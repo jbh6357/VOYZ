@@ -25,7 +25,7 @@ ml/
 ### 1. 의존성 설치
 
 ```bash
-pip install fastapi uvicorn pandas numpy
+pip install -r requirements.txt
 ```
 
 ### 2. 서버 실행

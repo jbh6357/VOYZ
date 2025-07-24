@@ -1,0 +1,19 @@
+# VOIZ Data Analysis API 의존성 라이브러리
+
+# FastAPI 웹 프레임워크
+fastapi==0.104.1
+
+# ASGI 서버 (FastAPI 실행용)
+uvicorn[standard]==0.24.0
+
+# 데이터 처리 및 수치 계산
+numpy==1.24.3
+
+# 데이터 검증 및 설정 관리
+pydantic==2.5.0
+
+# 타입 힌트 지원 (Python 3.8+ 에서는 기본 포함이지만 명시적으로 포함)
+typing-extensions==4.8.0
+
+# 추가 유틸리티 (선택사항)
+python-multipart==0.0.6 
