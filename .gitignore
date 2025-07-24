@@ -68,6 +68,9 @@ storybook-static/
 # 2. SPRING BOOT / MAVEN / JAVA
 # ===========================================
 
+.metadata/
+/.metadata/
+
 # Maven
 target/
 pom.xml.tag
