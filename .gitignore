@@ -70,6 +70,7 @@ storybook-static/
 
 .metadata/
 /.metadata/
+backend/.metadata/.log
 
 # Maven
 target/
