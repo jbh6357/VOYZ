@@ -17,7 +17,7 @@ app/src/main/java/com/voyz/
 │   ├── viewmodel/
 │   ├── activity/
 │   ├── fragment/
-│   └── adapter/
+│   └── navigation/
 ├── utils/
 └── di/
 ```
@@ -43,7 +43,7 @@ app/src/main/java/com/voyz/
 - **viewmodel/**: UI 상태를 관리하고, 도메인 레이어의 유스케이스를 호출하는 로직을 포함합니다.
 - **activity/**: 단일 화면을 구성하는 Activity 클래스들이 위치합니다.
 - **fragment/**: 화면 내 여러 UI 구성 단위를 나누는 Fragment 클래스들이 위치합니다.
-- **adapter/**: RecyclerView, ViewPager 등의 목록 UI를 위한 어댑터를 정의합니다.
+- **navigation/**: 앱 내 화면 간 전환(Navigation Graph 등)을 정의하며, 네비게이션 흐름을 관리합니다.
 
 #### utils/
 전역적으로 사용할 수 있는 유틸리티 클래스, 확장 함수, 공통 상수 등을 모아둡니다.
