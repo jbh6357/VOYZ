@@ -11,6 +11,8 @@ composeBom = "2024.09.00"
 retrofit = "2.9.0"
 okhttp = "4.12.0"
 gson = "2.10.1"
+material = "1.12.0"
+navigationComposeJvmstubs = "2.9.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -27,6 +29,7 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 # Network
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
@@ -34,6 +37,7 @@ retrofit-gson = { group = "com.squareup.retrofit2", name = "converter-gson", ver
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+androidx-navigation-compose-jvmstubs = { group = "androidx.navigation", name = "navigation-compose-jvmstubs", version.ref = "navigationComposeJvmstubs" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
