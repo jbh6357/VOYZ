@@ -68,6 +68,10 @@ storybook-static/
 # 2. SPRING BOOT / MAVEN / JAVA
 # ===========================================
 
+.metadata/
+/.metadata/
+backend/.metadata/.log
+
 # Maven
 target/
 pom.xml.tag
@@ -488,5 +492,4 @@ config/secrets.yml
 # data/raw/
 # experiments/
 # notebooks/checkpoint/
-
 .claude
