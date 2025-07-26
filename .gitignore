@@ -488,3 +488,5 @@ config/secrets.yml
 # data/raw/
 # experiments/
 # notebooks/checkpoint/
+
+.claude
