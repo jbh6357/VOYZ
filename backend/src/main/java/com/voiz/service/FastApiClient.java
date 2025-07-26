@@ -66,4 +66,9 @@ public class FastApiClient {
         String endpoint = "/api/predict/" + modelName;
         return postDataToFastApi(endpoint, inputData);
     }
+    
+    public ResponseEntity<String> getMatchResult(String modelName, Map<String, Object> inputData){
+    	String endpoint = "/api/match/" + modelName;
+        return postDataToFastApi(endpoint, inputData);
+    }
 } 

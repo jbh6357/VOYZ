@@ -8,10 +8,11 @@ from typing import Dict, Any, List
 from datetime import datetime
 
 # 설정 및 모델 import
-from config import API_CONFIG, SAMPLE_DATA, PredictionRequest, AnalysisRequest
+from config import API_CONFIG, SAMPLE_DATA, PredictionRequest, AnalysisRequest, SpecialDayMatchRequest
 from models.prediction_models import PredictionModels
 from models.analysis_models import AnalysisModels
 from services.dashboard_service import DashboardService
+from models.match_models import MatchModels
 
 # FastAPI 앱 생성
 app = FastAPI(
@@ -141,6 +142,23 @@ def customer_segmentation(request: Dict[str, Any]):
 def get_dashboard_data():
     """대시보드용 실시간 데이터"""
     return DashboardService.get_dashboard_data()
+
+# 특일 - 고객 매칭
+@app.post("/api/match/specialDay")
+def specialDay_match(request: SpecialDayMatchRequest):
+    """ 특일 - 고객 데이터 매칭"""
+    result = []
+    for i, day in enumerate(request.specialDays):
+        # llama 모델로 판단
+        judgement = MatchModels.specialDay_model(day.name, request.matchRequest.storeCategory)
+
+        if judgement == 1:
+            result.append({
+                 "sd_idx": day.sd_idx,
+                 "userId": request.matchRequest.userId
+            })
+
+    return result
 
 if __name__ == "__main__":
     import uvicorn
