@@ -11,15 +11,9 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Modifier
-import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
 import com.voyz.presentation.navigation.NavGraph
-
-import com.voyz.ui.theme.Blue500
 import com.voyz.ui.theme.VOYZTheme
 
 class MainActivity : ComponentActivity() {
@@ -29,19 +23,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             VOYZTheme {
-                val view = LocalView.current
-                SideEffect {
-                    val window = (view.context as ComponentActivity).window
-                    // 시스템바를 반투명하게 설정하여 앱과 구분
-                    window.statusBarColor = android.graphics.Color.TRANSPARENT
-                    window.navigationBarColor = android.graphics.Color.TRANSPARENT
-                    
-                    val insetsController = WindowCompat.getInsetsController(window, view)
-                    // 밝은 배경이므로 어두운 아이콘 사용
-                    insetsController.isAppearanceLightStatusBars = true
-                    insetsController.isAppearanceLightNavigationBars = true
-                }
-
                 val navController = rememberNavController()
                 
                 Box(
@@ -51,10 +32,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     NavGraph(navController = navController)
                 }
-
             }
         }
     }
-
 }
 

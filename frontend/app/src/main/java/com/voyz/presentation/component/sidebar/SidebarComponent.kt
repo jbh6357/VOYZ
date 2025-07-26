@@ -1,95 +1,96 @@
 package com.voyz.presentation.component.sidebar
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 
 @Composable
 fun SidebarComponent(
     isOpen: Boolean,
     onClose: () -> Unit,
+    animatedOffset: Float = 0f,
     menuItems: List<SidebarMenuItem> = getDefaultMenuItems(),
     modifier: Modifier = Modifier
 ) {
-    AnimatedVisibility(
-        visible = isOpen,
-        enter = slideInHorizontally(
-            initialOffsetX = { -it },
-            animationSpec = tween(300)
-        ),
-        exit = slideOutHorizontally(
-            targetOffsetX = { -it },
-            animationSpec = tween(300)
-        ),
-        modifier = modifier.zIndex(10f)
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val sidebarWidth = with(density) { 280.dp.toPx() }
+    
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Gray.copy(alpha = 0.7f))
     ) {
+        // 배경 터치로 사이드바 닫기
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable { onClose() }
+        )
+        
+        // 사이드바 콘텐츠
+        Box(
+            modifier = Modifier
+                .width(280.dp)
+                .fillMaxHeight()
+                .offset(x = with(density) { (animatedOffset - sidebarWidth).toDp() })
+                .background(MaterialTheme.colorScheme.surface)
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            if (dragOffset < -sidebarWidth * 0.3f) {
+                                onClose()
+                            }
+                            dragOffset = 0f
+                        }
+                    ) { _, dragAmount ->
+                        val newOffset = (dragOffset + dragAmount).coerceAtMost(0f)
+                        dragOffset = newOffset
+                    }
+                }
+                .clickable { /* 사이드바 내부는 터치 이벤트 차단 */ }
         ) {
-            // 배경 클릭 시 사이드바 닫기
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable { onClose() }
-            )
-            
-            // 사이드바 콘텐츠
-            Card(
-                modifier = Modifier
-                    .width(280.dp)
-                    .fillMaxHeight()
-                    .align(Alignment.CenterStart),
-                shape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(8.dp)
+                    .padding(16.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    // 사이드바 헤더
-                    Text(
-                        text = "VOYZ",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 24.dp)
+                // 사이드바 헤더
+                Text(
+                    text = "VOYZ",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+                
+                // 메뉴 아이템들
+                menuItems.forEach { item ->
+                    SidebarMenuItem(
+                        item = item,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    
-                    // 메뉴 아이템들
-                    menuItems.forEach { item ->
-                        SidebarMenuItem(
-                            item = item,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
                 }
             }
         }
