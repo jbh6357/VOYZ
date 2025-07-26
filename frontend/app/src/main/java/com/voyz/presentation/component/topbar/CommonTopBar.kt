@@ -1,4 +1,4 @@
-package com.voyz.presentation.component
+package com.voyz.presentation.component.topbar
 
 import android.os.Build
 import androidx.annotation.RequiresApi
