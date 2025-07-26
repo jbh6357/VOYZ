@@ -54,6 +54,8 @@ dependencies {
     implementation ("androidx.compose.material:material-icons-extended")
 
 
+    // Calendar - 임시로 주석 처리
+    // implementation("com.kizitonwose.calendar:compose:2.3.0")
 
     // Network
     implementation(libs.retrofit)

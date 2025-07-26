@@ -27,8 +27,8 @@ private val LightColorScheme = lightColorScheme(
     primary = Blue500,
     secondary = Teal500,
     tertiary = Blue700,
-    background = White,
-    surface = Gray50,
+    background = White, // 순수 화이트 배경
+    surface = White, // Surface도 화이트로 통일
     onPrimary = White,
     onSecondary = White,
     onBackground = Gray900,
@@ -39,7 +39,7 @@ private val LightColorScheme = lightColorScheme(
 fun VOYZTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // 고정 색상 사용
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
