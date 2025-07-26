@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -17,6 +17,7 @@ import kotlin.math.abs
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -74,7 +75,7 @@ fun CalendarComponent(
 ) {
     val currentMonth = viewModel.currentMonth
     val selectedDate = viewModel.selectedDate
-    var dragStarted by remember { mutableStateOf(false) }
+    var totalDrag by remember { mutableStateOf(0f) }
 
     Column(
         modifier = modifier
@@ -82,22 +83,22 @@ fun CalendarComponent(
             .fillMaxHeight()
             .background(Color.White)
             .pointerInput(Unit) {
-                detectDragGestures(
+                detectHorizontalDragGestures(
                     onDragStart = { 
-                        dragStarted = true 
+                        totalDrag = 0f
                     },
                     onDragEnd = { 
-                        dragStarted = false 
+                        if (abs(totalDrag) > 100) {
+                            if (totalDrag > 0) {
+                                viewModel.goToPreviousMonth()
+                            } else {
+                                viewModel.goToNextMonth()
+                            }
+                        }
+                        totalDrag = 0f
                     }
                 ) { _, dragAmount ->
-                    if (dragStarted && abs(dragAmount.x) > 100) {
-                        if (dragAmount.x > 0) {
-                            viewModel.goToPreviousMonth()
-                        } else {
-                            viewModel.goToNextMonth()
-                        }
-                        dragStarted = false
-                    }
+                    totalDrag += dragAmount
                 }
             },
         verticalArrangement = Arrangement.Top
@@ -119,10 +120,10 @@ fun CalendarComponent(
                 
                 slideInHorizontally(
                     initialOffsetX = { fullWidth -> slideDirection * fullWidth },
-                    animationSpec = tween(300)
+                    animationSpec = tween(200, easing = FastOutSlowInEasing)
                 ) togetherWith slideOutHorizontally(
                     targetOffsetX = { fullWidth -> -slideDirection * fullWidth },
-                    animationSpec = tween(300)
+                    animationSpec = tween(200, easing = FastOutSlowInEasing)
                 )
             },
             label = "calendar_month_transition"
@@ -156,7 +157,7 @@ private fun CalendarHeader(
         // 애니메이션이 적용된 월 텍스트
         Crossfade(
             targetState = currentMonth,
-            animationSpec = tween(150),
+            animationSpec = tween(200, easing = FastOutSlowInEasing),
             label = "month_text_transition"
         ) { animatedMonth ->
             Text(
