@@ -4,10 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.abs
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -68,19 +72,37 @@ fun CalendarComponent(
 ) {
     val currentMonth = viewModel.currentMonth
     val selectedDate = viewModel.selectedDate
+    var dragStarted by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .fillMaxHeight()
-            .background(Color.White),
+            .background(Color.White)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { 
+                        dragStarted = true 
+                    },
+                    onDragEnd = { 
+                        dragStarted = false 
+                    }
+                ) { _, dragAmount ->
+                    if (dragStarted && abs(dragAmount.x) > 100) {
+                        if (dragAmount.x > 0) {
+                            viewModel.goToPreviousMonth()
+                        } else {
+                            viewModel.goToNextMonth()
+                        }
+                        dragStarted = false
+                    }
+                }
+            },
         verticalArrangement = Arrangement.Top
     ) {
         // 캘린더 헤더
         CalendarHeader(
-            currentMonth = currentMonth,
-            onPreviousMonth = viewModel::goToPreviousMonth,
-            onNextMonth = viewModel::goToNextMonth
+            currentMonth = currentMonth
         )
         
         // 요일 헤더
@@ -121,14 +143,12 @@ fun CalendarComponent(
 
 @Composable
 private fun CalendarHeader(
-    currentMonth: YearMonth,
-    onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit
+    currentMonth: YearMonth
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 20.dp, horizontal = 40.dp),
+            .padding(top = 12.dp, bottom = 20.dp, start = 40.dp, end = 40.dp),
         contentAlignment = Alignment.Center
     ) {
         // 애니메이션이 적용된 월 텍스트
@@ -143,36 +163,6 @@ private fun CalendarHeader(
                 fontWeight = FontWeight.Normal,
                 color = MaterialTheme.colorScheme.onSurface
             )
-        }
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onPreviousMonth,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowLeft,
-                    contentDescription = "이전 달",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            
-            IconButton(
-                onClick = onNextMonth,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight,
-                    contentDescription = "다음 달",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
         }
     }
 }

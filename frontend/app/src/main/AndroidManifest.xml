@@ -6,7 +6,7 @@
         android:theme="@style/Theme.VOYZ">
 
         <activity
-            android:name="com.voyz.MainActivity"
+            android:name="com.voyz.presentation.activity.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

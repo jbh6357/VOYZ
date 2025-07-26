@@ -2,6 +2,7 @@ package com.voyz.presentation.fragment
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -36,14 +37,10 @@ fun MainScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         // 메인 콘텐츠
         Scaffold(
+            contentWindowInsets = WindowInsets(0),
             topBar = {
                 TopAppBar(
-                    title = {
-                        Text(
-                            text = "VOYZ",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                    },
+                    title = { },
                     navigationIcon = {
                         IconButton(onClick = { isSidebarOpen = true }) {
                             Icon(
@@ -56,7 +53,8 @@ fun MainScreen() {
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         titleContentColor = MaterialTheme.colorScheme.onSurface
-                    )
+                    ),
+                    windowInsets = WindowInsets(0)
                 )
             },
             floatingActionButton = {
