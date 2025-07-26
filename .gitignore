@@ -219,7 +219,6 @@ datasets/
 *.csv
 *.tsv
 *.json
-*.xml
 *.parquet
 *.hdf
 *.h5
