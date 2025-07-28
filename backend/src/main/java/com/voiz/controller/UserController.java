@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
-@Tag(name = "User Management", description = "사용자 관리 API")
+@Tag(name = "user", description = "사용자 관리 API")
 public class UserController {
     
     @Autowired

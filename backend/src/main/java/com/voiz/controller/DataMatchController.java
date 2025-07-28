@@ -18,7 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/match")
-@Tag(name = "Data Match", description = "사용자-데이터 매칭 API")
+@Tag(name = "data-match", description = "사용자-데이터 매칭 API")
 public class DataMatchController {
 
 	@Autowired

@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/calendars")
-@Tag(name = "calendar-controller", description = "일정관리 API")
+@Tag(name = "calendar", description = "일정관리 API")
 public class CalendarController {
 	
 	@Autowired

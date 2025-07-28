@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/collect")
-@Tag(name = "Data Collect", description = "데이터 수집 API")
+@Tag(name = "data-collect", description = "데이터 수집 API")
 public class DataCollectorController {
 	
 	@Autowired
