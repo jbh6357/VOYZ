@@ -31,12 +31,12 @@ fun NavGraph(navController: NavHostController) {
         }
         composable("signup") { SignUpScreen() }
         composable("find") { IdPwFindScreen() }
-        composable("main") { MainScreen() }
-
-
-
-        composable("reminder") { // 리마인더에서 알람 클릭
+        composable("main") {
+            MainScreen(navController = navController)
+        }
+        composable("reminder") {
             ReminderScreen(
+                navController = navController,
                 onAlarmClick = { navController.navigate("alarm") }
             )
         }
@@ -45,6 +45,5 @@ fun NavGraph(navController: NavHostController) {
                 onBackClick = { navController.popBackStack() }
             )
         }
-    }
 
-}
+    }}

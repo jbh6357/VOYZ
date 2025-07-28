@@ -30,13 +30,16 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.voyz.presentation.component.calendar.CalendarComponent
 import com.voyz.presentation.component.fab.FloatingActionMenu
 import com.voyz.presentation.component.sidebar.SidebarComponent
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.compose.rememberNavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(navController: NavController) {
     var isSidebarOpen by remember { mutableStateOf(false) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
@@ -118,6 +121,7 @@ fun MainScreen() {
                     isSidebarOpen = false
                     dragOffset = 0f
                 },
+                navController = navController,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -127,5 +131,8 @@ fun MainScreen() {
 @Preview(showBackground = true, widthDp = 400, heightDp = 800)
 @Composable
 fun MainScreenPreview() {
-    MainScreen()
+    val context = LocalContext.current
+    val fakeNavController = rememberNavController()
+
+    MainScreen(navController = fakeNavController)
 }
