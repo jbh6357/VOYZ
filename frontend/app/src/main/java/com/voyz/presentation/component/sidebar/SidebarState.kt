@@ -8,6 +8,7 @@ data class SidebarState(
 data class SidebarMenuItem(
     val id: String,
     val title: String,
+    val route: String,
     val icon: Int? = null,
     val onClick: () -> Unit = {}
 )
