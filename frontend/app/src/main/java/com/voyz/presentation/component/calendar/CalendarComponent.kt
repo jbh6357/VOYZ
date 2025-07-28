@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +62,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.voyz.data.model.MarketingOpportunity
+import com.voyz.data.model.Priority
+import com.voyz.data.repository.MarketingOpportunityRepository
+import com.voyz.ui.theme.MarketingColors
+import com.voyz.ui.theme.getMarketingCategoryColors
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -71,11 +78,18 @@ import java.util.Locale
 @Composable
 fun CalendarComponent(
     modifier: Modifier = Modifier,
-    viewModel: CalendarViewModel = viewModel()
+    viewModel: CalendarViewModel = viewModel(),
+    onDayClick: (LocalDate, List<MarketingOpportunity>) -> Unit = { _, _ -> }
 ) {
     val currentMonth = viewModel.currentMonth
     val selectedDate = viewModel.selectedDate
     var totalDrag by remember { mutableStateOf(0f) }
+    
+    // 마케팅 기회 데이터 가져오기
+    val marketingOpportunities = remember {
+        MarketingOpportunityRepository.getDailyOpportunities()
+            .associateBy { it.date }
+    }
 
     Column(
         modifier = modifier
@@ -128,11 +142,16 @@ fun CalendarComponent(
             },
             label = "calendar_month_transition"
         ) { animatedCurrentMonth ->
-            SimpleCalendarGrid(
+            MarketingCalendarGrid(
                 yearMonth = animatedCurrentMonth,
                 selectedDate = selectedDate,
-                events = viewModel.events,
+                marketingOpportunities = marketingOpportunities,
                 onDateClick = { date ->
+                    // 다른 달 날짜도 클릭 가능하게 변경
+                    val opportunities = marketingOpportunities[date]?.opportunities ?: emptyList()
+                    if (opportunities.isNotEmpty()) {
+                        onDayClick(date, opportunities)
+                    }
                     if (date == selectedDate) {
                         viewModel.clearSelection()
                     } else {
@@ -176,35 +195,45 @@ private fun DaysOfWeekHeader() {
         listOf("일", "월", "화", "수", "목", "금", "토")
     }
     
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
-        daysOfWeek.forEachIndexed { index, dayName ->
-            val textColor = when (index) {
-                0 -> Color(0xFFE57373) // 일요일 - 자연스러운 빨간색
-                6 -> Color(0xFF9E9E9E) // 토요일 - 회색
-                else -> Color(0xFF333333) // 평일 - 자연스러운 검은색
+    Column {
+        // 요일 헤더만 표시
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            daysOfWeek.forEachIndexed { index, dayName ->
+                val textColor = when (index) {
+                    0 -> MarketingColors.HighPriority // 일요일
+                    6 -> MarketingColors.TextSecondary // 토요일  
+                    else -> MarketingColors.TextPrimary // 평일
+                }
+                
+                Text(
+                    text = dayName,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = textColor
+                )
             }
-            
-            Text(
-                text = dayName,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Normal,
-                color = textColor
-            )
         }
+        
+        // 구분선
+        Divider(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            color = MarketingColors.TextTertiary.copy(alpha = 0.3f),
+            thickness = 0.5.dp
+        )
     }
 }
 
 @Composable
-private fun SimpleCalendarGrid(
+private fun MarketingCalendarGrid(
     yearMonth: YearMonth,
     selectedDate: LocalDate?,
-    events: Map<LocalDate, List<CalendarEvent>>,
+    marketingOpportunities: Map<LocalDate, com.voyz.data.model.DailyMarketingOpportunities>,
     onDateClick: (LocalDate) -> Unit
 ) {
     val firstDayOfMonth = yearMonth.atDay(1)
@@ -229,10 +258,14 @@ private fun SimpleCalendarGrid(
         
         // 다음 달 첫 날들
         val nextMonth = yearMonth.plusMonths(1)
-        val totalCells = 42 // 6주 * 7일
+        val totalCells = 35 // 5주 * 7일로 제한
         val remainingCells = totalCells - prevMonthDays.size - currentMonthDays.size
-        val nextMonthDays = (1..remainingCells).map { day ->
-            CalendarDate(nextMonth.atDay(day), false)
+        val nextMonthDays = if (remainingCells > 0) {
+            (1..remainingCells).map { day ->
+                CalendarDate(nextMonth.atDay(day), false)
+            }
+        } else {
+            emptyList()
         }
         
         prevMonthDays + currentMonthDays + nextMonthDays
@@ -245,28 +278,30 @@ private fun SimpleCalendarGrid(
             .padding(horizontal = 8.dp)
     ) {
         items(days) { calendarDate ->
-            CalendarDayCell(
+            MarketingCalendarDayCell(
                 date = calendarDate.date,
                 isCurrentMonth = calendarDate.isCurrentMonth,
                 isSelected = selectedDate == calendarDate.date,
-                events = events[calendarDate.date] ?: emptyList(),
-                onClick = { if (calendarDate.isCurrentMonth) onDateClick(calendarDate.date) }
+                dailyOpportunities = marketingOpportunities[calendarDate.date],
+                onClick = { onDateClick(calendarDate.date) } // isCurrentMonth 조건 제거
             )
         }
     }
 }
 
 @Composable
-private fun CalendarDayCell(
+private fun MarketingCalendarDayCell(
     date: LocalDate,
     isCurrentMonth: Boolean,
     isSelected: Boolean,
-    events: List<CalendarEvent>,
+    dailyOpportunities: com.voyz.data.model.DailyMarketingOpportunities?,
     onClick: () -> Unit
 ) {
     val textColor = when {
-        !isCurrentMonth -> Color(0xFFBDBDBD)
-        else -> Color(0xFF333333)
+        !isCurrentMonth -> MarketingColors.TextTertiary
+        date.dayOfWeek.value == 7 -> MarketingColors.HighPriority // 일요일 빨간색
+        date.dayOfWeek.value == 6 -> MarketingColors.TextSecondary // 토요일 회색
+        else -> MarketingColors.TextPrimary
     }
     
     Column(
@@ -276,85 +311,120 @@ private fun CalendarDayCell(
             .drawBehind {
                 // 윗줄만 그리기
                 drawLine(
-                    color = Color(0xFFF0F0F0),
+                    color = MarketingColors.TextTertiary.copy(alpha = 0.2f),
                     start = Offset(0f, 0f),
                     end = Offset(size.width, 0f),
-                    strokeWidth = 1.dp.toPx()
+                    strokeWidth = 0.5.dp.toPx()
                 )
             }
-            .clickable(enabled = isCurrentMonth) { onClick() }
+            .clickable { onClick() }
             .padding(4.dp),
         verticalArrangement = Arrangement.Top
     ) {
-        // 날짜 숫자
-        Text(
-            text = date.dayOfMonth.toString(),
-            color = textColor,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Normal,
-            modifier = Modifier
-                .padding(2.dp)
-                .then(
-                    if (isSelected) {
-                        Modifier
-                            .background(
-                                Color(0xFF64B5F6), // 블루 계열로 변경 (Blue300)
-                                CircleShape
-                            )
-                            .padding(4.dp)
+        // 날짜 숫자와 날씨
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = date.dayOfMonth.toString(),
+                color = textColor,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .then(
+                        if (isSelected) {
+                            Modifier
+                                .background(
+                                    MarketingColors.Selected,
+                                    CircleShape
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        } else {
+                            Modifier.padding(2.dp)
+                        }
+                    )
+            )
+            
+            // 날씨 아이콘 (현재 주의 7일만 표시)
+            val today = LocalDate.now()
+            val startOfWeek = today.minusDays(today.dayOfWeek.value % 7L)
+            val endOfWeek = startOfWeek.plusDays(6)
+            
+            if (date >= startOfWeek && date <= endOfWeek) {
+                val weatherEmoji = remember(date) {
+                    val weatherList = listOf("☀️", "🌤️", "☁️", "🌧️", "⛅")
+                    weatherList[date.dayOfMonth % weatherList.size]
+                }
+                Text(
+                    text = weatherEmoji,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 10.sp,
+                    modifier = if (!isCurrentMonth) {
+                        Modifier.alpha(0.3f) // 다른 달은 연하게
                     } else {
-                        Modifier.padding(4.dp)
+                        Modifier
                     }
                 )
-        )
+            }
+        }
         
-        // 일정 영역 - 고정 크기
+        // 마케팅 기회 영역 - 확장된 크기
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp), // 일정 영역 높이 고정
+                .height(80.dp), // 기회 영역 높이 대폭 증가
             verticalArrangement = Arrangement.Top
         ) {
-            // 최대 2개 이벤트만 표시
-            events.take(2).forEach { event ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(16.dp)
-                        .padding(vertical = 1.dp)
-                        .background(
-                            color = when (event.id) {
-                                "1" -> Color(0xFFFFE0B2) // 연한 주황
-                                "2" -> Color(0xFFF8BBD9) // 연한 분홍
-                                "3" -> Color(0xFFE8F5E8) // 연한 초록
-                                "4" -> Color(0xFFE3F2FD) // 연한 파랑
-                                else -> Color(0xFFF3E5F5) // 연한 보라
-                            },
-                            shape = RoundedCornerShape(2.dp)
+            dailyOpportunities?.let { daily ->                
+                // 최대 2개 기회만 표시
+                daily.opportunities.take(2).forEach { opportunity ->
+                    val backgroundColor = if (opportunity.priority == com.voyz.data.model.Priority.HIGH) {
+                        MarketingColors.HighPriority.copy(alpha = 0.3f) // 높은 우선순위는 빨간색 배경
+                    } else {
+                        getMarketingCategoryColors(opportunity.category).second
+                    }
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp) // 높이 증가
+                            .padding(vertical = 2.dp)
+                            .background(
+                                color = backgroundColor,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 4.dp, vertical = 3.dp)
+                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f), // 다른 달은 연하게
+                        contentAlignment = Alignment.CenterStart // 가운데 정렬
+                    ) {
+                        Text(
+                            text = opportunity.title,
+                            color = MarketingColors.TextPrimary,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 9.sp,
+                            minLines = 2, // 최소 2줄 표시
+                            maxLines = 2,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            lineHeight = 10.sp, // 줄 간격 조정
+                            modifier = Modifier.fillMaxWidth() // 전체 너비 사용
                         )
-                        .padding(horizontal = 2.dp, vertical = 1.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
+                    }
+                }
+                
+                // 더 많은 기회가 있을 때 표시
+                if (daily.totalCount > 2) {
                     Text(
-                        text = event.title,
-                        color = Color(0xFF333333),
+                        text = "+${daily.totalCount - 2}",
+                        color = MarketingColors.TextSecondary,
                         style = MaterialTheme.typography.labelSmall,
                         fontSize = 9.sp,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        modifier = Modifier
+                            .padding(top = 2.dp, start = 4.dp)
+                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f) // 다른 달은 연하게
                     )
                 }
-            }
-            
-            // 더 많은 이벤트가 있을 때 표시
-            if (events.size > 2) {
-                Text(
-                    text = "+${events.size - 2}",
-                    color = Color(0xFF888888),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 8.sp,
-                    modifier = Modifier.padding(top = 2.dp, start = 2.dp)
-                )
             }
         }
     }

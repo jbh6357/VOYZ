@@ -23,8 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.NotificationAdd
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -32,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,84 +49,67 @@ import androidx.compose.ui.zIndex
 @Composable
 fun FloatingActionMenu(
     modifier: Modifier = Modifier,
-    onTextPostClick: () -> Unit = {},
-    onPhotoPostClick: () -> Unit = {}
+    isExpanded: Boolean = false,
+    onExpandedChange: (Boolean) -> Unit = {},
+    onMarketingCreateClick: () -> Unit = {},
+    onReminderCreateClick: () -> Unit = {}
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
-    
     val rotationAngle by animateFloatAsState(
         targetValue = if (isExpanded) 45f else 0f,
         animationSpec = tween(300),
         label = "fab_rotation"
     )
 
-    Box(modifier = modifier) {
-        // 배경 오버레이 (메뉴가 열렸을 때)
+    // 메뉴 아이템들을 하단에서부터 올라가게 배치
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.End
+    ) {
+        // 마케팅 생성 메뉴
         AnimatedVisibility(
             visible = isExpanded,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(200))
+            enter = scaleIn(tween(200, delayMillis = 100)) + fadeIn(tween(200, delayMillis = 100)),
+            exit = scaleOut(tween(150)) + fadeOut(tween(150))
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f))
-                    .clickable { isExpanded = false }
-                    .zIndex(8f)
+            FloatingActionMenuItem(
+                icon = Icons.Default.Campaign,
+                label = "마케팅 생성",
+                onClick = {
+                    onMarketingCreateClick()
+                    onExpandedChange(false)
+                }
             )
         }
         
-        // 메뉴 아이템들
-        Column(
-            modifier = Modifier.zIndex(10f),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.End
+        // 리마인더 생성 메뉴
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = scaleIn(tween(200, delayMillis = 50)) + fadeIn(tween(200, delayMillis = 50)),
+            exit = scaleOut(tween(150)) + fadeOut(tween(150))
         ) {
-            // 텍스트 게시글 작성 메뉴
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = scaleIn(tween(200, delayMillis = 50)) + fadeIn(tween(200, delayMillis = 50)),
-                exit = scaleOut(tween(150)) + fadeOut(tween(150))
-            ) {
-                FloatingActionMenuItem(
-                    icon = Icons.Default.Edit,
-                    label = "텍스트 게시글",
-                    onClick = {
-                        onTextPostClick()
-                        isExpanded = false
-                    }
-                )
-            }
-            
-            // 사진 게시글 작성 메뉴
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = scaleIn(tween(200)) + fadeIn(tween(200)),
-                exit = scaleOut(tween(150)) + fadeOut(tween(150))
-            ) {
-                FloatingActionMenuItem(
-                    icon = Icons.Default.Create,
-                    label = "사진 게시글",
-                    onClick = {
-                        onPhotoPostClick()
-                        isExpanded = false
-                    }
-                )
-            }
-            
-            // 메인 FAB
-            FloatingActionButton(
-                onClick = { isExpanded = !isExpanded },
-                modifier = Modifier.size(56.dp),
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
-                    contentDescription = if (isExpanded) "메뉴 닫기" else "게시글 작성",
-                    modifier = Modifier.rotate(rotationAngle),
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
+            FloatingActionMenuItem(
+                icon = Icons.Default.NotificationAdd,
+                label = "리마인더 생성",
+                onClick = {
+                    onReminderCreateClick()
+                    onExpandedChange(false)
+                }
+            )
+        }
+        
+        // 메인 FAB
+        FloatingActionButton(
+            onClick = { onExpandedChange(!isExpanded) },
+            modifier = Modifier.size(56.dp),
+            containerColor = MaterialTheme.colorScheme.primary
+        ) {
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
+                contentDescription = if (isExpanded) "메뉴 닫기" else "게시글 작성",
+                modifier = Modifier.rotate(rotationAngle),
+                tint = MaterialTheme.colorScheme.onPrimary
+            )
         }
     }
 }
