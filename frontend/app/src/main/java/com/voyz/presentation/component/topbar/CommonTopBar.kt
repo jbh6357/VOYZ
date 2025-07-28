@@ -5,6 +5,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,8 +13,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.BottomAppBarDefaults.windowInsets
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.IconButton
@@ -29,6 +32,7 @@ import java.time.LocalDate
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CommonTopBar(
+    onMenuClick: () -> Unit ={},
     onSearchClick: () -> Unit = {},
     onAlarmClick: () -> Unit ={},
     onTodayClick: () -> Unit ={},
@@ -36,10 +40,17 @@ fun CommonTopBar(
 ){
     TopAppBar(  // 상단파 컴포저블
 
+
         //가운데 비워두기
         title ={},
 
-        //오른쪽 아이콘 3개 정렬
+        navigationIcon = {  // ← 햄버거 버튼을 이 안에 둠
+            IconButton(onClick = onMenuClick) {
+                Icon(Icons.Default.Menu, contentDescription = "메뉴 열기")
+            }
+        },
+
+                //오른쪽 아이콘 3개 정렬
         actions = {
             IconButton(onClick = onSearchClick) {
                 Icon(
@@ -53,7 +64,7 @@ fun CommonTopBar(
             IconButton(onClick = onAlarmClick) {
                 Icon(
                     imageVector = Icons.Default.NotificationsNone,
-                    contentDescription ="알림"
+                    contentDescription = "알림"
                 )
             }
 
@@ -65,13 +76,15 @@ fun CommonTopBar(
                 border = BorderStroke(2.dp, Color.Gray), // 테두리
                 contentPadding = PaddingValues(0.dp),//여백
                 modifier = Modifier.width(32.dp).height(36.dp)
-            ){
+            ) {
                 Text(
                     text = "${today.dayOfMonth}", // 오늘의 '일(day)'만 추출
                     fontSize = 16.sp
                 )
             }
-        }
+        },
+            windowInsets = WindowInsets(0)
+
     )
 
 }

@@ -25,13 +25,16 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 
 @Composable
 fun SidebarComponent(
     isOpen: Boolean,
     onClose: () -> Unit,
+    navController: NavController,
     animatedOffset: Float = 0f,
-    menuItems: List<SidebarMenuItem> = getDefaultMenuItems(),
+    menuItems: List<SidebarMenuItem> = getDefaultMenuItems(navController),
     modifier: Modifier = Modifier
 ) {
     var dragOffset by remember { mutableFloatStateOf(0f) }
@@ -117,7 +120,7 @@ private fun SidebarMenuItem(
     }
 }
 
-private fun getDefaultMenuItems(): List<SidebarMenuItem> {
+private fun getDefaultMenuItems(navController: NavController): List<SidebarMenuItem> {
     return listOf(
         SidebarMenuItem(
             id = "home",
@@ -125,9 +128,11 @@ private fun getDefaultMenuItems(): List<SidebarMenuItem> {
             onClick = { /* 홈 이동 로직 */ }
         ),
         SidebarMenuItem(
-            id = "calendar",
-            title = "캘린더",
-            onClick = { /* 캘린더 이동 로직 */ }
+            id = "reminder",
+            title = "리마인더",
+            onClick = {
+                navController.navigate("reminder")
+            }
         ),
         SidebarMenuItem(
             id = "posts",
@@ -150,8 +155,11 @@ private fun getDefaultMenuItems(): List<SidebarMenuItem> {
 @Preview(showBackground = true)
 @Composable
 fun SidebarComponentPreview() {
+    val navController = rememberNavController()
+
     SidebarComponent(
         isOpen = true,
-        onClose = {}
+        onClose = {},
+        navController = navController
     )
 }

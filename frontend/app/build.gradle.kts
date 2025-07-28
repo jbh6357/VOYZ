@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.gson)
+    implementation(libs.androidx.navigation.testing.android)
 
 
     testImplementation(libs.junit)
