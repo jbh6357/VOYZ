@@ -8,10 +8,15 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.voiz.dto.DaySuggestionDto;
 import com.voiz.dto.ReminderDto;
+import com.voiz.mapper.CalendarRepository;
 import com.voiz.mapper.MarketingRepository;
 import com.voiz.mapper.ReminderRepository;
+import com.voiz.mapper.SpecialDayRepository;
+import com.voiz.mapper.SpecialDaySuggestRepository;
 import com.voiz.vo.Marketing;
+import com.voiz.vo.SpecialDaySuggest;
 
 @Service
 public class CalendarService {
@@ -21,6 +26,15 @@ public class CalendarService {
 	
 	@Autowired
 	private ReminderRepository reminderRepository;
+	
+	@Autowired
+	private SpecialDaySuggestRepository specialDaySuggestRepository;
+	
+	@Autowired
+	private SpecialDayRepository specialDayRepository;
+	
+	@Autowired
+	private CalendarRepository calendarRepository;
 	
 	public Marketing getMarketing(int marketingIdx) {
 		Optional<Marketing> marketing = marketingRepository.findByMarketingIdx(marketingIdx);
@@ -53,5 +67,26 @@ public class CalendarService {
 	    LocalDate to = ym.plusMonths(1).atEndOfMonth();       // 다음월 말일
 
 	    return marketingRepository.findByReminderIdxAndDateRange(reminderIdx, from, to);
+	}
+
+	public SpecialDaySuggest getSpecialDaySuggestion(int ssuIdx) {
+		Optional<SpecialDaySuggest> suggestion = specialDaySuggestRepository.findBySsuIdx(ssuIdx);
+		if(suggestion.isPresent()) {
+			return suggestion.get();
+		}else {
+			return null;
+		}
+	}
+
+	public List<DaySuggestionDto> getDaySuggestionsByUserAndMonth(String userId, int year, int month) {
+		int calendarIdx = calendarRepository.findCalendarIdxByUserId(userId);
+		
+		// 해당 월 기준 전월 ~ 다음월 범위 계산
+	    YearMonth ym = YearMonth.of(year, month);
+	    LocalDate from = ym.minusMonths(1).atDay(1);          // 전월 1일
+	    LocalDate to = ym.plusMonths(1).atEndOfMonth();       // 다음월 말일
+		
+	    List<DaySuggestionDto> daySuggestionList = specialDayRepository.findSpecialDaysWithSuggestion(calendarIdx, from, to);
+		return daySuggestionList;
 	}
 }
