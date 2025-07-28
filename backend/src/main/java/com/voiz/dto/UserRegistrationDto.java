@@ -9,4 +9,7 @@ public class UserRegistrationDto {
     private String email;
     private String name;
     private String role;
+    private String phone;
+    private String storeCategory;
+    private String storeAddress;
 } 

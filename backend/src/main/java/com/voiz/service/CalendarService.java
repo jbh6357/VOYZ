@@ -1,16 +1,13 @@
 package com.voiz.service;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.voiz.dto.ReminderDto;
+import com.voiz.mapper.CalendarRepository;
 import com.voiz.mapper.MarketingRepository;
-import com.voiz.mapper.ReminderRepository;
 import com.voiz.vo.Marketing;
 
 @Service
@@ -18,9 +15,9 @@ public class CalendarService {
 
 	@Autowired
 	private MarketingRepository marketingRepository;
-	
+
 	@Autowired
-	private ReminderRepository reminderRepository;
+    private CalendarRepository calendarRepository; 
 	
 	public Marketing getMarketing(int marketingIdx) {
 		Optional<Marketing> marketing = marketingRepository.findByMarketingIdx(marketingIdx);
@@ -31,27 +28,9 @@ public class CalendarService {
 		}
 	}
 
-	public void createReminder(ReminderDto reminderDto, String userId) {
-		int reminderIdx = reminderRepository.findReminderIdxByUserId(userId);
-		Marketing marketing = new Marketing();
-		marketing.setContent(reminderDto.getContent());
-		marketing.setTitle(reminderDto.getTitle());
-		marketing.setStartDate(reminderDto.getStartDate());
-		marketing.setEndDate(reminderDto.getEndDate());
-		marketing.setReminder_idx(reminderIdx);
-		marketing.setStatus("진행전");
-		marketing.setType("1");
-		marketingRepository.save(marketing);
-	}
+	// 사용자 ID로 마케팅 제안 목록을 가져오는 로직
+    public List<Marketing> getMarketingProposalsByUserId(String userId) {
+        return calendarRepository.findMarketingByUserId(userId);
+    }
 
-	public List<Marketing> getMarketingListByUserAndMonth(String userId, int year, int month) {
-		int reminderIdx = reminderRepository.findReminderIdxByUserId(userId);
-		
-		// 해당 월 기준 전월 ~ 다음월 범위 계산
-	    YearMonth ym = YearMonth.of(year, month);
-	    LocalDate from = ym.minusMonths(1).atDay(1);          // 전월 1일
-	    LocalDate to = ym.plusMonths(1).atEndOfMonth();       // 다음월 말일
-
-	    return marketingRepository.findByReminderIdxAndDateRange(reminderIdx, from, to);
-	}
 }
