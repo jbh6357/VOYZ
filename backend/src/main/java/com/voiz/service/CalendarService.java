@@ -1,5 +1,8 @@
 package com.voiz.service;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,5 +42,16 @@ public class CalendarService {
 		marketing.setStatus("진행전");
 		marketing.setType("1");
 		marketingRepository.save(marketing);
+	}
+
+	public List<Marketing> getMarketingListByUserAndMonth(String userId, int year, int month) {
+		int reminderIdx = reminderRepository.findReminderIdxByUserId(userId);
+		
+		// 해당 월 기준 전월 ~ 다음월 범위 계산
+	    YearMonth ym = YearMonth.of(year, month);
+	    LocalDate from = ym.minusMonths(1).atDay(1);          // 전월 1일
+	    LocalDate to = ym.plusMonths(1).atEndOfMonth();       // 다음월 말일
+
+	    return marketingRepository.findByReminderIdxAndDateRange(reminderIdx, from, to);
 	}
 }

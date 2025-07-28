@@ -1,5 +1,7 @@
 package com.voiz.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,6 +44,17 @@ public class CalendarController {
 	public ResponseEntity<Void> createReminder(@RequestBody ReminderDto reminderDto, @RequestParam String userId) {
 	    calendarService.createReminder(reminderDto, userId);
 	    return ResponseEntity.ok().build(); 
+	}
+	
+	@GetMapping("/reminder")
+	@Operation(summary = "리마인더 일정 조회", description = "사용자의 리마인더 ID를 기반으로 마케팅 일정을 월 기준으로 조회합니다. (전월~다음월까지)")
+	public ResponseEntity<List<Marketing>> getRemindersByUserAndMonth(
+	        @RequestParam("user_id") String userId,
+	        @RequestParam int year,
+	        @RequestParam int month) {
+
+	    List<Marketing> marketingList = calendarService.getMarketingListByUserAndMonth(userId, year, month);
+	    return ResponseEntity.ok(marketingList);
 	}
 	
 	
