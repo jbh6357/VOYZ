@@ -25,17 +25,25 @@ fun AlarmScreen(onBackClick: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier
+                    .fillMaxWidth(),
                 title = {
-                    Text(text = "알림", fontSize = 18.sp)
+                    Text(text = "알림", fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "뒤로가기"
+                            contentDescription = "뒤로가기",
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                ),
+                windowInsets = WindowInsets(0)
             )
         }
     )  { innerPadding ->

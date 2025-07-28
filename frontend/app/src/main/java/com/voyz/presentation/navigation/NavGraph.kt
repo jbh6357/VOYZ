@@ -16,6 +16,7 @@ import com.voyz.presentation.fragment.SettingsScreen
 import com.voyz.presentation.fragment.UserProfileScreen
 import com.voyz.presentation.fragment.MarketingCreateScreen
 import com.voyz.presentation.fragment.ReminderCreateScreen
+import com.voyz.presentation.fragment.SearchScreen
 import com.voyz.presentation.screen.marketing.MarketingOpportunityDetailScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
@@ -54,6 +55,10 @@ fun NavGraph(navController: NavHostController) {
                 onBackClick = { navController.popBackStack() }
             )
         }
+        composable("search") {
+            SearchScreen(
+                onBackClick = { navController.popBackStack() })
+        }
         composable("operation_management") {
             OperationManagementScreen(navController = navController)
         }
@@ -82,5 +87,4 @@ fun NavGraph(navController: NavHostController) {
                 opportunityId = opportunityId
             )
         }
-
     }}
