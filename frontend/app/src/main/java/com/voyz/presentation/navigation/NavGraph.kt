@@ -10,6 +10,7 @@ import com.voyz.presentation.fragment.SignUpScreen
 import com.voyz.presentation.fragment.MainScreen
 import com.voyz.presentation.fragment.IdPwFindScreen
 import com.voyz.presentation.fragment.ReminderScreen
+import com.voyz.presentation.fragment.SearchScreen
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -44,6 +45,10 @@ fun NavGraph(navController: NavHostController) {
             AlarmScreen(
                 onBackClick = { navController.popBackStack() }
             )
+        }
+        composable("search") {
+            SearchScreen(
+                onBackClick = { navController.popBackStack() })
         }
 
     }}

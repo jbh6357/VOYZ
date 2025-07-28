@@ -6,7 +6,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -68,14 +70,18 @@ fun CommonTopBar(
                 )
             }
 
-            Spacer(modifier = Modifier.width(15.dp))
+            Spacer(modifier = Modifier.width(6.dp))
 
             OutlinedButton(
                 onClick = onTodayClick, //클릭시 실행
                 shape = RoundedCornerShape(8.dp), //버튼 모서리 둥글게
                 border = BorderStroke(2.dp, Color.Gray), // 테두리
                 contentPadding = PaddingValues(0.dp),//여백
-                modifier = Modifier.width(32.dp).height(36.dp)
+                modifier = Modifier.padding(end =6.dp)
+                    .defaultMinSize(minWidth = 30.dp)
+                    .height(36.dp)
+
+
             ) {
                 Text(
                     text = "${today.dayOfMonth}", // 오늘의 '일(day)'만 추출
