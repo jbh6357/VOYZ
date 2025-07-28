@@ -10,6 +10,10 @@ import com.voyz.presentation.fragment.SignUpScreen
 import com.voyz.presentation.fragment.MainScreen
 import com.voyz.presentation.fragment.IdPwFindScreen
 import com.voyz.presentation.fragment.ReminderScreen
+import com.voyz.presentation.fragment.OperationManagementScreen
+import com.voyz.presentation.fragment.CustomerManagementScreen
+import com.voyz.presentation.fragment.SettingsScreen
+import com.voyz.presentation.fragment.UserProfileScreen
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -17,7 +21,7 @@ fun NavGraph(navController: NavHostController) {
         composable("login") {
             LoginScreen(
                 onLoginClick = { id, pw ->
-                    if (id == "admin" && pw == "admin") {
+                    if (id == "ad" && pw == "ad") {
                         navController.navigate("main")
                     }
                 },
@@ -44,6 +48,18 @@ fun NavGraph(navController: NavHostController) {
             AlarmScreen(
                 onBackClick = { navController.popBackStack() }
             )
+        }
+        composable("operation_management") {
+            OperationManagementScreen(navController = navController)
+        }
+        composable("customer_management") {
+            CustomerManagementScreen(navController = navController)
+        }
+        composable("settings") {
+            SettingsScreen(navController = navController)
+        }
+        composable("user_profile") {
+            UserProfileScreen(navController = navController)
         }
 
     }}
