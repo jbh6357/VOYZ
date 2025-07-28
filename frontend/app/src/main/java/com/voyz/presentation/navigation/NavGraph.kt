@@ -7,7 +7,7 @@ import androidx.navigation.compose.composable
 import com.voyz.presentation.fragment.AlarmScreen
 import com.voyz.presentation.fragment.LoginScreen
 import com.voyz.presentation.fragment.SignUpScreen
-import com.voyz.presentation.fragment.MainScreen
+import com.voyz.presentation.screen.main.MainScreen
 import com.voyz.presentation.fragment.IdPwFindScreen
 import com.voyz.presentation.fragment.ReminderScreen
 import com.voyz.presentation.fragment.OperationManagementScreen
@@ -16,7 +16,7 @@ import com.voyz.presentation.fragment.SettingsScreen
 import com.voyz.presentation.fragment.UserProfileScreen
 import com.voyz.presentation.fragment.MarketingCreateScreen
 import com.voyz.presentation.fragment.ReminderCreateScreen
-import com.voyz.presentation.fragment.MarketingOpportunityDetailScreen
+import com.voyz.presentation.screen.marketing.MarketingOpportunityDetailScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 
