@@ -36,10 +36,21 @@ import com.voyz.presentation.component.fab.FloatingActionMenu
 import com.voyz.presentation.component.sidebar.SidebarComponent
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
+import com.voyz.presentation.component.topbar.CommonTopBar
+import android.os.Build
+import androidx.annotation.RequiresApi
+import java.time.LocalDate
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(navController: NavController) {
+fun MainScreen(
+    navController: NavController,
+    onSearchClick: () -> Unit = {},
+    onAlarmClick: () -> Unit = {},
+    onTodayClick: () -> Unit = {},
+    today: LocalDate = LocalDate.now()
+) {
     var isSidebarOpen by remember { mutableStateOf(false) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
@@ -73,22 +84,12 @@ fun MainScreen(navController: NavController) {
                 },
             contentWindowInsets = WindowInsets(0),
             topBar = {
-                TopAppBar(
-                    title = { },
-                    navigationIcon = {
-                        IconButton(onClick = { isSidebarOpen = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "메뉴 열기",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    windowInsets = WindowInsets(0)
+                CommonTopBar(
+                    onMenuClick = { isSidebarOpen = true },
+                    onSearchClick = onSearchClick,
+                    onAlarmClick = onAlarmClick,
+                    onTodayClick = onTodayClick,
+                    today = today
                 )
             },
             floatingActionButton = {
@@ -128,6 +129,7 @@ fun MainScreen(navController: NavController) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, widthDp = 400, heightDp = 800)
 @Composable
 fun MainScreenPreview() {
