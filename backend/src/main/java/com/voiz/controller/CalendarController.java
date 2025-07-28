@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.voiz.dto.DaySuggestionDto;
 import com.voiz.dto.ReminderDto;
 import com.voiz.service.CalendarService;
 import com.voiz.vo.Marketing;
@@ -63,6 +64,18 @@ public class CalendarController {
 	public ResponseEntity<SpecialDaySuggest> getSpecialDaySuggestion(@PathVariable("ssu_idx") int ssuIdx) {
 	    SpecialDaySuggest suggestion = calendarService.getSpecialDaySuggestion(ssuIdx);
 	    return ResponseEntity.ok(suggestion);
+	}
+	
+//	get /api/calendars/day-sug :
+		
+	@GetMapping("/day-sug")
+	@Operation(summary = "특일, 특일 제안 조회", description = "사용자의 캘린더 ID를 기반으로 특일/특일제안 내용을 월 기준으로 조회합니다. (전월~다음월까지)")
+	public ResponseEntity<List<DaySuggestionDto>> getSpecialDaySuggestionsByUserAndMonth(
+	        @RequestParam("user_id") String userId,
+	        @RequestParam int year,
+	        @RequestParam int month) {
+		List<DaySuggestionDto> daySuggestionList = calendarService.getDaySuggestionsByUserAndMonth(userId, year, month);
+		return ResponseEntity.ok(daySuggestionList);
 	}
 	
 	
