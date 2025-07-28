@@ -2,65 +2,126 @@
 
 Spring Boot REST API 백엔드와 통신하는 VOYZ 플랫폼의 안드로이드 프론트엔드 애플리케이션입니다.
 
-## 프로젝트 구조
+## 프로젝트 구조 (현재 상태 - 2025.07.28 리팩토링 후)
+
+### ⚠️ 폴더 구조 정리 필요사항
+> **현재 문제점**: fragment/ 와 screen/ 폴더가 혼재되어 있음. 동일한 용도(화면)인데 위치가 다름.
+> **향후 계획**: fragment/ 폴더를 screen/으로 통합하고 카테고리별로 재정리 예정.
 
 ```text
 app/src/main/java/com/voyz/
 ├── data/
-│   ├── api/
-│   ├── repository/
-│   └── model/
-├── domain/
-│   ├── usecase/
-│   └── repository/
+│   ├── model/                    # 데이터 모델 (MarketingOpportunity, Priority 등)
+│   └── repository/               # 데이터 저장소 (MarketingOpportunityRepository)
 ├── presentation/
-│   ├── viewmodel/
 │   ├── activity/
-│   ├── fragment/
-│   └── navigation/
-├── utils/
-└── di/
+│   │   └── MainActivity.kt       # 메인 액티비티 (단일)
+│   ├── component/                # 재사용 가능한 UI 컴포넌트
+│   │   ├── calendar/            # 캘린더 컴포넌트 + ViewModel
+│   │   ├── fab/                 # FloatingActionMenu
+│   │   ├── gesture/             # 제스처 핸들러 (SidebarDragHandler)
+│   │   ├── modal/               # 모달 컴포넌트들
+│   │   ├── sidebar/             # 사이드바 + 상태 관리
+│   │   └── topbar/              # 공통 상단바
+│   ├── fragment/                # ⚠️ 기존 화면들 (정리 필요)
+│   │   ├── AlramScreen.kt
+│   │   ├── CustomerManagementScreen.kt
+│   │   ├── IdPwFindScreen.kt
+│   │   ├── LoginScreen.kt
+│   │   ├── MainScreen_backup.kt  # 백업 파일
+│   │   ├── MarketingCreateScreen.kt
+│   │   ├── OperationManagementScreen.kt
+│   │   ├── ReminderCreateScreen.kt
+│   │   ├── ReminderScreen.kt
+│   │   ├── SettingsScreen.kt
+│   │   ├── SignUpScreen.kt
+│   │   └── UserProfileScreen.kt
+│   ├── screen/                  # 🔥 리팩토링된 화면들
+│   │   ├── main/                # MainScreen 리팩토링 결과
+│   │   │   ├── MainScreen.kt        # 메인 컨트롤러 (91줄)
+│   │   │   ├── MainScreenState.kt   # 상태 관리 클래스
+│   │   │   └── components/          # MainScreen 전용 컴포넌트
+│   │   │       ├── MainContent.kt       # 메인 UI 컴포넌트
+│   │   │       └── OverlayManager.kt    # 오버레이 관리
+│   │   └── marketing/
+│   │       └── MarketingOpportunityDetailScreen.kt
+│   ├── navigation/
+│   │   └── NavGraph.kt          # 네비게이션 설정
+│   └── viewmodel/               # ⚠️ 현재 비어있음 (State 패턴 사용 중)
+├── ui/theme/                    # 테마 및 색상 시스템
+│   ├── Color.kt
+│   ├── MarketingColors.kt       # 마케팅 전용 색상 시스템
+│   └── Type.kt
+└── utils/
+    └── Constants.kt
 ```
 
-### 디렉토리 설명
+### 📝 MainScreen 리팩토링 세부사항 (2025.07.28)
 
-#### data/
-외부 데이터 소스를 다루는 계층으로, 네트워크 통신 및 데이터 가공 책임을 집니다.
+**기존 문제점:**
+- MainScreen.kt가 226줄로 과도하게 복잡
+- 사이드바, 모달, FAB, 캘린더 로직이 모두 한 곳에 집중
+- 7개의 상태 변수가 분산 관리
+- 드래그 제스처, 애니메이션 로직 혼재
 
-- **api/**: REST API와 통신하는 인터페이스 및 구현체 (예: Retrofit 사용).
-- **repository/**: 도메인 레이어의 repository 인터페이스를 실제로 구현한 클래스들이 위치합니다.
-- **model/**: 서버 응답, 요청, DB 엔티티 등 순수 데이터 구조(DTO, Entity)를 정의합니다.
+**리팩토링 결과:**
+- **MainScreen.kt**: 226줄 → 91줄 (60% 감소)
+- **상태 관리 분리**: `MainScreenState.kt`로 모든 상태 캡슐화
+- **UI 컴포넌트 분리**: `MainContent.kt`, `OverlayManager.kt`로 역할 분담
+- **제스처 로직 분리**: `SidebarDragHandler.kt`로 독립화
 
-#### domain/
-비즈니스 로직을 담당하는 계층입니다. 외부 라이브러리나 안드로이드 프레임워크에 의존하지 않으며, 핵심 로직만을 정의합니다.
+**개선 효과:**
+- 가독성 및 유지보수성 대폭 향상
+- 테스트 용이성 증대 (각 컴포넌트 독립 테스트 가능)
+- 재사용성 증대 (상태 클래스, 제스처 핸들러)
+- 확장성 향상 (새 기능 추가 시 영향 범위 최소화)
 
-- **usecase/**: 애플리케이션의 구체적인 기능 단위 (예: 로그인, 데이터 조회 등).
-- **repository/**: 비즈니스 로직에서 필요로 하는 데이터 소스를 추상화한 인터페이스를 정의합니다.
+### 🔧 향후 정리 계획
 
-#### presentation/
-사용자 인터페이스와 관련된 요소들이 위치하는 계층입니다. MVVM 패턴을 따릅니다.
-
-- **viewmodel/**: UI 상태를 관리하고, 도메인 레이어의 유스케이스를 호출하는 로직을 포함합니다.
-- **activity/**: 단일 화면을 구성하는 Activity 클래스들이 위치합니다.
-- **fragment/**: 화면 내 여러 UI 구성 단위를 나누는 Fragment 클래스들이 위치합니다.
-- **navigation/**: 앱 내 화면 간 전환(Navigation Graph 등)을 정의하며, 네비게이션 흐름을 관리합니다.
-
-#### utils/
-전역적으로 사용할 수 있는 유틸리티 클래스, 확장 함수, 공통 상수 등을 모아둡니다.
-
-#### di/
-의존성 주입 설정 파일들이 위치합니다. Hilt, Dagger, Koin 등의 DI 프레임워크를 사용할 경우 이곳에 모듈을 정의합니다.
-
-### 아키텍처 흐름 요약
-
-```
-[ UI ] ← ViewModel ← UseCase ← Repository Interface ← Repository 구현 ← API/DB
-       └──── presentation ────┘   └───── domain ─────┘    └──── data ─────┘
+**1. 폴더 구조 통합**
+```text
+presentation/screen/
+├── auth/                 # LoginScreen, SignUpScreen, IdPwFindScreen
+├── main/                 # MainScreen (리팩토링 완료)
+├── marketing/            # MarketingOpportunityDetailScreen, MarketingCreateScreen
+├── management/           # CustomerManagement, OperationManagement, Settings
+└── reminder/             # ReminderScreen, ReminderCreateScreen
 ```
 
-- presentation은 domain에 의존하지만, 그 반대는 아닙니다.
-- 의존성은 항상 바깥에서 안쪽 방향으로만 흐릅니다.
-- 클린 아키텍처 및 MVVM 패턴을 기반으로 구조화되어 있습니다.
+**2. 불필요한 폴더 제거**
+- `viewmodel/` 폴더 (현재 비어있음, State 패턴 사용)
+- `component/gesture/` 폴더 (파일 1개만 존재)
+- 과도한 depth 줄이기
+
+**3. 네이밍 일관성**
+- fragment/ → screen/ 통일
+- 화면별 카테고리 명확화
+
+### 🎨 UI/UX 개선사항
+
+**마케팅 색상 시스템 구축:**
+- 기존 랜덤 색상 → 전문적인 회색-파랑 계열 통일
+- 카테고리별 일관된 색상 (특별한 날/공휴일만 강조색)
+- 우선순위별 차분한 색상 시스템
+
+**모바일 UX 최적화:**
+- 양방향 스와이프 날짜 네비게이션 구현
+- 모바일 친화적 모달 디자인 (핸들바, 둥근 모서리)
+- 배경 터치로 모달 닫기 기능
+- 부드러운 애니메이션 전환
+
+### 🚀 기술 스택 및 패턴
+
+**현재 사용 중인 패턴:**
+- **Compose UI**: 선언적 UI 개발
+- **State Pattern**: MainScreenState를 통한 상태 캡슐화  
+- **Component Composition**: 재사용 가능한 컴포넌트 설계
+- **Repository Pattern**: 데이터 접근 추상화
+
+**아키텍처 특징:**
+- MVVM 패턴 기반이지만 ViewModel 대신 State 클래스 활용
+- 컴포넌트 중심 설계로 높은 재사용성
+- 관심사의 분리를 통한 유지보수성 확보
 
 
 
