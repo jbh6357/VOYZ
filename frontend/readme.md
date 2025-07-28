@@ -10,7 +10,7 @@ Spring Boot REST API 백엔드와 통신하는 VOYZ 플랫폼의 안드로이드
 
 ```text
 app/src/main/java/com/voyz/
-├── data/
+├── datas/
 │   ├── model/                    # 데이터 모델 (MarketingOpportunity, Priority 등)
 │   └── repository/               # 데이터 저장소 (MarketingOpportunityRepository)
 ├── presentation/

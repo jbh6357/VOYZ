@@ -22,7 +22,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.voyz.data.model.MarketingOpportunity
+import com.voyz.datas.model.MarketingOpportunity
 import com.voyz.presentation.component.calendar.CalendarComponent
 import com.voyz.presentation.component.fab.FloatingActionMenu
 import com.voyz.presentation.component.gesture.sidebarDragGesture

@@ -1,6 +1,5 @@
 package com.voyz.presentation.screen.main.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -11,8 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.voyz.data.model.MarketingOpportunity
-import com.voyz.data.repository.MarketingOpportunityRepository
+import com.voyz.datas.model.MarketingOpportunity
+import com.voyz.datas.repository.MarketingOpportunityRepository
 import com.voyz.presentation.component.modal.MarketingOpportunityListModal
 import com.voyz.presentation.component.sidebar.SidebarComponent
 import com.voyz.presentation.screen.main.MainScreenState
