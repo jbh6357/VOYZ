@@ -41,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.voyz.ui.theme.MarketingColors
 
 @Composable
 fun SidebarComponent(
@@ -61,7 +62,7 @@ fun SidebarComponent(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Gray.copy(alpha = 0.7f))
+            .background(MarketingColors.OverlayBackground)
     ) {
         // 배경 터치로 사이드바 닫기
         Box(

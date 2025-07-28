@@ -50,6 +50,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import com.voyz.data.model.MarketingOpportunity
+import com.voyz.data.repository.MarketingOpportunityRepository
+import com.voyz.presentation.component.modal.MarketingOpportunityListModal
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,6 +78,9 @@ fun MainScreen(
     )
     
     var isFabExpanded by remember { mutableStateOf(false) }
+    var showOpportunityModal by remember { mutableStateOf(false) }
+    var selectedOpportunities by remember { mutableStateOf<List<MarketingOpportunity>>(emptyList()) }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     
     Box(modifier = Modifier.fillMaxSize()) {
         // 메인 콘텐츠 (슬라이딩)
@@ -112,7 +120,13 @@ fun MainScreen(
                     .blur(if (isFabExpanded) 8.dp else 0.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CalendarComponent()
+                CalendarComponent(
+                    onDayClick = { date, opportunities ->
+                        selectedDate = date
+                        selectedOpportunities = opportunities
+                        showOpportunityModal = true
+                    }
+                )
             }
         }
         
@@ -131,25 +145,31 @@ fun MainScreen(
             )
         }
         
-        // FloatingActionMenu (블러 효과 제외)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.BottomEnd
+        // FloatingActionMenu (블러 효과 제외) - 모달이 열리면 숨김
+        AnimatedVisibility(
+            visible = !showOpportunityModal,
+            enter = scaleIn(animationSpec = tween(200)) + fadeIn(animationSpec = tween(200)),
+            exit = scaleOut(animationSpec = tween(150)) + fadeOut(animationSpec = tween(150))
         ) {
-            FloatingActionMenu(
-                isExpanded = isFabExpanded,
-                onExpandedChange = { expanded ->
-                    isFabExpanded = expanded
-                },
-                onMarketingCreateClick = {
-                    navController.navigate("marketing_create")
-                },
-                onReminderCreateClick = {
-                    navController.navigate("reminder_create")
-                }
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                FloatingActionMenu(
+                    isExpanded = isFabExpanded,
+                    onExpandedChange = { expanded ->
+                        isFabExpanded = expanded
+                    },
+                    onMarketingCreateClick = {
+                        navController.navigate("marketing_create")
+                    },
+                    onReminderCreateClick = {
+                        navController.navigate("reminder_create")
+                    }
+                )
+            }
         }
         
         // 사이드바 (최상단 오버레이)
@@ -163,6 +183,43 @@ fun MainScreen(
                 },
                 navController = navController,
                 modifier = Modifier.fillMaxSize()
+            )
+        }
+        
+        // 마케팅 기회 리스트 모달
+        if (showOpportunityModal && selectedDate != null) {
+            val marketingOpportunities = remember {
+                MarketingOpportunityRepository.getDailyOpportunities()
+                    .associateBy { it.date }
+            }
+            
+            MarketingOpportunityListModal(
+                date = selectedDate!!,
+                opportunities = selectedOpportunities,
+                onDismiss = { 
+                    showOpportunityModal = false 
+                },
+                onOpportunityClick = { opportunity ->
+                    showOpportunityModal = false
+                    navController.navigate("marketing_opportunity_detail/${opportunity.id}")
+                },
+                onFabClick = {
+                    // FAB 클릭 시 메뉴 확장
+                    isFabExpanded = !isFabExpanded
+                },
+                onMarketingCreateClick = {
+                    showOpportunityModal = false
+                    navController.navigate("marketing_create")
+                },
+                onReminderCreateClick = {
+                    showOpportunityModal = false
+                    navController.navigate("reminder_create")
+                },
+                onDateChange = { newDate ->
+                    selectedDate = newDate
+                    // 일정이 없어도 날짜 변경 허용
+                    selectedOpportunities = marketingOpportunities[newDate]?.opportunities ?: emptyList()
+                }
             )
         }
     }

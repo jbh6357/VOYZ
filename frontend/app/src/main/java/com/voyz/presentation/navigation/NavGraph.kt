@@ -16,6 +16,9 @@ import com.voyz.presentation.fragment.SettingsScreen
 import com.voyz.presentation.fragment.UserProfileScreen
 import com.voyz.presentation.fragment.MarketingCreateScreen
 import com.voyz.presentation.fragment.ReminderCreateScreen
+import com.voyz.presentation.fragment.MarketingOpportunityDetailScreen
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -68,6 +71,16 @@ fun NavGraph(navController: NavHostController) {
         }
         composable("reminder_create") {
             ReminderCreateScreen(navController = navController)
+        }
+        composable(
+            "marketing_opportunity_detail/{opportunityId}",
+            arguments = listOf(navArgument("opportunityId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val opportunityId = backStackEntry.arguments?.getString("opportunityId") ?: ""
+            MarketingOpportunityDetailScreen(
+                navController = navController,
+                opportunityId = opportunityId
+            )
         }
 
     }}
