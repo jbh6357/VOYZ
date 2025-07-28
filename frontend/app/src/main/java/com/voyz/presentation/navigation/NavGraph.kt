@@ -14,6 +14,8 @@ import com.voyz.presentation.fragment.OperationManagementScreen
 import com.voyz.presentation.fragment.CustomerManagementScreen
 import com.voyz.presentation.fragment.SettingsScreen
 import com.voyz.presentation.fragment.UserProfileScreen
+import com.voyz.presentation.fragment.MarketingCreateScreen
+import com.voyz.presentation.fragment.ReminderCreateScreen
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -60,6 +62,12 @@ fun NavGraph(navController: NavHostController) {
         }
         composable("user_profile") {
             UserProfileScreen(navController = navController)
+        }
+        composable("marketing_create") {
+            MarketingCreateScreen(navController = navController)
+        }
+        composable("reminder_create") {
+            ReminderCreateScreen(navController = navController)
         }
 
     }}

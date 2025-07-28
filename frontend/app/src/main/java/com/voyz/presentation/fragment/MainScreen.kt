@@ -3,6 +3,7 @@ package com.voyz.presentation.fragment
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,6 +41,15 @@ import com.voyz.presentation.component.topbar.CommonTopBar
 import android.os.Build
 import androidx.annotation.RequiresApi
 import java.time.LocalDate
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,6 +71,8 @@ fun MainScreen(
         animationSpec = tween(durationMillis = 200),
         label = "sidebar_offset"
     )
+    
+    var isFabExpanded by remember { mutableStateOf(false) }
     
     Box(modifier = Modifier.fillMaxSize()) {
         // 메인 콘텐츠 (슬라이딩)
@@ -91,26 +103,53 @@ fun MainScreen(
                     onTodayClick = onTodayClick,
                     today = today
                 )
-            },
-            floatingActionButton = {
-                FloatingActionMenu(
-                    onTextPostClick = {
-                        // TODO: 텍스트 게시글 작성 화면으로 이동
-                    },
-                    onPhotoPostClick = {
-                        // TODO: 사진 게시글 작성 화면으로 이동
-                    }
-                )
             }
         ) { paddingValues ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(paddingValues)
+                    .blur(if (isFabExpanded) 8.dp else 0.dp),
                 contentAlignment = Alignment.Center
             ) {
                 CalendarComponent()
             }
+        }
+        
+        // FAB 메뉴가 열렸을 때 배경 차단 오버레이
+        if (isFabExpanded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        // 배경 클릭 시 FAB 메뉴 닫기
+                        isFabExpanded = false
+                    }
+            )
+        }
+        
+        // FloatingActionMenu (블러 효과 제외)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionMenu(
+                isExpanded = isFabExpanded,
+                onExpandedChange = { expanded ->
+                    isFabExpanded = expanded
+                },
+                onMarketingCreateClick = {
+                    navController.navigate("marketing_create")
+                },
+                onReminderCreateClick = {
+                    navController.navigate("reminder_create")
+                }
+            )
         }
         
         // 사이드바 (최상단 오버레이)
