@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.voyz.data.model.MarketingOpportunity
 import com.voyz.presentation.screen.main.components.MainContent
 import com.voyz.presentation.screen.main.components.OverlayManager
 import java.time.LocalDate

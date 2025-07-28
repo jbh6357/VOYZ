@@ -63,19 +63,19 @@ object MarketingColors {
 /**
  * 마케팅 카테고리별 색상 페어 반환
  */
-fun getMarketingCategoryColors(category: com.voyz.data.model.MarketingCategory): Pair<Color, Color> {
+fun getMarketingCategoryColors(category: com.voyz.datas.model.MarketingCategory): Pair<Color, Color> {
     return when (category) {
-        com.voyz.data.model.MarketingCategory.WEATHER -> 
+        com.voyz.datas.model.MarketingCategory.WEATHER ->
             MarketingColors.WeatherPrimary to MarketingColors.WeatherSecondary
-        com.voyz.data.model.MarketingCategory.UNIVERSITY -> 
+        com.voyz.datas.model.MarketingCategory.UNIVERSITY ->
             MarketingColors.UniversityPrimary to MarketingColors.UniversitySecondary
-        com.voyz.data.model.MarketingCategory.SPECIAL_DAY -> 
+        com.voyz.datas.model.MarketingCategory.SPECIAL_DAY ->
             MarketingColors.SpecialDayPrimary to MarketingColors.SpecialDaySecondary
-        com.voyz.data.model.MarketingCategory.EVENT -> 
+        com.voyz.datas.model.MarketingCategory.EVENT ->
             MarketingColors.EventPrimary to MarketingColors.EventSecondary
-        com.voyz.data.model.MarketingCategory.SEASON -> 
+        com.voyz.datas.model.MarketingCategory.SEASON ->
             MarketingColors.SeasonPrimary to MarketingColors.SeasonSecondary
-        com.voyz.data.model.MarketingCategory.HOLIDAY -> 
+        com.voyz.datas.model.MarketingCategory.HOLIDAY ->
             MarketingColors.HolidayPrimary to MarketingColors.HolidaySecondary
     }
 }
@@ -83,10 +83,10 @@ fun getMarketingCategoryColors(category: com.voyz.data.model.MarketingCategory):
 /**
  * 우선순위별 색상 반환
  */
-fun getPriorityColor(priority: com.voyz.data.model.Priority): Color {
+fun getPriorityColor(priority: com.voyz.datas.model.Priority): Color {
     return when (priority) {
-        com.voyz.data.model.Priority.HIGH -> MarketingColors.HighPriority
-        com.voyz.data.model.Priority.MEDIUM -> MarketingColors.MediumPriority
-        com.voyz.data.model.Priority.LOW -> MarketingColors.LowPriority
+        com.voyz.datas.model.Priority.HIGH -> MarketingColors.HighPriority
+        com.voyz.datas.model.Priority.MEDIUM -> MarketingColors.MediumPriority
+        com.voyz.datas.model.Priority.LOW -> MarketingColors.LowPriority
     }
 }

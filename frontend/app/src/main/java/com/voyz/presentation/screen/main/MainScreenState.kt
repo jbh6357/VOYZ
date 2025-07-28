@@ -1,6 +1,6 @@
 package com.voyz.presentation.screen.main
 
-import com.voyz.data.model.MarketingOpportunity
+import com.voyz.datas.model.MarketingOpportunity
 import java.time.LocalDate
 
 /**

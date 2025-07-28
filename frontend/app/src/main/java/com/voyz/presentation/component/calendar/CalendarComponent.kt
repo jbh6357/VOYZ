@@ -1,17 +1,13 @@
 package com.voyz.presentation.component.calendar
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlin.math.abs
 import androidx.compose.animation.AnimatedContent
@@ -25,28 +21,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,7 +39,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,16 +46,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.voyz.data.model.MarketingOpportunity
-import com.voyz.data.model.Priority
-import com.voyz.data.repository.MarketingOpportunityRepository
+import com.voyz.datas.model.MarketingOpportunity
+import com.voyz.datas.repository.MarketingOpportunityRepository
 import com.voyz.ui.theme.MarketingColors
 import com.voyz.ui.theme.getMarketingCategoryColors
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.time.DayOfWeek
 import java.time.temporal.WeekFields
 import java.util.Locale
 
@@ -233,7 +213,7 @@ private fun DaysOfWeekHeader() {
 private fun MarketingCalendarGrid(
     yearMonth: YearMonth,
     selectedDate: LocalDate?,
-    marketingOpportunities: Map<LocalDate, com.voyz.data.model.DailyMarketingOpportunities>,
+    marketingOpportunities: Map<LocalDate, com.voyz.datas.model.DailyMarketingOpportunities>,
     onDateClick: (LocalDate) -> Unit
 ) {
     val firstDayOfMonth = yearMonth.atDay(1)
@@ -294,7 +274,7 @@ private fun MarketingCalendarDayCell(
     date: LocalDate,
     isCurrentMonth: Boolean,
     isSelected: Boolean,
-    dailyOpportunities: com.voyz.data.model.DailyMarketingOpportunities?,
+    dailyOpportunities: com.voyz.datas.model.DailyMarketingOpportunities?,
     onClick: () -> Unit
 ) {
     val textColor = when {
@@ -380,7 +360,7 @@ private fun MarketingCalendarDayCell(
             dailyOpportunities?.let { daily ->                
                 // 최대 2개 기회만 표시
                 daily.opportunities.take(2).forEach { opportunity ->
-                    val backgroundColor = if (opportunity.priority == com.voyz.data.model.Priority.HIGH) {
+                    val backgroundColor = if (opportunity.priority == com.voyz.datas.model.Priority.HIGH) {
                         MarketingColors.HighPriority.copy(alpha = 0.3f) // 높은 우선순위는 빨간색 배경
                     } else {
                         getMarketingCategoryColors(opportunity.category).second
