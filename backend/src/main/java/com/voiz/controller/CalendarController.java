@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.voiz.dto.ReminderDto;
 import com.voiz.service.CalendarService;
 import com.voiz.vo.Marketing;
+import com.voiz.vo.SpecialDaySuggest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,6 +56,13 @@ public class CalendarController {
 
 	    List<Marketing> marketingList = calendarService.getMarketingListByUserAndMonth(userId, year, month);
 	    return ResponseEntity.ok(marketingList);
+	}
+	
+	@GetMapping("/day-sug/{ssu_idx}")
+	@Operation(summary = "특일 제안 단건 조회", description = "특정 제안(ssu_idx)을 조회합니다.")
+	public ResponseEntity<SpecialDaySuggest> getSpecialDaySuggestion(@PathVariable("ssu_idx") int ssuIdx) {
+	    SpecialDaySuggest suggestion = calendarService.getSpecialDaySuggestion(ssuIdx);
+	    return ResponseEntity.ok(suggestion);
 	}
 	
 	

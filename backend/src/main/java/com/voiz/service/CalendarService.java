@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import com.voiz.dto.ReminderDto;
 import com.voiz.mapper.MarketingRepository;
 import com.voiz.mapper.ReminderRepository;
+import com.voiz.mapper.SpecialDaySuggestRepository;
 import com.voiz.vo.Marketing;
+import com.voiz.vo.SpecialDaySuggest;
 
 @Service
 public class CalendarService {
@@ -21,6 +23,9 @@ public class CalendarService {
 	
 	@Autowired
 	private ReminderRepository reminderRepository;
+	
+	@Autowired
+	private SpecialDaySuggestRepository specialDaySuggestRepository;
 	
 	public Marketing getMarketing(int marketingIdx) {
 		Optional<Marketing> marketing = marketingRepository.findByMarketingIdx(marketingIdx);
@@ -53,5 +58,14 @@ public class CalendarService {
 	    LocalDate to = ym.plusMonths(1).atEndOfMonth();       // 다음월 말일
 
 	    return marketingRepository.findByReminderIdxAndDateRange(reminderIdx, from, to);
+	}
+
+	public SpecialDaySuggest getSpecialDaySuggestion(int ssuIdx) {
+		Optional<SpecialDaySuggest> suggestion = specialDaySuggestRepository.findBySsuIdx(ssuIdx);
+		if(suggestion.isPresent()) {
+			return suggestion.get();
+		}else {
+			return null;
+		}
 	}
 }
