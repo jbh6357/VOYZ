@@ -1,5 +1,6 @@
 package com.voyz.presentation.fragment
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
@@ -9,17 +10,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.NotificationAdd
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.voyz.datas.datastore.UserPreferencesManager
+import com.voyz.datas.model.dto.ReminderDto
+import com.voyz.datas.network.ApiClient
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -27,16 +36,131 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ReminderCreateScreen(
     navController: NavController,
-    modifier: Modifier = Modifier
+    initialTitle: String = "",
+    initialContent: String = "",
+    initialDate: String = "",
+    modifier: Modifier = Modifier,
+    onReminderCreated: (() -> Unit)? = null // 리마인더 생성 완료 콜백
 ) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    var selectedTime by remember { mutableStateOf(LocalTime.now()) }
-    var priority by remember { mutableStateOf("보통") }
-    var isRepeating by remember { mutableStateOf(false) }
+        // 백엔드 API에 맞는 필드들만 사용
+    var title by remember { mutableStateOf(if (initialTitle.isNotEmpty()) java.net.URLDecoder.decode(initialTitle, "UTF-8") else "") }
+    var content by remember { mutableStateOf(if (initialContent.isNotEmpty()) java.net.URLDecoder.decode(initialContent, "UTF-8") else "") }
+    var startDate by remember { 
+        mutableStateOf(
+            if (initialDate.isNotEmpty()) {
+                android.util.Log.d("ReminderCreate", "Using initialDate: $initialDate")
+                try { 
+                    val parsed = LocalDate.parse(initialDate)
+                    android.util.Log.d("ReminderCreate", "Parsed date: $parsed")
+                    // 2015년처럼 이상한 연도면 현재 날짜로 대체
+                    if (parsed.year < 2020 || parsed.year > 2030) {
+                        android.util.Log.w("ReminderCreate", "Invalid year ${parsed.year}, using current date")
+                        LocalDate.now()
+                    } else {
+                        parsed
+                    }
+                } catch (e: Exception) { 
+                    android.util.Log.e("ReminderCreate", "Failed to parse initialDate: $initialDate", e)
+                    LocalDate.now()
+                }
+            } else {
+                android.util.Log.d("ReminderCreate", "Using LocalDate.now(): ${LocalDate.now()}")
+                LocalDate.now()
+            }
+        )
+    }
+    var endDate by remember { mutableStateOf(startDate) }
     
-    val priorityOptions = listOf("낮음", "보통", "높음", "긴급")
+    // 오늘 날짜로 리셋하는 함수
+    fun resetToToday() {
+        startDate = LocalDate.now()
+        endDate = LocalDate.now()  
+        android.util.Log.d("ReminderCreate", "Reset to today: ${LocalDate.now()}")
+    }
+    
+    // UI 상태 관리
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+    
+    // 컨텍스트와 Coroutine Scope
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val userPreferencesManager = remember { UserPreferencesManager(context) }
+    
+    // 리마인더 생성 함수
+    fun createReminder() {
+        coroutineScope.launch {
+            try {
+                isLoading = true
+                errorMessage = null
+                
+                // 유효성 검사
+                if (title.isBlank()) {
+                    errorMessage = "제목을 입력해주세요."
+                    return@launch
+                }
+                
+                if (content.isBlank()) {
+                    errorMessage = "내용을 입력해주세요."
+                    return@launch
+                }
+                
+                if (endDate.isBefore(startDate)) {
+                    errorMessage = "종료 날짜는 시작 날짜보다 늦어야 합니다."
+                    return@launch
+                }
+                
+                // 사용자 ID 가져오기
+                val userId = userPreferencesManager.userId.first()
+                if (userId.isNullOrBlank()) {
+                    errorMessage = "로그인이 필요합니다."
+                    return@launch
+                }
+                
+                // API 호출
+                val reminderDto = ReminderDto(
+                    title = title.trim(),
+                    content = content.trim(),
+                    startDate = startDate,
+                    endDate = endDate
+                )
+                
+                android.util.Log.d("ReminderCreate", "=== Creating Reminder ===")
+                android.util.Log.d("ReminderCreate", "title: ${reminderDto.title}")
+                android.util.Log.d("ReminderCreate", "content: ${reminderDto.content}")
+                android.util.Log.d("ReminderCreate", "startDate: ${reminderDto.startDate}")
+                android.util.Log.d("ReminderCreate", "endDate: ${reminderDto.endDate}")
+                android.util.Log.d("ReminderCreate", "userId: $userId")
+                
+                val response = ApiClient.calendarApiService.createReminder(reminderDto, userId)
+                android.util.Log.d("ReminderCreate", "API Response code: ${response.code()}")
+                
+                if (response.isSuccessful) {
+                    // 성공시 캘린더 캐시 무효화 (새로고침)
+                    try {
+                        val calendarDataStore = com.voyz.datas.datastore.CalendarDataStore(context)
+                        val currentDate = java.time.LocalDate.now()
+                        val monthKey = "${currentDate.year}-${String.format("%02d", currentDate.monthValue)}"
+                        calendarDataStore.clearCache(userId, monthKey)
+                    } catch (e: Exception) {
+                        android.util.Log.e("ReminderCreateScreen", "Failed to clear cache", e)
+                    }
+                    onReminderCreated?.invoke()
+                    navController.navigateUp()
+                } else {
+                    errorMessage = "리마인더 생성에 실패했습니다. (${response.code()})"
+                }
+                
+            } catch (e: Exception) {
+                errorMessage = "오류가 발생했습니다: ${e.message}"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
     
     Scaffold(
         modifier = modifier,
@@ -116,111 +240,109 @@ fun ReminderCreateScreen(
                 singleLine = true
             )
             
-            // 리마인더 설명
+            // 리마인더 내용
             OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("상세 설명") },
-                placeholder = { Text("추가 정보나 메모를 입력하세요") },
+                value = content,
+                onValueChange = { content = it },
+                label = { Text("리마인더 내용") },
+                placeholder = { Text("리마인더 상세 내용을 입력하세요") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp),
-                maxLines = 4
+                    .height(120.dp),
+                maxLines = 5
             )
             
-            // 날짜 및 시간 선택
+            // 리마인더 기간 설정
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 날짜 선택
+                // 시작 날짜
                 OutlinedTextField(
-                    value = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
+                    value = startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
                     onValueChange = { },
-                    label = { Text("날짜") },
+                    label = { Text("시작 날짜") },
                     readOnly = true,
                     leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = "날짜 선택"
-                        )
+                        IconButton(onClick = { showStartDatePicker = true }) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = "시작 날짜 선택"
+                            )
+                        }
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { showStartDatePicker = true }
                 )
                 
-                // 시간 선택
+                // 종료 날짜
                 OutlinedTextField(
-                    value = selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                    value = endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
                     onValueChange = { },
-                    label = { Text("시간") },
+                    label = { Text("종료 날짜") },
                     readOnly = true,
                     leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = "시간 선택"
-                        )
+                        IconButton(onClick = { showEndDatePicker = true }) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = "종료 날짜 선택"
+                            )
+                        }
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { showEndDatePicker = true }
                 )
             }
             
             // 우선순위 선택
-            var expandedPriority by remember { mutableStateOf(false) }
+            var expandedPriority by remember { mutableStateOf(false)             }
             
-            ExposedDropdownMenuBox(
-                expanded = expandedPriority,
-                onExpandedChange = { expandedPriority = !expandedPriority }
-            ) {
-                OutlinedTextField(
-                    value = priority,
-                    onValueChange = { },
-                    readOnly = true,
-                    label = { Text("우선순위") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedPriority)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
+            // 날짜 범위 설정 도움말
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 )
-                
-                ExposedDropdownMenu(
-                    expanded = expandedPriority,
-                    onDismissRequest = { expandedPriority = false }
-                ) {
-                    priorityOptions.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option) },
-                            onClick = {
-                                priority = option
-                                expandedPriority = false
-                            }
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = "💡 시작 날짜와 종료 날짜를 동일하게 설정하면 하루 리마인더가 됩니다.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    OutlinedButton(
+                        onClick = { resetToToday() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
                         )
+                    ) {
+                        Text("📅 오늘 날짜로 설정")
                     }
                 }
             }
             
-            // 반복 설정
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = "반복 알림",
-                        style = MaterialTheme.typography.bodyLarge
+            // 에러 메시지 표시
+            errorMessage?.let { message ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
                     )
+                ) {
                     Text(
-                        text = "매일 같은 시간에 알림",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(12.dp)
                     )
                 }
-                Switch(
-                    checked = isRepeating,
-                    onCheckedChange = { isRepeating = it }
-                )
             }
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -238,16 +360,95 @@ fun ReminderCreateScreen(
                 }
                 
                 Button(
-                    onClick = { 
-                        // TODO: 리마인더 생성 로직
-                        navController.navigateUp()
-                    },
+                    onClick = { createReminder() },
                     modifier = Modifier.weight(1f),
-                    enabled = title.isNotBlank()
+                    enabled = !isLoading && title.isNotBlank() && content.isNotBlank()
                 ) {
-                    Text("생성하기")
+                    if (isLoading) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Text("생성 중...")
+                        }
+                    } else {
+                        Text("생성하기")
+                    }
                 }
             }
+        }
+    }
+    
+    // 시작 날짜 선택기
+    if (showStartDatePicker) {
+        val datePickerState = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = startDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = { showStartDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        startDate = java.time.Instant.ofEpochMilli(millis)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate()
+                        // 종료 날짜가 시작 날짜보다 이르면 시작 날짜로 맞춤
+                        if (endDate.isBefore(startDate)) {
+                            endDate = startDate
+                        }
+                    }
+                    showStartDatePicker = false
+                }) {
+                    Text("확인")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartDatePicker = false }) {
+                    Text("취소")
+                }
+            }
+        ) {
+            androidx.compose.material3.DatePicker(state = datePickerState)
+        }
+    }
+    
+    // 종료 날짜 선택기
+    if (showEndDatePicker) {
+        val datePickerState = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = endDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = { showEndDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val selectedDate = java.time.Instant.ofEpochMilli(millis)
+                            .atZone(java.time.ZoneId.systemDefault())
+                            .toLocalDate()
+                        // 종료 날짜는 시작 날짜보다 늦어야 함
+                        if (selectedDate.isBefore(startDate)) {
+                            endDate = startDate
+                        } else {
+                            endDate = selectedDate
+                        }
+                    }
+                    showEndDatePicker = false
+                }) {
+                    Text("확인")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndDatePicker = false }) {
+                    Text("취소")
+                }
+            }
+        ) {
+            androidx.compose.material3.DatePicker(state = datePickerState)
         }
     }
 }
@@ -257,5 +458,10 @@ fun ReminderCreateScreen(
 @Composable
 fun ReminderCreateScreenPreview() {
     val navController = rememberNavController()
-    ReminderCreateScreen(navController = navController)
+    ReminderCreateScreen(
+        navController = navController,
+        initialTitle = "샘플 리마인더",
+        initialContent = "이것은 샘플 리마인더 내용입니다.",
+        initialDate = "2024-01-15"
+    )
 }
