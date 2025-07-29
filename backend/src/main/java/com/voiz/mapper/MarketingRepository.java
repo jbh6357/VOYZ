@@ -15,7 +15,7 @@ import com.voiz.vo.Marketing;
 public interface MarketingRepository extends JpaRepository<Marketing, Integer> {
 	Optional<Marketing> findByMarketingIdx(int marketingIdx);
 
-	@Query("SELECT m FROM Marketing m WHERE m.reminder_idx = :reminderIdx AND m.startDate BETWEEN :from AND :to")
+	@Query("SELECT m FROM Marketing m WHERE m.reminder_idx = :reminderIdx AND (m.startDate <= :to AND m.endDate >= :from)")
 	List<Marketing> findByReminderIdxAndDateRange(@Param("reminderIdx") int reminderIdx,
 	                                              @Param("from") LocalDate from,
 	                                              @Param("to") LocalDate to);
