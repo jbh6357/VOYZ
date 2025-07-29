@@ -10,9 +10,8 @@ import com.voiz.vo.Users;
 @Repository
 public interface UsersRepository extends JpaRepository<Users, String>{
 
+    Optional<Users> findByUserId(String userId);
     Optional<Users> findByUserName(String username);
-    Optional<Users> findByUserEmail(String userEmail);
     boolean existsByUserName(String userName);
-    boolean existsByUserEmail(String userEmail);
 
 }

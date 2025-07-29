@@ -23,13 +23,14 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDto loginDto) {
+    @Operation(summary = "로그인", description = "사용자를 확인합니다.")
+    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginDto) {
         try {
-            // ✅ loginAndIssueTokens를 호출하고, 반환값도 Map으로 받습니다.
-            Map<String, String> tokens = userService.loginAndIssueTokens(loginDto);
-            return ResponseEntity.ok(tokens);
+            // loginAndIssueTokens를 호출하고, 반환값도 Map으로 받습니다.
+            LoginResponseDto user = userService.login(loginDto);
+            return ResponseEntity.ok(user);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
@@ -43,11 +44,5 @@ public class UserController {
         } else {
             return ResponseEntity.badRequest().body("회원가입에 실패했습니다. 이미 존재하는 사용자명 또는 이메일입니다.");
         }
-    }
-
-    @GetMapping("/test")
-    @Operation(summary = "테스트", description = "API 연결 테스트")
-    public ResponseEntity<String> test() {
-        return ResponseEntity.ok("API 연결 성공!");
     }
 }

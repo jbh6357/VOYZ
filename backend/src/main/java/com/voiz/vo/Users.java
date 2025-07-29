@@ -24,9 +24,6 @@ public class Users {
 	@Column(name = "USER_NAME", nullable = false)
 	private String userName;
 	
-	@Column(name = "USER_EMAIL", nullable = false)
-	private String userEmail;
-	
 	@Column(name = "USER_PHONE", nullable = false)
 	private String userPhone;
 	
