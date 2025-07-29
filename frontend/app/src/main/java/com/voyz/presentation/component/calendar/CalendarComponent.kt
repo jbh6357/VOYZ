@@ -1,15 +1,5 @@
 package com.voyz.presentation.component.calendar
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.input.pointer.pointerInput
-import kotlin.math.abs
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -17,58 +7,71 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.abs
+import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import com.voyz.datas.datastore.UserPreferencesManager
 import com.voyz.datas.model.MarketingOpportunity
-import com.voyz.datas.repository.MarketingOpportunityRepository
+import com.voyz.presentation.component.calendar.components.MarketingCalendarGrid
 import com.voyz.ui.theme.MarketingColors
-import com.voyz.ui.theme.getMarketingCategoryColors
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.temporal.WeekFields
-import java.util.Locale
 
 @Composable
 fun CalendarComponent(
     modifier: Modifier = Modifier,
-    viewModel: CalendarViewModel = viewModel(),
-    onDayClick: (LocalDate, List<MarketingOpportunity>) -> Unit = { _, _ -> }
+    viewModel: CalendarViewModel? = null,
+    onDateClick: (LocalDate, List<MarketingOpportunity>) -> Unit = { _, _ -> }
 ) {
-    val currentMonth = viewModel.currentMonth
-    val selectedDate = viewModel.selectedDate
+    val context = LocalContext.current
+    val userPreferencesManager = remember { UserPreferencesManager(context) }
+    val userId = userPreferencesManager.userId.collectAsState(initial = null)
+    val isLoggedIn = userPreferencesManager.isLoggedIn.collectAsState(initial = false)
+    
+    // 전달받은 ViewModel이 있으면 사용, 없으면 새로 생성
+    val calendarViewModel = viewModel ?: remember(context) { CalendarViewModel(context) }
+    
+    val currentMonth = calendarViewModel.currentMonth
+    val selectedDate = calendarViewModel.selectedDate
+    val dailyOpportunities = calendarViewModel.dailyOpportunities
+    val isLoading = calendarViewModel.isLoading
     var totalDrag by remember { mutableStateOf(0f) }
     
-    // 마케팅 기회 데이터 가져오기
-    val marketingOpportunities = remember {
-        MarketingOpportunityRepository.getDailyOpportunities()
-            .associateBy { it.date }
+    // 사용자 ID가 있으면 캘린더 데이터 로딩
+    LaunchedEffect(userId.value, isLoggedIn.value, currentMonth) {
+        Log.d("CalendarComponent", "LaunchedEffect triggered")
+        Log.d("CalendarComponent", "- userId: ${userId.value}")
+        Log.d("CalendarComponent", "- isLoggedIn: ${isLoggedIn.value}")
+        Log.d("CalendarComponent", "- currentMonth: $currentMonth")
+        Log.d("CalendarComponent", "- Current system date: ${java.time.LocalDate.now()}")
+        
+        if (isLoggedIn.value && userId.value != null) {
+            val id = userId.value!!
+            Log.d("CalendarComponent", "User is logged in. Loading calendar data for user: $id")
+            calendarViewModel.loadCalendarData(id)
+        } else {
+            Log.w("CalendarComponent", "User not logged in or userId is null. Skipping data load.")
+            Log.w("CalendarComponent", "- isLoggedIn: ${isLoggedIn.value}, userId: ${userId.value}")
+        }
     }
 
     Column(
@@ -83,10 +86,12 @@ fun CalendarComponent(
                     },
                     onDragEnd = { 
                         if (abs(totalDrag) > 100) {
+                            userId.value?.let { id ->
                             if (totalDrag > 0) {
-                                viewModel.goToPreviousMonth()
+                                                            calendarViewModel.goToPreviousMonth(id)
                             } else {
-                                viewModel.goToNextMonth()
+                        calendarViewModel.goToNextMonth(id)
+                                }
                             }
                         }
                         totalDrag = 0f
@@ -125,17 +130,17 @@ fun CalendarComponent(
             MarketingCalendarGrid(
                 yearMonth = animatedCurrentMonth,
                 selectedDate = selectedDate,
-                marketingOpportunities = marketingOpportunities,
+                marketingOpportunities = dailyOpportunities,
                 onDateClick = { date ->
-                    // 다른 달 날짜도 클릭 가능하게 변경
-                    val opportunities = marketingOpportunities[date]?.opportunities ?: emptyList()
-                    if (opportunities.isNotEmpty()) {
-                        onDayClick(date, opportunities)
+                    // 마케팅 기회가 있는 날짜 클릭 시 처리
+                    val dailyOpps = dailyOpportunities[date]
+                    if (dailyOpps != null && dailyOpps.opportunities.isNotEmpty()) {
+                        onDateClick(date, dailyOpps.opportunities)
                     }
                     if (date == selectedDate) {
-                        viewModel.clearSelection()
+                        calendarViewModel.clearSelection()
                     } else {
-                        viewModel.selectDate(date)
+                        calendarViewModel.selectDate(date)
                     }
                 }
             )
@@ -158,7 +163,7 @@ private fun CalendarHeader(
             targetState = currentMonth,
             animationSpec = tween(200, easing = FastOutSlowInEasing),
             label = "month_text_transition"
-        ) { animatedMonth ->
+        ) { animatedMonth: YearMonth ->
             Text(
                 text = "${animatedMonth.monthValue}월",
                 style = MaterialTheme.typography.headlineMedium,
@@ -209,211 +214,9 @@ private fun DaysOfWeekHeader() {
     }
 }
 
-@Composable
-private fun MarketingCalendarGrid(
-    yearMonth: YearMonth,
-    selectedDate: LocalDate?,
-    marketingOpportunities: Map<LocalDate, com.voyz.datas.model.DailyMarketingOpportunities>,
-    onDateClick: (LocalDate) -> Unit
-) {
-    val firstDayOfMonth = yearMonth.atDay(1)
-    val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
-    val daysFromFirstDayOfWeek = firstDayOfMonth.dayOfWeek.ordinal - firstDayOfWeek.ordinal
-    val adjustedDaysFromFirstDayOfWeek = if (daysFromFirstDayOfWeek < 0) daysFromFirstDayOfWeek + 7 else daysFromFirstDayOfWeek
-    
-    val days = remember(yearMonth) {
-        val monthLength = yearMonth.lengthOfMonth()
-        val prevMonth = yearMonth.minusMonths(1)
-        val prevMonthLength = prevMonth.lengthOfMonth()
-        
-        // 이전 달 마지막 날들
-        val prevMonthDays = (prevMonthLength - adjustedDaysFromFirstDayOfWeek + 1..prevMonthLength).map { day ->
-            CalendarDate(prevMonth.atDay(day), false)
-        }
-        
-        // 현재 달 날들
-        val currentMonthDays = (1..monthLength).map { day ->
-            CalendarDate(yearMonth.atDay(day), true)
-        }
-        
-        // 다음 달 첫 날들
-        val nextMonth = yearMonth.plusMonths(1)
-        val totalCells = 35 // 5주 * 7일로 제한
-        val remainingCells = totalCells - prevMonthDays.size - currentMonthDays.size
-        val nextMonthDays = if (remainingCells > 0) {
-            (1..remainingCells).map { day ->
-                CalendarDate(nextMonth.atDay(day), false)
-            }
-        } else {
-            emptyList()
-        }
-        
-        prevMonthDays + currentMonthDays + nextMonthDays
-    }
-    
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(7),
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp)
-    ) {
-        items(days) { calendarDate ->
-            MarketingCalendarDayCell(
-                date = calendarDate.date,
-                isCurrentMonth = calendarDate.isCurrentMonth,
-                isSelected = selectedDate == calendarDate.date,
-                dailyOpportunities = marketingOpportunities[calendarDate.date],
-                onClick = { onDateClick(calendarDate.date) } // isCurrentMonth 조건 제거
-            )
-        }
-    }
-}
+// MarketingCalendarGrid는 이제 별도 파일로 분리됨
 
-@Composable
-private fun MarketingCalendarDayCell(
-    date: LocalDate,
-    isCurrentMonth: Boolean,
-    isSelected: Boolean,
-    dailyOpportunities: com.voyz.datas.model.DailyMarketingOpportunities?,
-    onClick: () -> Unit
-) {
-    val textColor = when {
-        !isCurrentMonth -> MarketingColors.TextTertiary
-        date.dayOfWeek.value == 7 -> MarketingColors.HighPriority // 일요일 빨간색
-        date.dayOfWeek.value == 6 -> MarketingColors.TextSecondary // 토요일 회색
-        else -> MarketingColors.TextPrimary
-    }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .drawBehind {
-                // 윗줄만 그리기
-                drawLine(
-                    color = MarketingColors.TextTertiary.copy(alpha = 0.2f),
-                    start = Offset(0f, 0f),
-                    end = Offset(size.width, 0f),
-                    strokeWidth = 0.5.dp.toPx()
-                )
-            }
-            .clickable { onClick() }
-            .padding(4.dp),
-        verticalArrangement = Arrangement.Top
-    ) {
-        // 날짜 숫자와 날씨
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = date.dayOfMonth.toString(),
-                color = textColor,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .then(
-                        if (isSelected) {
-                            Modifier
-                                .background(
-                                    MarketingColors.Selected,
-                                    CircleShape
-                                )
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        } else {
-                            Modifier.padding(2.dp)
-                        }
-                    )
-            )
-            
-            // 날씨 아이콘 (현재 주의 7일만 표시)
-            val today = LocalDate.now()
-            val startOfWeek = today.minusDays(today.dayOfWeek.value % 7L)
-            val endOfWeek = startOfWeek.plusDays(6)
-            
-            if (date >= startOfWeek && date <= endOfWeek) {
-                val weatherEmoji = remember(date) {
-                    val weatherList = listOf("☀️", "🌤️", "☁️", "🌧️", "⛅")
-                    weatherList[date.dayOfMonth % weatherList.size]
-                }
-                Text(
-                    text = weatherEmoji,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 10.sp,
-                    modifier = if (!isCurrentMonth) {
-                        Modifier.alpha(0.3f) // 다른 달은 연하게
-                    } else {
-                        Modifier
-                    }
-                )
-            }
-        }
-        
-        // 마케팅 기회 영역 - 확장된 크기
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp), // 기회 영역 높이 대폭 증가
-            verticalArrangement = Arrangement.Top
-        ) {
-            dailyOpportunities?.let { daily ->                
-                // 최대 2개 기회만 표시
-                daily.opportunities.take(2).forEach { opportunity ->
-                    val backgroundColor = if (opportunity.priority == com.voyz.datas.model.Priority.HIGH) {
-                        MarketingColors.HighPriority.copy(alpha = 0.3f) // 높은 우선순위는 빨간색 배경
-                    } else {
-                        getMarketingCategoryColors(opportunity.category).second
-                    }
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(32.dp) // 높이 증가
-                            .padding(vertical = 2.dp)
-                            .background(
-                                color = backgroundColor,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(horizontal = 4.dp, vertical = 3.dp)
-                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f), // 다른 달은 연하게
-                        contentAlignment = Alignment.CenterStart // 가운데 정렬
-                    ) {
-                        Text(
-                            text = opportunity.title,
-                            color = MarketingColors.TextPrimary,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 9.sp,
-                            minLines = 2, // 최소 2줄 표시
-                            maxLines = 2,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            lineHeight = 10.sp, // 줄 간격 조정
-                            modifier = Modifier.fillMaxWidth() // 전체 너비 사용
-                        )
-                    }
-                }
-                
-                // 더 많은 기회가 있을 때 표시
-                if (daily.totalCount > 2) {
-                    Text(
-                        text = "+${daily.totalCount - 2}",
-                        color = MarketingColors.TextSecondary,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 9.sp,
-                        modifier = Modifier
-                            .padding(top = 2.dp, start = 4.dp)
-                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f) // 다른 달은 연하게
-                    )
-                }
-            }
-        }
-    }
-}
-
-private data class CalendarDate(
-    val date: LocalDate,
-    val isCurrentMonth: Boolean
-)
+// MarketingCalendarDayCell과 CalendarDate는 이제 별도 파일로 분리됨
 
 @Preview(showBackground = true, widthDp = 400, heightDp = 700)
 @Composable

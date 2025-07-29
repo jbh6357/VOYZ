@@ -7,46 +7,53 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.voyz.datas.model.MarketingOpportunity
-import com.voyz.datas.model.Priority
-import com.voyz.datas.repository.MarketingOpportunityRepository
-import com.voyz.ui.theme.MarketingColors
-import com.voyz.ui.theme.getMarketingCategoryColors
+import com.voyz.datas.model.dto.SpecialDaySuggestDto
+import com.voyz.datas.network.ApiClient
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MarketingOpportunityDetailScreen(
     navController: NavController,
-    opportunityId: String,
+    ssuIdx: Int,
     modifier: Modifier = Modifier
 ) {
-    val opportunity = remember { MarketingOpportunityRepository.getOpportunityById(opportunityId) }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     
-    if (opportunity == null) {
-        // 기회를 찾을 수 없는 경우
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("마케팅 기회를 찾을 수 없습니다.")
+    var suggestion by remember { mutableStateOf<SpecialDaySuggestDto?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(ssuIdx) {
+        coroutineScope.launch {
+            try {
+                isLoading = true
+                val response = ApiClient.calendarApiService.getSuggestionDetail(ssuIdx)
+                if (response.isSuccessful) {
+                    suggestion = response.body()
+                } else {
+                    error = "제안을 불러올 수 없습니다. (${response.code()})"
+                }
+            } catch (e: Exception) {
+                error = "오류가 발생했습니다: ${e.message}"
+            } finally {
+                isLoading = false
+            }
         }
-        return
     }
-    
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -65,20 +72,6 @@ fun MarketingOpportunityDetailScreen(
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = { /* TODO: 북마크 기능 */ }) {
-                        Icon(
-                            imageVector = Icons.Default.BookmarkBorder,
-                            contentDescription = "북마크"
-                        )
-                    }
-                    IconButton(onClick = { /* TODO: 공유 기능 */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "공유"
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
@@ -86,261 +79,151 @@ fun MarketingOpportunityDetailScreen(
             )
         },
         bottomBar = {
-            MarketingOpportunityBottomBar(
-                onCreateCampaignClick = {
-                    // TODO: 캠페인 생성 화면으로 이동
-                    navController.navigate("marketing_create")
-                },
-                onSetReminderClick = {
-                    // TODO: 리마인더 생성 화면으로 이동  
-                    navController.navigate("reminder_create")
-                }
-            )
+            suggestion?.let {
+                SuggestionDetailBottomBar(
+                    onSetReminderClick = {
+                        // 제안 내용을 리마인더 생성 폼으로 전달
+                        val encodedTitle = java.net.URLEncoder.encode(it.title, "UTF-8")
+                        val encodedContent = java.net.URLEncoder.encode(it.content, "UTF-8")
+                        // LocalDate를 ISO 형식으로 명시적 변환 (YYYY-MM-DD)
+                        val dateString = it.startDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                        android.util.Log.d("MarketingDetail", "Original startDate: ${it.startDate}")
+                        android.util.Log.d("MarketingDetail", "Original year: ${it.startDate.year}, month: ${it.startDate.monthValue}, day: ${it.startDate.dayOfMonth}")
+                        android.util.Log.d("MarketingDetail", "Converted dateString: $dateString")
+                        val reminderData = "title=$encodedTitle&content=$encodedContent&date=$dateString"
+                        android.util.Log.d("MarketingDetail", "Final reminderData: $reminderData")
+                        navController.navigate("reminder_create?$reminderData")
+                    },
+                    onCreateCampaignClick = {
+                        navController.navigate("marketing_create")
+                    }
+                )
+            }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // 헤더 카드
-            MarketingOpportunityHeader(opportunity = opportunity)
-            
-            // 기회 설명
-            MarketingOpportunityDescription(opportunity = opportunity)
-            
-            // 제안된 액션
-            MarketingOpportunitySuggestions(opportunity = opportunity)
-            
-            // 예상 효과
-            MarketingOpportunityEffects(opportunity = opportunity)
-            
-            // 데이터 소스 정보
-            MarketingOpportunityDataSource(opportunity = opportunity)
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            error != null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = error!!,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Button(onClick = { navController.navigateUp() }) {
+                            Text("돌아가기")
+                        }
+                    }
+                }
+            }
+            suggestion != null -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // 제안 헤더
+                    SuggestionHeader(suggestion = suggestion!!)
+                    
+                    // 제안 내용
+                    SuggestionContent(suggestion = suggestion!!)
+                    
+                    // 제안 기간
+                    SuggestionPeriod(suggestion = suggestion!!)
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun MarketingOpportunityHeader(
-    opportunity: MarketingOpportunity
-) {
+private fun SuggestionHeader(suggestion: SpecialDaySuggestDto) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = getMarketingCategoryColors(opportunity.category).second
+            containerColor = Color(0xFFFFC107).copy(alpha = 0.1f) // 노란색 (제안)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // 날짜와 카테고리
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = opportunity.date.format(DateTimeFormatter.ofPattern("M월 d일 (E)", Locale.KOREAN)),
+                        text = suggestion.title,
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = opportunity.category.emoji,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Text(
-                            text = opportunity.category.displayName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // 우선순위
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = when (opportunity.priority) {
-                                    Priority.HIGH -> MarketingColors.HighPriority
-                                    Priority.MEDIUM -> MarketingColors.MediumPriority 
-                                    Priority.LOW -> MarketingColors.LowPriority
-                                },
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = opportunity.priority.displayName,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(4.dp))
                     
-                    // 신뢰도
                     Text(
-                        text = "성공률 ${(opportunity.confidence * 100).toInt()}%",
+                        text = suggestion.startDate.format(DateTimeFormatter.ofPattern("M월 d일 (E)", Locale.KOREAN)),
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                // 제안 배지
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color(0xFFFFC107), // 노란색 (제안)
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "제안",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // 제목
-            Text(
-                text = opportunity.title,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // 타겟 고객
-            Text(
-                text = "👥 ${opportunity.targetCustomer}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
 
 @Composable
-private fun MarketingOpportunityDescription(
-    opportunity: MarketingOpportunity
-) {
+private fun SuggestionContent(suggestion: SpecialDaySuggestDto) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MarketingColors.SurfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Text(
-                text = "📊 상황 분석",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Text(
-                text = opportunity.description,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight
-            )
-        }
-    }
-}
-
-@Composable
-private fun MarketingOpportunitySuggestions(
-    opportunity: MarketingOpportunity
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MarketingColors.PrimaryLight
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Text(
-                text = "💡 제안된 마케팅 액션",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MarketingColors.TextPrimary
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Text(
-                text = opportunity.suggestedAction,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MarketingColors.TextPrimary,
-                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight
-            )
-        }
-    }
-}
-
-@Composable
-private fun MarketingOpportunityEffects(
-    opportunity: MarketingOpportunity
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MarketingColors.CategorySecondary
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Text(
-                text = "📈 예상 효과",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MarketingColors.TextPrimary
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Text(
-                text = opportunity.expectedEffect,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MarketingColors.TextPrimary,
-                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight
-            )
-        }
-    }
-}
-
-@Composable
-private fun MarketingOpportunityDataSource(
-    opportunity: MarketingOpportunity
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MarketingColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         border = CardDefaults.outlinedCardBorder()
     ) {
@@ -350,7 +233,7 @@ private fun MarketingOpportunityDataSource(
                 .padding(16.dp)
         ) {
             Text(
-                text = "📋 데이터 출처",
+                text = "💡 제안 내용",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -359,7 +242,7 @@ private fun MarketingOpportunityDataSource(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = opportunity.dataSource.displayName,
+                text = suggestion.content,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -368,14 +251,75 @@ private fun MarketingOpportunityDataSource(
 }
 
 @Composable
-private fun MarketingOpportunityBottomBar(
-    onCreateCampaignClick: () -> Unit,
-    onSetReminderClick: () -> Unit
-) {
-    Surface(
+private fun SuggestionPeriod(suggestion: SpecialDaySuggestDto) {
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = CardDefaults.outlinedCardBorder()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "📅 제안 기간",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "시작일:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = suggestion.startDate.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일")),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                Column {
+                    Text(
+                        text = "종료일:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = suggestion.endDate.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일")),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionDetailBottomBar(
+    onSetReminderClick: () -> Unit,
+    onCreateCampaignClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Row(
             modifier = Modifier
@@ -400,14 +344,4 @@ private fun MarketingOpportunityBottomBar(
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MarketingOpportunityDetailScreenPreview() {
-    val navController = rememberNavController()
-    MarketingOpportunityDetailScreen(
-        navController = navController,
-        opportunityId = "1"
-    )
 }

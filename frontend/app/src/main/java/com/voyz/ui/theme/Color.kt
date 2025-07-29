@@ -3,6 +3,7 @@ package com.voyz.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Primary Colors
+val Primary = Color(0xFF2196F3)
 val Blue500 = Color(0xFF2196F3)
 val Blue700 = Color(0xFF1976D2)
 val Blue300 = Color(0xFF64B5F6)

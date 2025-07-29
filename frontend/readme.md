@@ -2,55 +2,63 @@
 
 Spring Boot REST API 백엔드와 통신하는 VOYZ 플랫폼의 안드로이드 프론트엔드 애플리케이션입니다.
 
-## 프로젝트 구조 (현재 상태 - 2025.07.28 리팩토링 후)
+## 프로젝트 구조 (현재 상태 - 2025.07.29 리팩토링 후)
 
-### ⚠️ 폴더 구조 정리 필요사항
-> **현재 문제점**: fragment/ 와 screen/ 폴더가 혼재되어 있음. 동일한 용도(화면)인데 위치가 다름.
-> **향후 계획**: fragment/ 폴더를 screen/으로 통합하고 카테고리별로 재정리 예정.
+### ✅ 폴더 구조 정리 완료
+> **완료된 작업**: fragment/ 폴더를 screen/으로 통합하고 카테고리별로 재정리 완료
+> **개선 효과**: 화면 관련 파일들의 일관된 구조와 명확한 카테고리 분류
 
 ```text
 app/src/main/java/com/voyz/
 ├── datas/
-│   ├── model/                    # 데이터 모델 (MarketingOpportunity, Priority 등)
-│   └── repository/               # 데이터 저장소 (MarketingOpportunityRepository)
+│   ├── datastore/               # 사용자 환경설정 저장소
+│   ├── mapper/                  # 데이터 변환 로직
+│   ├── model/                   # 데이터 모델 (MarketingOpportunity, Priority 등)
+│   │   └── dto/                 # Data Transfer Objects  
+│   ├── network/                 # API 통신 클래스들
+│   └── repository/              # 데이터 저장소 패턴
 ├── presentation/
 │   ├── activity/
-│   │   └── MainActivity.kt       # 메인 액티비티 (단일)
-│   ├── component/                # 재사용 가능한 UI 컴포넌트
-│   │   ├── calendar/            # 캘린더 컴포넌트 + ViewModel
-│   │   ├── fab/                 # FloatingActionMenu
-│   │   ├── gesture/             # 제스처 핸들러 (SidebarDragHandler)
-│   │   ├── modal/               # 모달 컴포넌트들
-│   │   ├── sidebar/             # 사이드바 + 상태 관리
-│   │   └── topbar/              # 공통 상단바
-│   ├── fragment/                # ⚠️ 기존 화면들 (정리 필요)
-│   │   ├── AlramScreen.kt
-│   │   ├── CustomerManagementScreen.kt
-│   │   ├── IdPwFindScreen.kt
-│   │   ├── LoginScreen.kt
-│   │   ├── MainScreen_backup.kt  # 백업 파일
-│   │   ├── MarketingCreateScreen.kt
-│   │   ├── OperationManagementScreen.kt
-│   │   ├── ReminderCreateScreen.kt
-│   │   ├── ReminderScreen.kt
-│   │   ├── SettingsScreen.kt
-│   │   ├── SignUpScreen.kt
-│   │   └── UserProfileScreen.kt
-│   ├── screen/                  # 🔥 리팩토링된 화면들
-│   │   ├── main/                # MainScreen 리팩토링 결과
-│   │   │   ├── MainScreen.kt        # 메인 컨트롤러 (91줄)
-│   │   │   ├── MainScreenState.kt   # 상태 관리 클래스
-│   │   │   └── components/          # MainScreen 전용 컴포넌트
-│   │   │       ├── MainContent.kt       # 메인 UI 컴포넌트
-│   │   │       └── OverlayManager.kt    # 오버레이 관리
-│   │   └── marketing/
-│   │       └── MarketingOpportunityDetailScreen.kt
-│   ├── navigation/
-│   │   └── NavGraph.kt          # 네비게이션 설정
-│   └── viewmodel/               # ⚠️ 현재 비어있음 (State 패턴 사용 중)
-├── ui/theme/                    # 테마 및 색상 시스템
+│   │   └── MainActivity.kt      # 메인 액티비티 (단일)
+│   ├── component/               # 재사용 가능한 UI 컴포넌트
+│   │   ├── calendar/           # 캘린더 컴포넌트 + ViewModel
+│   │   │   └── components/     # ✅ 분리된 캘린더 하위 컴포넌트들
+│   │   │       ├── CalendarDayCell.kt    # 날짜 셀 컴포넌트
+│   │   │       └── CalendarGrid.kt       # 캘린더 그리드
+│   │   ├── fab/                # FloatingActionMenu
+│   │   ├── modal/              # 모달 컴포넌트들
+│   │   ├── reminder/           # 리마인더 관련 컴포넌트들
+│   │   ├── sidebar/            # 사이드바 + 상태 관리
+│   │   └── topbar/             # 공통 상단바
+│   ├── screen/                 # ✅ 화면들 (카테고리별 정리 완료)
+│   │   ├── auth/               # 인증 관련 화면들
+│   │   │   ├── LoginScreen.kt
+│   │   │   ├── LoginViewModel.kt
+│   │   │   ├── IdPwFindScreen.kt
+│   │   │   └── signup/         # 회원가입 관련
+│   │   ├── main/               # 메인 화면 (리팩토링 완료)
+│   │   │   ├── MainScreen.kt       # 메인 컨트롤러 (91줄)
+│   │   │   ├── MainScreenState.kt  # 상태 관리 클래스
+│   │   │   ├── SearchScreen.kt
+│   │   │   └── components/         # MainScreen 전용 컴포넌트
+│   │   ├── marketing/          # 마케팅 관련 화면들
+│   │   │   ├── MarketingOpportunityDetailScreen.kt
+│   │   │   └── MarketingCreateScreen.kt
+│   │   ├── management/         # 관리 화면들
+│   │   │   ├── CustomerManagementScreen.kt
+│   │   │   ├── OperationManagementScreen.kt
+│   │   │   ├── SettingsScreen.kt
+│   │   │   └── UserProfileScreen.kt
+│   │   └── reminder/           # 리마인더 관련 화면들
+│   │       ├── ReminderScreen.kt
+│   │       ├── ReminderCreateScreen.kt
+│   │       ├── ReminderDetailScreen.kt
+│   │       └── AlramScreen.kt
+│   └── navigation/
+│       └── NavGraph.kt         # 네비게이션 설정
+├── ui/theme/                   # 테마 및 색상 시스템
 │   ├── Color.kt
-│   ├── MarketingColors.kt       # 마케팅 전용 색상 시스템
+│   ├── MarketingColors.kt      # 마케팅 전용 색상 시스템
 │   └── Type.kt
 └── utils/
     └── Constants.kt
@@ -76,26 +84,21 @@ app/src/main/java/com/voyz/
 - 재사용성 증대 (상태 클래스, 제스처 핸들러)
 - 확장성 향상 (새 기능 추가 시 영향 범위 최소화)
 
-### 🔧 향후 정리 계획
+### ✅ 완료된 리팩토링 작업들 (2025.07.29)
 
-**1. 폴더 구조 통합**
-```text
-presentation/screen/
-├── auth/                 # LoginScreen, SignUpScreen, IdPwFindScreen
-├── main/                 # MainScreen (리팩토링 완료)
-├── marketing/            # MarketingOpportunityDetailScreen, MarketingCreateScreen
-├── management/           # CustomerManagement, OperationManagement, Settings
-└── reminder/             # ReminderScreen, ReminderCreateScreen
-```
+**1. 폴더 구조 통합 완료**
+- ✅ fragment/ → screen/ 통합 완료
+- ✅ 화면별 카테고리 분류 (auth, main, marketing, management, reminder)
+- ✅ 일관된 네이밍 규칙 적용
 
-**2. 불필요한 폴더 제거**
-- `viewmodel/` 폴더 (현재 비어있음, State 패턴 사용)
-- `component/gesture/` 폴더 (파일 1개만 존재)
-- 과도한 depth 줄이기
+**2. 불필요한 폴더 제거 완료**
+- ✅ `viewmodel/` 폴더 제거 (State 패턴 사용)
+- ✅ `domain/` 폴더 제거 (빈 폴더)
+- ✅ `di/` 폴더 제거 (빈 폴더)
 
-**3. 네이밍 일관성**
-- fragment/ → screen/ 통일
-- 화면별 카테고리 명확화
+**3. 컴포넌트 분리 및 최적화**
+- ✅ CalendarComponent (498줄) → CalendarDayCell, CalendarGrid로 분리
+- ✅ 재사용 가능한 하위 컴포넌트들을 components/ 폴더로 구조화
 
 ### 🎨 UI/UX 개선사항
 

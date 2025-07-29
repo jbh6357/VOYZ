@@ -16,6 +16,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.voyz.presentation.screen.main.components.MainContent
 import com.voyz.presentation.screen.main.components.OverlayManager
+import com.voyz.presentation.component.calendar.CalendarViewModel
 import java.time.LocalDate
 
 /**
@@ -37,11 +38,16 @@ fun MainScreen(
     today: LocalDate = LocalDate.now()
 ) {
     var screenState by remember { mutableStateOf(MainScreenState()) }
+    
+    // CalendarViewModel을 MainScreen 레벨에서 유지하여 상태 보존
+    val context = LocalContext.current
+    val sharedCalendarViewModel = remember(context) { CalendarViewModel(context) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // 메인 컨텐츠 (캘린더 + FAB)
         MainContent(
             state = screenState,
+            calendarViewModel = sharedCalendarViewModel, // ViewModel 전달
             onSearchClick = onSearchClick,
             onAlarmClick = onAlarmClick,
             onTodayClick = onTodayClick,
@@ -54,20 +60,24 @@ fun MainScreen(
             onFabToggle = {
                 screenState = screenState.toggleFab()
             },
-            onDayClick = { date, opportunities ->
+            onDateClick = { date, opportunities ->
+                android.util.Log.d("MainScreen", "onDateClick - date: $date")
+                android.util.Log.d("MainScreen", "onDateClick - date.year: ${date.year}")
+                android.util.Log.d("MainScreen", "onDateClick - date.monthValue: ${date.monthValue}")
+                android.util.Log.d("MainScreen", "onDateClick - date.dayOfMonth: ${date.dayOfMonth}")
                 screenState = screenState.openOpportunityModal(date, opportunities)
             },
             onMarketingCreateClick = {
                 screenState = screenState.closeFab()
+                navController.navigate("marketing_create")
             },
             onReminderCreateClick = {
                 screenState = screenState.closeFab()
-            },
-            today = today,
-            navController = navController
+                navController.navigate("reminder_create")
+            }
         )
 
-        // 오버레이 관리 (사이드바, 모달, FAB 배경)
+        // 오버레이 요소들 (사이드바, 모달, FAB 배경)
         OverlayManager(
             state = screenState,
             navController = navController,
