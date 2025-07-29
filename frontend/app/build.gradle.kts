@@ -65,6 +65,9 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.androidx.navigation.testing.android)
 
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
