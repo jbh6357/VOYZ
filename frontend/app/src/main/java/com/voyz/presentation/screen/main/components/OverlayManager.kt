@@ -109,7 +109,7 @@ fun OverlayManager(
             onReminderCreateClick = { selectedDate ->
                 android.util.Log.d("OverlayManager", "=== Navigating to reminder_create ===")
                 android.util.Log.d("OverlayManager", "selectedDate: $selectedDate")
-                android.util.Log.d("OverlayManager", "selectedDate.year: ${selectedDate.year}")
+                android.util.Log.d("OverlayManager", "selectedDate.year: ${selectedDate.year}, month: ${selectedDate.monthValue}, day: ${selectedDate.dayOfMonth}")
                 android.util.Log.d("OverlayManager", "Current LocalDate.now(): ${java.time.LocalDate.now()}")
                 
                 // 안전장치: 이상한 연도면 현재 날짜로 대체
@@ -120,7 +120,11 @@ fun OverlayManager(
                     selectedDate
                 }
                 
-                val navigationUrl = "reminder_create?date=${safeDate}"
+                // 날짜를 ISO 형식으로 변환
+                val dateString = safeDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                val navigationUrl = "reminder_create?date=${dateString}"
+                android.util.Log.d("OverlayManager", "Safe date: $safeDate")
+                android.util.Log.d("OverlayManager", "Date string: $dateString") 
                 android.util.Log.d("OverlayManager", "Final navigation URL: $navigationUrl")
                 
                 onModalClose()
