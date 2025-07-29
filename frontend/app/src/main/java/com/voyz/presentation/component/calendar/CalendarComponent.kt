@@ -21,11 +21,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -64,18 +66,21 @@ import java.util.Locale
 @Composable
 fun CalendarComponent(
     modifier: Modifier = Modifier,
-    viewModel: CalendarViewModel = viewModel(),
-    onDayClick: (LocalDate, List<MarketingOpportunity>) -> Unit = { _, _ -> }
+    viewModel: CalendarViewModel? = null,
+    onDateClick: (LocalDate, List<MarketingOpportunity>) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val userPreferencesManager = remember { UserPreferencesManager(context) }
     val userId = userPreferencesManager.userId.collectAsState(initial = null)
     val isLoggedIn = userPreferencesManager.isLoggedIn.collectAsState(initial = false)
     
-    val currentMonth = viewModel.currentMonth
-    val selectedDate = viewModel.selectedDate
-    val dailyOpportunities = viewModel.dailyOpportunities
-    val isLoading = viewModel.isLoading
+    // 전달받은 ViewModel이 있으면 사용, 없으면 새로 생성
+    val calendarViewModel = viewModel ?: remember(context) { CalendarViewModel(context) }
+    
+    val currentMonth = calendarViewModel.currentMonth
+    val selectedDate = calendarViewModel.selectedDate
+    val dailyOpportunities = calendarViewModel.dailyOpportunities
+    val isLoading = calendarViewModel.isLoading
     var totalDrag by remember { mutableStateOf(0f) }
     
     // 사용자 ID가 있으면 캘린더 데이터 로딩
@@ -89,7 +94,7 @@ fun CalendarComponent(
         if (isLoggedIn.value && userId.value != null) {
             val id = userId.value!!
             Log.d("CalendarComponent", "User is logged in. Loading calendar data for user: $id")
-            viewModel.loadCalendarData(id)
+            calendarViewModel.loadCalendarData(id)
         } else {
             Log.w("CalendarComponent", "User not logged in or userId is null. Skipping data load.")
             Log.w("CalendarComponent", "- isLoggedIn: ${isLoggedIn.value}, userId: ${userId.value}")
@@ -109,10 +114,10 @@ fun CalendarComponent(
                     onDragEnd = { 
                         if (abs(totalDrag) > 100) {
                             userId.value?.let { id ->
-                                if (totalDrag > 0) {
-                                    viewModel.goToPreviousMonth(id)
-                                } else {
-                                    viewModel.goToNextMonth(id)
+                            if (totalDrag > 0) {
+                                                            calendarViewModel.goToPreviousMonth(id)
+                            } else {
+                        calendarViewModel.goToNextMonth(id)
                                 }
                             }
                         }
@@ -157,12 +162,12 @@ fun CalendarComponent(
                     // 마케팅 기회가 있는 날짜 클릭 시 처리
                     val dailyOpps = dailyOpportunities[date]
                     if (dailyOpps != null && dailyOpps.opportunities.isNotEmpty()) {
-                        onDayClick(date, dailyOpps.opportunities)
+                        onDateClick(date, dailyOpps.opportunities)
                     }
                     if (date == selectedDate) {
-                        viewModel.clearSelection()
+                        calendarViewModel.clearSelection()
                     } else {
-                        viewModel.selectDate(date)
+                        calendarViewModel.selectDate(date)
                     }
                 }
             )
@@ -254,12 +259,12 @@ private fun MarketingCalendarGrid(
         val prevMonthLength = prevMonth.lengthOfMonth()
         
         // 이전 달 마지막 날들
-        val prevMonthDays = (prevMonthLength - adjustedDaysFromFirstDayOfWeek + 1..prevMonthLength).map { day ->
+        val prevMonthDays = (prevMonthLength - adjustedDaysFromFirstDayOfWeek + 1..prevMonthLength).map { day: Int ->
             CalendarDate(prevMonth.atDay(day), false)
         }
         
         // 현재 달 날들
-        val currentMonthDays = (1..monthLength).map { day ->
+        val currentMonthDays = (1..monthLength).map { day: Int ->
             CalendarDate(yearMonth.atDay(day), true)
         }
         
@@ -267,12 +272,12 @@ private fun MarketingCalendarGrid(
         val nextMonth = yearMonth.plusMonths(1)
         val totalCells = 35 // 5주 * 7일로 제한
         val remainingCells = totalCells - prevMonthDays.size - currentMonthDays.size
-        val nextMonthDays = if (remainingCells > 0) {
-            (1..remainingCells).map { day ->
+        val nextMonthDays: List<CalendarDate> = if (remainingCells > 0) {
+            (1..remainingCells).map { day: Int ->
                 CalendarDate(nextMonth.atDay(day), false)
             }
         } else {
-            emptyList()
+            emptyList<CalendarDate>()
         }
         
         prevMonthDays + currentMonthDays + nextMonthDays
@@ -387,51 +392,81 @@ private fun MarketingCalendarDayCell(
             dailyOpportunities?.let { daily ->                
                 // 최대 2개 기회만 표시
                 daily.opportunities.take(2).forEach { opportunity ->
-                    // 새로운 색상 로직 적용
-                    val backgroundColor = if (opportunity.title.startsWith("[리마인더]")) {
-                        // 리마인더 타입별 색상
-                        when (opportunity.priority) {
-                            Priority.HIGH -> Color(0xFFFF4444).copy(alpha = 0.4f) // 마케팅 -> 빨간색
-                            Priority.MEDIUM -> Color(0xFF2196F3).copy(alpha = 0.4f) // 일정 -> 파란색
-                            else -> Color(0xFF2196F3).copy(alpha = 0.4f) // 기본값 파란색
+                    val isReminder = opportunity.title.startsWith("[리마인더]")
+                    
+                    if (isReminder) {
+                        // 리마인더: 왼쪽 세로 바 스타일
+                        val barColor = when (opportunity.priority) {
+                            Priority.HIGH -> Color(0xFFFF4444) // 마케팅 -> 빨간색
+                            Priority.MEDIUM -> Color(0xFF2196F3) // 일정 -> 파란색
+                            else -> Color(0xFF2196F3) // 기본값 파란색
+                        }
+                        
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                                .padding(vertical = 1.dp)
+                                .alpha(if (!isCurrentMonth) 0.3f else 1.0f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // 왼쪽 세로 바
+                            Box(
+                                modifier = Modifier
+                                    .width(3.dp)
+                                    .height(16.dp)
+                                    .background(
+                                        color = barColor,
+                                        shape = RoundedCornerShape(2.dp)
+                                    )
+                            )
+                            
+                            Spacer(modifier = Modifier.width(4.dp))
+                            
+                            // 텍스트
+                            Text(
+                                text = opportunity.title.removePrefix("[리마인더] "),
+                                color = MarketingColors.TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     } else {
-                        // 특일 제안 색상
-                        when (opportunity.priority) {
+                        // 제안/기회: 기존 전체 배경색 스타일 유지
+                        val backgroundColor = when (opportunity.priority) {
                             Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f) // 제안 있음 -> 노란색
                             Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 제안 없음 -> 회색
                             else -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 기본값 회색
                         }
-                    }
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight() // 텍스트 내용에 맞게 높이 자동 조정
-                            .padding(vertical = 1.dp) 
-                            .background(
-                                color = backgroundColor,
-                                shape = RoundedCornerShape(4.dp)
+                        
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                                .padding(vertical = 1.dp) 
+                                .background(
+                                    color = backgroundColor,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 4.dp, vertical = 3.dp)
+                                .alpha(if (!isCurrentMonth) 0.3f else 1.0f),
+                            contentAlignment = Alignment.TopStart
+                        ) {
+                            Text(
+                                text = opportunity.title,
+                                color = MarketingColors.TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
+                                maxLines = 2, // 최대 2줄까지 표시
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                lineHeight = 12.sp, // 2줄 표시를 위해 적절한 줄 간격
+                                textAlign = TextAlign.Start, // 왼쪽 정렬
+                                modifier = Modifier.fillMaxWidth() // 박스가 동적 높이이므로 fillMaxHeight 제거
                             )
-                            .padding(horizontal = 4.dp, vertical = 3.dp) // 적절한 패딩으로 복원
-                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f),
-                        contentAlignment = Alignment.TopStart
-                    ) {
-                        Text(
-                            text = if (opportunity.title.startsWith("[리마인더]")) {
-                                opportunity.title.removePrefix("[리마인더] ")
-                            } else {
-                                opportunity.title
-                            },
-                            color = MarketingColors.TextPrimary,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 10.sp,
-                            maxLines = 2, // 최대 2줄까지 표시
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            lineHeight = 12.sp, // 2줄 표시를 위해 적절한 줄 간격
-                            textAlign = TextAlign.Start, // 왼쪽 정렬
-                            modifier = Modifier.fillMaxWidth() // 박스가 동적 높이이므로 fillMaxHeight 제거
-                        )
+                        }
                     }
                 }
                 
@@ -452,7 +487,7 @@ private fun MarketingCalendarDayCell(
     }
 }
 
-private data class CalendarDate(
+data class CalendarDate(
     val date: LocalDate,
     val isCurrentMonth: Boolean
 )
