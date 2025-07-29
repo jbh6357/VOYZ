@@ -24,9 +24,6 @@ public class Users {
 	@Column(name = "USER_NAME", nullable = false)
 	private String userName;
 	
-	@Column(name = "USER_EMAIL", nullable = false)
-	private String userEmail;
-	
 	@Column(name = "USER_PHONE", nullable = false)
 	private String userPhone;
 	
@@ -38,9 +35,6 @@ public class Users {
 	
 	@Column(name = "STORE_ADDRESS", nullable = false)
 	private String storeAddress;
-	
-	@Column(name = "ROLE", nullable = false)
-	private String role;
 	
 	@Column(name = "CREATED_AT")
 	private LocalDateTime createdAt;
