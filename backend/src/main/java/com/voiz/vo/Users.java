@@ -36,9 +36,6 @@ public class Users {
 	@Column(name = "STORE_ADDRESS", nullable = false)
 	private String storeAddress;
 	
-	@Column(name = "ROLE", nullable = false)
-	private String role;
-	
 	@Column(name = "CREATED_AT")
 	private LocalDateTime createdAt;
 	

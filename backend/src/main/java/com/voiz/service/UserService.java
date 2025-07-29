@@ -60,8 +60,6 @@ public class UserService {
         users.setStoreCategory(registrationDto.getStoreCategory());
         users.setStoreAddress(registrationDto.getStoreAddress());
 
-        users.setRole(registrationDto.getRole() != null ? registrationDto.getRole() : "USERS");
-
         try {
             usersRepository.save(users);
             return true;
