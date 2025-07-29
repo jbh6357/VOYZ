@@ -19,12 +19,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.voyz.presentation.component.fab.FloatingActionMenu
 import com.voyz.presentation.component.reminder.ReminderCalendarComponent
+import com.voyz.presentation.component.reminder.ReminderCalendarEvent
 import com.voyz.presentation.component.reminder.ReminderCalendarViewModel
+import com.voyz.presentation.component.reminder.ReminderDayInfoBox
 import com.voyz.presentation.component.reminder.ReminderListBox
 import com.voyz.presentation.component.sidebar.SidebarComponent
 import com.voyz.presentation.component.topbar.CommonTopBar
 import java.time.LocalDate
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,15 +48,17 @@ fun ReminderScreen(
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
     val selectedDate = RemindercalendarViewModel.selectedDate
-    val selectedEvents = remember(selectedDate, RemindercalendarViewModel.events) {
-        RemindercalendarViewModel.getEventsForDate(selectedDate ?: LocalDate.MIN)
-    }
+    val selectedEvents: List<ReminderCalendarEvent> =
+        remember(selectedDate, RemindercalendarViewModel.events) {
+            RemindercalendarViewModel.getEventsForDate(selectedDate ?: LocalDate.MIN)
+        }
 
     val animatedOffset by animateFloatAsState(
         targetValue = if (isSidebarOpen) sidebarWidth else 0f,
         animationSpec = tween(durationMillis = 200),
         label = "sidebar_offset"
     )
+    var isFabExpanded by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -75,18 +81,30 @@ fun ReminderScreen(
                 },
             topBar = {
                 CommonTopBar(
-                        onMenuClick = {isSidebarOpen=true},
-                        onSearchClick = {
-                            navController.navigate("search")
-                        },
-                        onAlarmClick = onAlarmClick,
-                        onTodayClick = {
-                            RemindercalendarViewModel.goToToday()
-                        },
-                        today = today
-                    )
-            }
+                    onMenuClick = { isSidebarOpen = true },
+                    onSearchClick = {
+                        navController.navigate("search")
+                    },
+                    onAlarmClick = onAlarmClick,
+                    onTodayClick = {
+                        RemindercalendarViewModel.goToToday()
+                    },
+                    today = today
+                )
+            },
 
+            floatingActionButton = {
+                FloatingActionMenu(
+                    isExpanded = isFabExpanded,
+                    onExpandedChange = { isFabExpanded = it },
+                    onReminderCreateClick = {
+                        navController.navigate("reminder_create")
+                    },
+                    onMarketingCreateClick = {
+                        navController.navigate("marketing_create")
+                    }
+                )
+            }
         ) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -108,37 +126,56 @@ fun ReminderScreen(
                     )
                 }
 
-                Box(
+                Box(// 하단
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                     contentAlignment = Alignment.TopStart
                 ) {
-                    ReminderListBox(events = selectedEvents)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(-16.dp)
+                    ) {
+                        ReminderDayInfoBox(
+                            selectedDate = selectedDate ?: LocalDate.now(),
+                            weatherIcon = "🌤️",
+                            temperature = "30°C",
+                            events = selectedEvents
+                        )
+
+                        // ⬇️ 리마인더 리스트
+                        ReminderListBox(
+                            events = selectedEvents,
+                            selectedDate = selectedDate ?: LocalDate.now(),
+                            onEventCheckChange = { event, isChecked ->
+                                RemindercalendarViewModel.updateEventCheckStatus(event, isChecked)
+                            }
+                        )
+                    }
                 }
+            }
+
+            if (isSidebarOpen || animatedOffset > 0f) {
+                SidebarComponent(
+                    isOpen = isSidebarOpen,
+                    animatedOffset = animatedOffset + dragOffset,
+                    onClose = {
+                        isSidebarOpen = false
+                        dragOffset = 0f
+                    },
+                    navController = navController,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }
-        if (isSidebarOpen || animatedOffset > 0f) {
-            SidebarComponent(
-                isOpen = isSidebarOpen,
-                animatedOffset = animatedOffset + dragOffset,
-                onClose = {
-                    isSidebarOpen = false
-                    dragOffset = 0f
-                },
-                navController = navController,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+    @RequiresApi(Build.VERSION_CODES.O)
+    @Preview(showBackground = true)
+    @Composable
+    fun ReminderScreenPreview() {
+        val navController = rememberNavController()
+        ReminderScreen(navController = navController)
     }
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview(showBackground = true)
-@Composable
-fun ReminderScreenPreview() {
-    val navController = rememberNavController()
-    ReminderScreen(
-        navController = navController
-    )
 }

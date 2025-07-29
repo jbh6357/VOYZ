@@ -15,12 +15,17 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -149,7 +154,7 @@ private fun DaysOfWeekHeader() {
 private fun SimpleCalendarGrid(
     dates: List<ReminderCalendarDate>,
     selectedDate: LocalDate?,
-    events: Map<LocalDate, List<CalendarEvent>>,
+    events: Map<LocalDate, List<ReminderCalendarEvent>>,
     onDateClick: (LocalDate) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -185,12 +190,12 @@ private fun CalendarDayCell(
     date: LocalDate,
     isCurrentMonth: Boolean,
     isSelected: Boolean,
-    events: List<CalendarEvent>,
+    events: List<ReminderCalendarEvent>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val textColor = if (!isCurrentMonth) androidx.compose.ui.graphics.Color(0xFFBDBDBD) else androidx.compose.ui.graphics.Color(0xFF333333)
-
+    val textColor = if (!isCurrentMonth) Color(0xFFBDBDBD) else Color(0xFF333333)
+    val isCheckedExist = events.any { it.isChecked }
     Column(
         modifier = modifier
             .clickable(enabled = isCurrentMonth) { onClick() }
@@ -202,12 +207,12 @@ private fun CalendarDayCell(
             text = date.dayOfMonth.toString(),
             color = textColor,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
+            fontWeight = FontWeight.Normal,
             modifier = Modifier
                 .padding(2.dp)
                 .then(
                     if (isSelected) Modifier
-                        .background(androidx.compose.ui.graphics.Color(0xFF64B5F6), CircleShape)
+                        .background(Color(0xFF64B5F6), CircleShape)
                         .padding(4.dp)
                     else Modifier.padding(4.dp)
                 )
@@ -223,22 +228,30 @@ private fun CalendarDayCell(
             modifier = Modifier.padding(top = 2.dp)
         ) {
             dotsToShow.forEach { event ->
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(
-                            color = when (event.id) {
-                                "1" -> androidx.compose.ui.graphics.Color(0xFFFFE0B2)
-                                "2" -> androidx.compose.ui.graphics.Color(0xFFF8BBD9)
-                                "3" -> androidx.compose.ui.graphics.Color(0xFFE8F5E8)
-                                "4" -> androidx.compose.ui.graphics.Color(0xFFE3F2FD)
-                                else -> androidx.compose.ui.graphics.Color(0xFFF3E5F5)
-                            },
-                            shape = CircleShape
-                        )
-                )
+                if (event.isChecked) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Checked",
+                        tint = Color(0xFF4CAF50), // 체크 색상
+                        modifier = Modifier.size(10.dp)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(
+                                color = when (event.id) {
+                                    "1" -> Color(0xFFFFE0B2)
+                                    "2" -> Color(0xFFF8BBD9)
+                                    "3" -> Color(0xFFE8F5E8)
+                                    "4" -> Color(0xFFE3F2FD)
+                                    else -> Color(0xFFF3E5F5)
+                                },
+                                shape = CircleShape
+                            )
+                    )
+                }
             }
-
             if (extraCount > 0) {
                 Text(
                     text = "+$extraCount",
