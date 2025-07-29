@@ -134,11 +134,11 @@ object CalendarDataMapper {
         reminders.forEach { reminder ->
             Log.d("CalendarDataMapper", "Processing reminder: ${reminder.title} (${reminder.startDate} ~ ${reminder.endDate})")
             val opportunity = mapReminderToOpportunity(reminder)
-            // 시작일부터 종료일까지 각 날짜에 추가
+            // 시작일부터 종료일까지 각 날짜에 추가 (동일한 ID로 모든 날짜에 표시)
             var currentDate = reminder.startDate
             while (!currentDate.isAfter(reminder.endDate)) {
                 allOpportunities.add(opportunity.copy(
-                    id = "${opportunity.id}_${currentDate}",
+                    id = opportunity.id, // 날짜별로 다른 ID가 아닌 동일한 ID 사용
                     date = currentDate
                 ))
                 currentDate = currentDate.plusDays(1)
@@ -161,18 +161,25 @@ object CalendarDataMapper {
         }
         
         Log.d("CalendarDataMapper", "Total opportunities created: ${allOpportunities.size}")
+        allOpportunities.forEachIndexed { index, opp ->
+            Log.d("CalendarDataMapper", "[$index] ID: ${opp.id}, Title: ${opp.title}, Date: ${opp.date}")
+        }
         
         // 날짜별로 그룹화
         val dailyOpportunities = allOpportunities
             .groupBy { it.date }
             .map { (date, opportunities) ->
+                Log.d("CalendarDataMapper", "Grouping for date $date: ${opportunities.size} opportunities")
+                opportunities.forEachIndexed { idx, opp ->
+                    Log.d("CalendarDataMapper", "  [$idx] ID: ${opp.id}, Title: ${opp.title}")
+                }
                 DailyMarketingOpportunities(date, opportunities)
             }
             .sortedBy { it.date }
             
         Log.d("CalendarDataMapper", "Daily opportunities groups: ${dailyOpportunities.size}")
         dailyOpportunities.forEach { daily ->
-            Log.d("CalendarDataMapper", "Date: ${daily.date}, Opportunities: ${daily.opportunities.size}")
+            Log.d("CalendarDataMapper", "Final - Date: ${daily.date}, Opportunities: ${daily.opportunities.size}")
         }
         
         return dailyOpportunities
