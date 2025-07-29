@@ -4,18 +4,22 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -156,21 +160,48 @@ fun ReminderScreen(
                     }
                 }
             }
-
-            if (isSidebarOpen || animatedOffset > 0f) {
-                SidebarComponent(
-                    isOpen = isSidebarOpen,
-                    animatedOffset = animatedOffset + dragOffset,
-                    onClose = {
-                        isSidebarOpen = false
-                        dragOffset = 0f
-                    },
-                    navController = navController,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
         }
+        if (isSidebarOpen) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                            isSidebarOpen = false
+                            dragOffset = 0f
+                        }
+                    }
+                    .zIndex(0.5f)
+            )
+        }
+            //사이드 바
+            if (isSidebarOpen || animatedOffset > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(280.dp)
+                        .graphicsLayer {
+                            translationX = animatedOffset + dragOffset - sidebarWidth
+                        }
+                        .zIndex(1f)
+                ) {
+                        SidebarComponent(
+                            isOpen = isSidebarOpen,
+                            animatedOffset = animatedOffset + dragOffset,
+                            onClose = {
+                                isSidebarOpen = false
+                                dragOffset = 0f
+                            },
+                            navController = navController,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
     }
+
+
     @RequiresApi(Build.VERSION_CODES.O)
     @Preview(showBackground = true)
     @Composable
@@ -178,4 +209,3 @@ fun ReminderScreen(
         val navController = rememberNavController()
         ReminderScreen(navController = navController)
     }
-}
