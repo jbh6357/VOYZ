@@ -6,7 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.voyz.presentation.fragment.AlarmScreen
 import com.voyz.presentation.fragment.LoginScreen
-import com.voyz.presentation.fragment.SignUpScreen
+import com.voyz.presentation.fragment.signup.SignUpScreen
 import com.voyz.presentation.screen.main.MainScreen
 import com.voyz.presentation.fragment.IdPwFindScreen
 import com.voyz.presentation.fragment.ReminderScreen
@@ -26,9 +26,9 @@ fun NavGraph(navController: NavHostController) {
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(
-                onLoginClick = { id, pw ->
-                    if (id == "ad" && pw == "ad") {
-                        navController.navigate("main")
+                onLoginSuccess = {
+                    navController.navigate("main") {
+                        popUpTo("login") { inclusive = true }
                     }
                 },
                 onSignupClick = {
@@ -39,7 +39,12 @@ fun NavGraph(navController: NavHostController) {
                 }
             )
         }
-        composable("signup") { SignUpScreen() }
+        composable("signup") { 
+            SignUpScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onSignUpComplete = { navController.navigate("login") }
+            ) 
+        }
         composable("find") { IdPwFindScreen() }
         composable("main") {
             MainScreen(navController = navController)
