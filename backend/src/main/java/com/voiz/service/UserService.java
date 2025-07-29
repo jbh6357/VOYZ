@@ -50,13 +50,22 @@ public class UserService {
             return false;
         }
 
+        // 1. 하이픈 제거
+        String rawPhone = registrationDto.getUserPhone();
+        String cleanedPhone = rawPhone.replaceAll("-", "");
+        
+        // 2. 숫자만으로 구성되어 있고 길이가 11이 아니면 실패
+        if (!cleanedPhone.matches("\\d{11}")) {
+            return false;
+        }
+        
         Users users = new Users();
         users.setUserId(registrationDto.getUserId());
         users.setUserPw(passwordEncoder.encode(registrationDto.getUserPw()));
 
         users.setUserName(registrationDto.getUserName());
         users.setStoreName(registrationDto.getStoreName());
-        users.setUserPhone(registrationDto.getUserPhone());
+        users.setUserPhone(cleanedPhone);
         users.setStoreCategory(registrationDto.getStoreCategory());
         users.setStoreAddress(registrationDto.getStoreAddress());
 
