@@ -13,6 +13,4 @@ public class UserRegistrationDto {
     private String storeName;
     private String storeCategory;
     private String storeAddress;
-    private String role;
-    private LocalDateTime createdAt;
 } 
