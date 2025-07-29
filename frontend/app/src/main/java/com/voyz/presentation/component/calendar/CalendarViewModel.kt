@@ -4,10 +4,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import android.util.Log
+import androidx.lifecycle.viewModelScope
+import com.voyz.datas.model.dto.DaySuggestionDto
+import com.voyz.datas.model.dto.MarketingDto
+import com.voyz.datas.model.DailyMarketingOpportunities
+import com.voyz.datas.repository.CalendarRepository
+import com.voyz.datas.mapper.CalendarDataMapper
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
 
 class CalendarViewModel : ViewModel() {
+    
+    private val calendarRepository = CalendarRepository()
     
     var selectedDate by mutableStateOf<LocalDate?>(null)
         private set
@@ -15,17 +25,85 @@ class CalendarViewModel : ViewModel() {
     var currentMonth by mutableStateOf(YearMonth.now())
         private set
         
-    var events by mutableStateOf<Map<LocalDate, List<CalendarEvent>>>(
-        // 테스트용 이벤트 데이터
-        mapOf(
-            LocalDate.now().withDayOfMonth(5) to listOf(CalendarEvent("1", "회의")),
-            LocalDate.now().withDayOfMonth(7) to listOf(CalendarEvent("2", "약속")),
-            LocalDate.now().withDayOfMonth(14) to listOf(CalendarEvent("3", "생일")),
-            LocalDate.now().withDayOfMonth(21) to listOf(CalendarEvent("4", "병원")),
-            LocalDate.now().withDayOfMonth(26) to listOf(CalendarEvent("5", "여행"))
-        )
-    )
+    var dailyOpportunities by mutableStateOf<Map<LocalDate, DailyMarketingOpportunities>>(emptyMap())
         private set
+        
+    var isLoading by mutableStateOf(false)
+        private set
+    
+    var reminders by mutableStateOf<List<MarketingDto>>(emptyList())
+        private set
+        
+    var daySuggestions by mutableStateOf<List<DaySuggestionDto>>(emptyList())
+        private set
+    
+    // 캐싱을 위한 변수들
+    private var cachedUserId: String? = null
+    private var cachedMonth: YearMonth? = null
+    private var lastApiCallTime: Long = 0L
+
+    /**
+     * 캘린더 데이터 로딩 (리마인더 + 특일제안)
+     */
+    fun loadCalendarData(userId: String) {
+        Log.d("CalendarViewModel", "loadCalendarData called with userId: $userId, year: ${currentMonth.year}, month: ${currentMonth.monthValue}")
+        Log.d("CalendarViewModel", "Current real date: ${LocalDate.now()}, currentMonth in ViewModel: $currentMonth")
+        
+        // 캐싱 체크: 동일한 사용자와 월, 그리고 5분 이내인 경우 API 호출 스킵
+        val currentTime = System.currentTimeMillis()
+        val cacheValidTime = 5 * 60 * 1000L // 5분
+        
+        if (cachedUserId == userId && 
+            cachedMonth == currentMonth && 
+            (currentTime - lastApiCallTime) < cacheValidTime &&
+            dailyOpportunities.isNotEmpty()) {
+            Log.d("CalendarViewModel", "Using cached data - skipping API call")
+            return
+        }
+        
+        viewModelScope.launch {
+            isLoading = true
+            try {
+                val (remindersData, daySuggestionsData) = calendarRepository.getCalendarData(
+                    userId = userId,
+                    year = currentMonth.year,
+                    month = currentMonth.monthValue
+                )
+                
+                Log.d("CalendarViewModel", "API Response - Reminders: ${remindersData.size}, DaySuggestions: ${daySuggestionsData.size}")
+                
+                reminders = remindersData
+                daySuggestions = daySuggestionsData
+                
+                // 데이터를 기존 MarketingOpportunity 형태로 변환
+                updateOpportunitiesMap()
+                
+                // 캐시 정보 업데이트
+                cachedUserId = userId
+                cachedMonth = currentMonth
+                lastApiCallTime = currentTime
+                
+                Log.d("CalendarViewModel", "Final dailyOpportunities size: ${dailyOpportunities.size}")
+                
+            } catch (e: Exception) {
+                // 에러 처리 (로그 출력 등)
+                Log.e("CalendarViewModel", "Error loading calendar data", e)
+                reminders = emptyList()
+                daySuggestions = emptyList()
+                dailyOpportunities = emptyMap()
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+    
+    /**
+     * 리마인더와 특일제안 데이터를 MarketingOpportunity로 변환하여 맵 업데이트
+     */
+    private fun updateOpportunitiesMap() {
+        val opportunitiesList = CalendarDataMapper.mapToDailyOpportunities(reminders, daySuggestions)
+        dailyOpportunities = opportunitiesList.associateBy { it.date }
+    }
 
     fun selectDate(date: LocalDate) {
         selectedDate = date
@@ -35,45 +113,52 @@ class CalendarViewModel : ViewModel() {
         selectedDate = null
     }
     
-    fun goToNextMonth() {
+    /**
+     * 캐시 무효화
+     */
+    private fun invalidateCache() {
+        Log.d("CalendarViewModel", "Cache invalidated")
+        cachedUserId = null
+        cachedMonth = null
+        lastApiCallTime = 0L
+    }
+
+    fun goToNextMonth(userId: String) {
         currentMonth = currentMonth.plusMonths(1)
+        invalidateCache() // 월 변경 시 캐시 무효화
+        loadCalendarData(userId)
     }
     
-    fun goToPreviousMonth() {
+    fun goToPreviousMonth(userId: String) {
         currentMonth = currentMonth.minusMonths(1)
+        invalidateCache() // 월 변경 시 캐시 무효화
+        loadCalendarData(userId)
     }
     
-    fun goToNextMonthWithDirection(): Pair<YearMonth, Boolean> {
+    fun goToNextMonthWithDirection(userId: String): Pair<YearMonth, Boolean> {
         val newMonth = currentMonth.plusMonths(1)
         currentMonth = newMonth
+        invalidateCache() // 월 변경 시 캐시 무효화
+        loadCalendarData(userId)
         return newMonth to true // true = 다음 달로 이동
     }
     
-    fun goToPreviousMonthWithDirection(): Pair<YearMonth, Boolean> {
+    fun goToPreviousMonthWithDirection(userId: String): Pair<YearMonth, Boolean> {
         val newMonth = currentMonth.minusMonths(1)
         currentMonth = newMonth
+        invalidateCache() // 월 변경 시 캐시 무효화
+        loadCalendarData(userId)
         return newMonth to false // false = 이전 달로 이동
     }
     
-    fun goToMonth(yearMonth: YearMonth) {
+    fun goToMonth(yearMonth: YearMonth, userId: String) {
         currentMonth = yearMonth
+        invalidateCache() // 월 변경 시 캐시 무효화
+        loadCalendarData(userId)
     }
     
-    fun addEvent(date: LocalDate, event: CalendarEvent) {
-        val currentEvents = events[date] ?: emptyList()
-        events = events.toMutableMap().apply {
-            put(date, currentEvents + event)
-        }
-    }
-    
-    fun getEventsForDate(date: LocalDate): List<CalendarEvent> {
-        return events[date] ?: emptyList()
+    fun getOpportunitiesForDate(date: LocalDate): DailyMarketingOpportunities? {
+        return dailyOpportunities[date]
     }
 }
 
-data class CalendarEvent(
-    val id: String,
-    val title: String,
-    val description: String? = null,
-    val time: String? = null
-)

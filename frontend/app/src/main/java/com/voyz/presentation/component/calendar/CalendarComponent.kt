@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -45,9 +46,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import com.voyz.datas.datastore.UserPreferencesManager
 import com.voyz.datas.model.MarketingOpportunity
-import com.voyz.datas.repository.MarketingOpportunityRepository
+import com.voyz.datas.model.Priority
 import com.voyz.ui.theme.MarketingColors
 import com.voyz.ui.theme.getMarketingCategoryColors
 import java.time.LocalDate
@@ -61,14 +67,33 @@ fun CalendarComponent(
     viewModel: CalendarViewModel = viewModel(),
     onDayClick: (LocalDate, List<MarketingOpportunity>) -> Unit = { _, _ -> }
 ) {
+    val context = LocalContext.current
+    val userPreferencesManager = remember { UserPreferencesManager(context) }
+    val userId = userPreferencesManager.userId.collectAsState(initial = null)
+    val isLoggedIn = userPreferencesManager.isLoggedIn.collectAsState(initial = false)
+    
     val currentMonth = viewModel.currentMonth
     val selectedDate = viewModel.selectedDate
+    val dailyOpportunities = viewModel.dailyOpportunities
+    val isLoading = viewModel.isLoading
     var totalDrag by remember { mutableStateOf(0f) }
     
-    // 마케팅 기회 데이터 가져오기
-    val marketingOpportunities = remember {
-        MarketingOpportunityRepository.getDailyOpportunities()
-            .associateBy { it.date }
+    // 사용자 ID가 있으면 캘린더 데이터 로딩
+    LaunchedEffect(userId.value, isLoggedIn.value, currentMonth) {
+        Log.d("CalendarComponent", "LaunchedEffect triggered")
+        Log.d("CalendarComponent", "- userId: ${userId.value}")
+        Log.d("CalendarComponent", "- isLoggedIn: ${isLoggedIn.value}")
+        Log.d("CalendarComponent", "- currentMonth: $currentMonth")
+        Log.d("CalendarComponent", "- Current system date: ${java.time.LocalDate.now()}")
+        
+        if (isLoggedIn.value && userId.value != null) {
+            val id = userId.value!!
+            Log.d("CalendarComponent", "User is logged in. Loading calendar data for user: $id")
+            viewModel.loadCalendarData(id)
+        } else {
+            Log.w("CalendarComponent", "User not logged in or userId is null. Skipping data load.")
+            Log.w("CalendarComponent", "- isLoggedIn: ${isLoggedIn.value}, userId: ${userId.value}")
+        }
     }
 
     Column(
@@ -83,10 +108,12 @@ fun CalendarComponent(
                     },
                     onDragEnd = { 
                         if (abs(totalDrag) > 100) {
-                            if (totalDrag > 0) {
-                                viewModel.goToPreviousMonth()
-                            } else {
-                                viewModel.goToNextMonth()
+                            userId.value?.let { id ->
+                                if (totalDrag > 0) {
+                                    viewModel.goToPreviousMonth(id)
+                                } else {
+                                    viewModel.goToNextMonth(id)
+                                }
                             }
                         }
                         totalDrag = 0f
@@ -125,12 +152,12 @@ fun CalendarComponent(
             MarketingCalendarGrid(
                 yearMonth = animatedCurrentMonth,
                 selectedDate = selectedDate,
-                marketingOpportunities = marketingOpportunities,
+                marketingOpportunities = dailyOpportunities,
                 onDateClick = { date ->
-                    // 다른 달 날짜도 클릭 가능하게 변경
-                    val opportunities = marketingOpportunities[date]?.opportunities ?: emptyList()
-                    if (opportunities.isNotEmpty()) {
-                        onDayClick(date, opportunities)
+                    // 마케팅 기회가 있는 날짜 클릭 시 처리
+                    val dailyOpps = dailyOpportunities[date]
+                    if (dailyOpps != null && dailyOpps.opportunities.isNotEmpty()) {
+                        onDayClick(date, dailyOpps.opportunities)
                     }
                     if (date == selectedDate) {
                         viewModel.clearSelection()
@@ -263,7 +290,7 @@ private fun MarketingCalendarGrid(
                 isCurrentMonth = calendarDate.isCurrentMonth,
                 isSelected = selectedDate == calendarDate.date,
                 dailyOpportunities = marketingOpportunities[calendarDate.date],
-                onClick = { onDateClick(calendarDate.date) } // isCurrentMonth 조건 제거
+                onClick = { onDateClick(calendarDate.date) }
             )
         }
     }
@@ -350,45 +377,60 @@ private fun MarketingCalendarDayCell(
             }
         }
         
-        // 마케팅 기회 영역 - 확장된 크기
+        // 마케팅 기회 영역 - 기존 디자인 복제
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp), // 기회 영역 높이 대폭 증가
+                .height(75.dp), // 2줄 텍스트를 위해 높이 증가 70 -> 75
             verticalArrangement = Arrangement.Top
         ) {
             dailyOpportunities?.let { daily ->                
                 // 최대 2개 기회만 표시
                 daily.opportunities.take(2).forEach { opportunity ->
-                    val backgroundColor = if (opportunity.priority == com.voyz.datas.model.Priority.HIGH) {
-                        MarketingColors.HighPriority.copy(alpha = 0.3f) // 높은 우선순위는 빨간색 배경
+                    // 새로운 색상 로직 적용
+                    val backgroundColor = if (opportunity.title.startsWith("[리마인더]")) {
+                        // 리마인더 타입별 색상
+                        when (opportunity.priority) {
+                            Priority.HIGH -> Color(0xFFFF4444).copy(alpha = 0.4f) // 마케팅 -> 빨간색
+                            Priority.MEDIUM -> Color(0xFF2196F3).copy(alpha = 0.4f) // 일정 -> 파란색
+                            else -> Color(0xFF2196F3).copy(alpha = 0.4f) // 기본값 파란색
+                        }
                     } else {
-                        getMarketingCategoryColors(opportunity.category).second
+                        // 특일 제안 색상
+                        when (opportunity.priority) {
+                            Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f) // 제안 있음 -> 노란색
+                            Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 제안 없음 -> 회색
+                            else -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 기본값 회색
+                        }
                     }
                     
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(32.dp) // 높이 증가
-                            .padding(vertical = 2.dp)
+                            .wrapContentHeight() // 텍스트 내용에 맞게 높이 자동 조정
+                            .padding(vertical = 1.dp) 
                             .background(
                                 color = backgroundColor,
                                 shape = RoundedCornerShape(4.dp)
                             )
-                            .padding(horizontal = 4.dp, vertical = 3.dp)
-                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f), // 다른 달은 연하게
-                        contentAlignment = Alignment.CenterStart // 가운데 정렬
+                            .padding(horizontal = 4.dp, vertical = 3.dp) // 적절한 패딩으로 복원
+                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f),
+                        contentAlignment = Alignment.TopStart
                     ) {
                         Text(
-                            text = opportunity.title,
+                            text = if (opportunity.title.startsWith("[리마인더]")) {
+                                opportunity.title.removePrefix("[리마인더] ")
+                            } else {
+                                opportunity.title
+                            },
                             color = MarketingColors.TextPrimary,
                             style = MaterialTheme.typography.labelSmall,
-                            fontSize = 9.sp,
-                            minLines = 2, // 최소 2줄 표시
-                            maxLines = 2,
+                            fontSize = 10.sp,
+                            maxLines = 2, // 최대 2줄까지 표시
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            lineHeight = 10.sp, // 줄 간격 조정
-                            modifier = Modifier.fillMaxWidth() // 전체 너비 사용
+                            lineHeight = 12.sp, // 2줄 표시를 위해 적절한 줄 간격
+                            textAlign = TextAlign.Start, // 왼쪽 정렬
+                            modifier = Modifier.fillMaxWidth() // 박스가 동적 높이이므로 fillMaxHeight 제거
                         )
                     }
                 }
@@ -399,10 +441,10 @@ private fun MarketingCalendarDayCell(
                         text = "+${daily.totalCount - 2}",
                         color = MarketingColors.TextSecondary,
                         style = MaterialTheme.typography.labelSmall,
-                        fontSize = 9.sp,
+                        fontSize = 8.sp, // 9 -> 8로 감소 (카운터는 작게)
                         modifier = Modifier
-                            .padding(top = 2.dp, start = 4.dp)
-                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f) // 다른 달은 연하게
+                            .padding(top = 1.dp, start = 4.dp) // top padding 2 -> 1로 감소
+                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f)
                     )
                 }
             }
