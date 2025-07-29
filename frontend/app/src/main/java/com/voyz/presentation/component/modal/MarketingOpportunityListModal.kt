@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.animation.*
@@ -29,6 +30,7 @@ import kotlin.math.abs
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import com.voyz.datas.model.MarketingOpportunity
+import com.voyz.datas.model.Priority
 import com.voyz.ui.theme.MarketingColors
 import com.voyz.ui.theme.getMarketingCategoryColors
 import com.voyz.ui.theme.getPriorityColor
@@ -121,7 +123,7 @@ fun MarketingOpportunityListModal(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.fillMaxWidth()) {
@@ -256,7 +258,11 @@ fun MarketingOpportunityListModal(
                             FloatingActionButton(
                                 onClick = { isFabExpanded = !isFabExpanded },
                                 containerColor = MarketingColors.Primary,
-                                contentColor = Color.White
+                                contentColor = Color.White,
+                                elevation = FloatingActionButtonDefaults.elevation(
+                                    defaultElevation = 0.dp,
+                                    pressedElevation = 0.dp
+                                )
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Add,
@@ -285,7 +291,7 @@ private fun FabMenuItem(
             colors = CardDefaults.cardColors(
                 containerColor = MarketingColors.Surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Text(
                 text = label,
@@ -298,7 +304,11 @@ private fun FabMenuItem(
         SmallFloatingActionButton(
             onClick = onClick,
             containerColor = MarketingColors.Primary,
-            contentColor = Color.White
+            contentColor = Color.White,
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = 0.dp,
+                pressedElevation = 0.dp
+            )
         ) {
             Icon(
                 imageVector = icon,
@@ -319,9 +329,23 @@ private fun MarketingOpportunityItem(
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = getMarketingCategoryColors(opportunity.category).second
+            containerColor = if (opportunity.title.startsWith("[리마인더]")) {
+                // 리마인더 타입별 색상
+                when (opportunity.priority) {
+                    Priority.HIGH -> Color(0xFFFF4444).copy(alpha = 0.4f) // 마케팅 -> 빨간색
+                    Priority.MEDIUM -> Color(0xFF2196F3).copy(alpha = 0.4f) // 일정 -> 파란색
+                    else -> Color(0xFF2196F3).copy(alpha = 0.4f) // 기본값 파란색
+                }
+            } else {
+                // 특일 제안 색상
+                when (opportunity.priority) {
+                    Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f) // 제안 있음 -> 노란색
+                    Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 제안 없음 -> 회색
+                    else -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 기본값 회색
+                }
+            }
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -357,7 +381,21 @@ private fun MarketingOpportunityItem(
                     Box(
                         modifier = Modifier
                             .background(
-                                color = getPriorityColor(opportunity.priority),
+                                color = if (opportunity.title.startsWith("[리마인더]")) {
+                                    // 리마인더 타입별 색상
+                                    when (opportunity.priority) {
+                                        Priority.HIGH -> Color(0xFFFF4444) // 마케팅 -> 빨간색
+                                        Priority.MEDIUM -> Color(0xFF2196F3) // 일정 -> 파란색
+                                        else -> Color(0xFF2196F3) // 기본값 파란색
+                                    }
+                                } else {
+                                    // 특일 제안 색상
+                                    when (opportunity.priority) {
+                                        Priority.MEDIUM -> Color(0xFFFFC107) // 제안 있음 -> 노란색
+                                        Priority.LOW -> Color(0xFF9E9E9E) // 제안 없음 -> 회색
+                                        else -> Color(0xFF9E9E9E) // 기본값 회색
+                                    }
+                                },
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -365,7 +403,13 @@ private fun MarketingOpportunityItem(
                         Text(
                             text = opportunity.priority.displayName,
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
+                            color = if (opportunity.priority == Priority.MEDIUM && !opportunity.title.startsWith("[리마인더]")) {
+                                // 노란색 배경(제안 있음)에는 검은색 텍스트
+                                Color.Black
+                            } else {
+                                // 나머지는 흰색 텍스트
+                                Color.White
+                            },
                             fontWeight = FontWeight.Bold
                         )
                     }
