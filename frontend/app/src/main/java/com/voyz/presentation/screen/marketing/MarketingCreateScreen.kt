@@ -1,4 +1,4 @@
-package com.voyz.presentation.fragment
+package com.voyz.presentation.screen.marketing
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

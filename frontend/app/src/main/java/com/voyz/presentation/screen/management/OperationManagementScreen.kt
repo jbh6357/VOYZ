@@ -1,4 +1,4 @@
-package com.voyz.presentation.fragment
+package com.voyz.presentation.screen.management
 
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -21,7 +21,7 @@ import java.time.LocalDate
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
+fun OperationManagementScreen(
     navController: NavController,
     onSearchClick: () -> Unit = {},
     onAlarmClick: () -> Unit = {},
@@ -74,7 +74,7 @@ fun SettingsScreen(
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("설정 페이지입니다.")
+                Text("운영 관리 페이지입니다.")
             }
         }
 

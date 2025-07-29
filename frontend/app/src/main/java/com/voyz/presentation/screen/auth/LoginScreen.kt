@@ -1,4 +1,4 @@
-package com.voyz.presentation.fragment
+package com.voyz.presentation.screen.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape

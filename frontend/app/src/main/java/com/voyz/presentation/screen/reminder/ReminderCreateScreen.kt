@@ -1,4 +1,4 @@
-package com.voyz.presentation.fragment
+package com.voyz.presentation.screen.reminder
 
 import android.content.Context
 import android.os.Build
@@ -48,20 +48,32 @@ fun ReminderCreateScreen(
     var startDate by remember { 
         mutableStateOf(
             if (initialDate.isNotEmpty()) {
-                android.util.Log.d("ReminderCreate", "Using initialDate: $initialDate")
+                android.util.Log.d("ReminderCreate", "Using initialDate: '$initialDate'")
                 try { 
-                    val parsed = LocalDate.parse(initialDate)
+                    // ISO_LOCAL_DATE 형식으로 파싱 (YYYY-MM-DD)
+                    val parsed = LocalDate.parse(initialDate, DateTimeFormatter.ISO_LOCAL_DATE)
                     android.util.Log.d("ReminderCreate", "Parsed date: $parsed")
+                    android.util.Log.d("ReminderCreate", "Parsed year: ${parsed.year}, month: ${parsed.monthValue}, day: ${parsed.dayOfMonth}")
+                    
                     // 2015년처럼 이상한 연도면 현재 날짜로 대체
                     if (parsed.year < 2020 || parsed.year > 2030) {
                         android.util.Log.w("ReminderCreate", "Invalid year ${parsed.year}, using current date")
                         LocalDate.now()
                     } else {
+                        android.util.Log.d("ReminderCreate", "Using parsed date: $parsed")
                         parsed
                     }
                 } catch (e: Exception) { 
-                    android.util.Log.e("ReminderCreate", "Failed to parse initialDate: $initialDate", e)
-                    LocalDate.now()
+                    android.util.Log.e("ReminderCreate", "Failed to parse initialDate: '$initialDate'", e)
+                    // 기본 파싱도 시도
+                    try {
+                        val fallbackParsed = LocalDate.parse(initialDate)
+                        android.util.Log.d("ReminderCreate", "Fallback parsing successful: $fallbackParsed")
+                        fallbackParsed
+                    } catch (e2: Exception) {
+                        android.util.Log.e("ReminderCreate", "Fallback parsing also failed", e2)
+                        LocalDate.now()
+                    }
                 }
             } else {
                 android.util.Log.d("ReminderCreate", "Using LocalDate.now(): ${LocalDate.now()}")
@@ -322,7 +334,7 @@ fun ReminderCreateScreen(
                             contentColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("📅 오늘 날짜로 설정")
+                        Text("오늘 날짜로 설정")
                     }
                 }
             }

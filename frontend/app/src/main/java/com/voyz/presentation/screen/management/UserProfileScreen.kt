@@ -1,4 +1,4 @@
-package com.voyz.presentation.fragment
+package com.voyz.presentation.screen.management
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
