@@ -28,6 +28,10 @@ import com.voyz.presentation.component.reminder.ReminderListBox
 import com.voyz.presentation.component.sidebar.SidebarComponent
 import com.voyz.presentation.component.topbar.CommonTopBar
 import java.time.LocalDate
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -157,7 +161,33 @@ fun ReminderScreen(
                 }
             }
 
-            if (isSidebarOpen || animatedOffset > 0f) {
+        }
+
+        if (isSidebarOpen) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                            isSidebarOpen = false
+                            dragOffset = 0f
+                        }
+                    }
+                    .zIndex(0.5f)
+            )
+        }
+
+        if (isSidebarOpen || animatedOffset > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(280.dp)
+                    .graphicsLayer {
+                        translationX = animatedOffset + dragOffset - sidebarWidth
+                    }
+                    .zIndex(1f)
+            ) {
                 SidebarComponent(
                     isOpen = isSidebarOpen,
                     animatedOffset = animatedOffset + dragOffset,
