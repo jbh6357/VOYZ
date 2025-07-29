@@ -46,7 +46,7 @@ fun MarketingOpportunityListModal(
     onOpportunityClick: (MarketingOpportunity) -> Unit,
     onFabClick: () -> Unit = {},
     onMarketingCreateClick: () -> Unit = {},
-    onReminderCreateClick: () -> Unit = {},
+    onReminderCreateClick: (LocalDate) -> Unit = {},
     onDateChange: (LocalDate) -> Unit = {}
 ) {
     var isFabExpanded by remember { mutableStateOf(false) }
@@ -183,9 +183,26 @@ fun MarketingOpportunityListModal(
                                 
                                 Spacer(modifier = Modifier.height(12.dp))
                                 
-                                // 마케팅 기회 개수
+                                // 일정 개수 (리마인더 + 제안 구분)
+                                android.util.Log.d("Modal", "=== MarketingOpportunityListModal ===")
+                                android.util.Log.d("Modal", "Date: ${animatedDate}, Total opportunities: ${opportunities.size}")
+                                opportunities.forEachIndexed { index, opp ->
+                                    android.util.Log.d("Modal", "[$index] ID: ${opp.id}, Title: ${opp.title}")
+                                }
+                                val reminderCount = opportunities.count { it.title.startsWith("[리마인더]") }
+                                val suggestionCount = opportunities.size - reminderCount
+                                android.util.Log.d("Modal", "Reminder count: $reminderCount, Suggestion count: $suggestionCount")
+                                android.util.Log.d("Modal", "=== End MarketingOpportunityListModal ===")
+                                
                                 Text(
-                                    text = "${opportunities.size}개의 마케팅 기회",
+                                    text = when {
+                                        reminderCount > 0 && suggestionCount > 0 -> 
+                                            "리마인더 ${reminderCount}개, 제안 ${suggestionCount}개"
+                                        reminderCount > 0 -> 
+                                            "${reminderCount}개의 리마인더"
+                                        else -> 
+                                            "${suggestionCount}개의 제안"
+                                    },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MarketingColors.Primary,
                                     fontWeight = FontWeight.Medium,
@@ -239,7 +256,7 @@ fun MarketingOpportunityListModal(
                                         label = "리마인더 생성",
                                         onClick = {
                                             isFabExpanded = false
-                                            onReminderCreateClick()
+                                            onReminderCreateClick(date)
                                         }
                                     )
                                     

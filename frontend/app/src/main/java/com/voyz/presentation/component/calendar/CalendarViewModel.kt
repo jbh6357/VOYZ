@@ -15,15 +15,27 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
 
-class CalendarViewModel : ViewModel() {
+class CalendarViewModel(
+    private val context: android.content.Context
+) : ViewModel() {
     
     private val calendarRepository = CalendarRepository()
+    private val calendarDataStore = com.voyz.datas.datastore.CalendarDataStore(context)
     
     var selectedDate by mutableStateOf<LocalDate?>(null)
         private set
     
     var currentMonth by mutableStateOf(YearMonth.now())
         private set
+        
+    init {
+        android.util.Log.d("CalendarViewModel", "=== CalendarViewModel Init ===")
+        android.util.Log.d("CalendarViewModel", "System time: ${java.time.LocalDateTime.now()}")
+        android.util.Log.d("CalendarViewModel", "YearMonth.now(): ${YearMonth.now()}")
+        android.util.Log.d("CalendarViewModel", "LocalDate.now(): ${java.time.LocalDate.now()}")
+        android.util.Log.d("CalendarViewModel", "currentMonth: $currentMonth")
+        android.util.Log.d("CalendarViewModel", "=== End CalendarViewModel Init ===")
+    }
         
     var dailyOpportunities by mutableStateOf<Map<LocalDate, DailyMarketingOpportunities>>(emptyMap())
         private set
@@ -103,6 +115,21 @@ class CalendarViewModel : ViewModel() {
     private fun updateOpportunitiesMap() {
         val opportunitiesList = CalendarDataMapper.mapToDailyOpportunities(reminders, daySuggestions)
         dailyOpportunities = opportunitiesList.associateBy { it.date }
+        
+        // DataStore에 캐시 저장
+        viewModelScope.launch {
+            try {
+                val allOpportunities = opportunitiesList.flatMap { it.opportunities }
+                val monthKey = "${currentMonth.year}-${String.format("%02d", currentMonth.monthValue)}"
+                
+                cachedUserId?.let { userId ->
+                    calendarDataStore.cacheOpportunities(userId, monthKey, allOpportunities)
+                    Log.d("CalendarViewModel", "Cached ${allOpportunities.size} opportunities for $monthKey")
+                }
+            } catch (e: Exception) {
+                Log.e("CalendarViewModel", "Failed to cache opportunities", e)
+            }
+        }
     }
 
     fun selectDate(date: LocalDate) {
@@ -114,9 +141,9 @@ class CalendarViewModel : ViewModel() {
     }
     
     /**
-     * 캐시 무효화
+     * 캐시 무효화 (외부에서 호출 가능)
      */
-    private fun invalidateCache() {
+    fun invalidateCache() {
         Log.d("CalendarViewModel", "Cache invalidated")
         cachedUserId = null
         cachedMonth = null

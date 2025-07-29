@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.voyz.datas.model.MarketingOpportunity
 import com.voyz.presentation.component.calendar.CalendarComponent
+import com.voyz.presentation.component.calendar.CalendarViewModel
 import com.voyz.presentation.component.fab.FloatingActionMenu
 import com.voyz.presentation.component.gesture.sidebarDragGesture
 import com.voyz.presentation.component.topbar.CommonTopBar
@@ -38,17 +39,16 @@ import java.time.LocalDate
 @Composable
 fun MainContent(
     state: MainScreenState,
+    calendarViewModel: CalendarViewModel,
     onSearchClick: () -> Unit,
     onAlarmClick: () -> Unit,
     onTodayClick: () -> Unit,
     onSidebarOpen: () -> Unit,
     onDragOffsetChange: (Float) -> Unit,
     onFabToggle: () -> Unit,
-    onDayClick: (LocalDate, List<MarketingOpportunity>) -> Unit,
+    onDateClick: (LocalDate, List<MarketingOpportunity>) -> Unit,
     onMarketingCreateClick: () -> Unit,
     onReminderCreateClick: () -> Unit,
-    today: LocalDate,
-    navController: NavController,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
@@ -72,7 +72,7 @@ fun MainContent(
                 onSearchClick = onSearchClick,
                 onAlarmClick = onAlarmClick,
                 onTodayClick = onTodayClick,
-                today = today
+                today = LocalDate.now()
             )
         }
     ) { paddingValues ->
@@ -84,7 +84,8 @@ fun MainContent(
             contentAlignment = Alignment.Center
         ) {
             CalendarComponent(
-                onDayClick = onDayClick
+                viewModel = calendarViewModel,
+                onDateClick = onDateClick
             )
         }
     }
@@ -104,14 +105,8 @@ fun MainContent(
             FloatingActionMenu(
                 isExpanded = state.isFabExpanded,
                 onExpandedChange = { onFabToggle() },
-                onMarketingCreateClick = {
-                    navController.navigate("marketing_create")
-                    onMarketingCreateClick()
-                },
-                onReminderCreateClick = {
-                    navController.navigate("reminder_create")
-                    onReminderCreateClick()
-                }
+                onMarketingCreateClick = onMarketingCreateClick,
+                onReminderCreateClick = onReminderCreateClick
             )
         }
     }
