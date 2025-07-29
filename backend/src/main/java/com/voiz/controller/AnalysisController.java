@@ -1,6 +1,9 @@
 package com.voiz.controller;
 
 import com.voiz.service.FastApiClient;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +12,7 @@ import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/predict")
+@Tag(name = "analysis", description = "데이터분석 API")
 public class AnalysisController {
     
     @Autowired

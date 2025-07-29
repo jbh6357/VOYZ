@@ -70,6 +70,7 @@ storybook-static/
 
 .metadata/
 /.metadata/
+backend/.metadata/.log
 
 # Maven
 target/
@@ -218,7 +219,6 @@ datasets/
 *.csv
 *.tsv
 *.json
-*.xml
 *.parquet
 *.hdf
 *.h5
@@ -491,3 +491,4 @@ config/secrets.yml
 # data/raw/
 # experiments/
 # notebooks/checkpoint/
+.claude

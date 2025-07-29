@@ -1,9 +1,10 @@
 package com.voiz.service;
+
 import com.voiz.dto.LoginRequestDto;
 import com.voiz.dto.LoginResponseDto;
 import com.voiz.dto.UserRegistrationDto;
-import com.voiz.mapper.UserRepository;
-import com.voiz.vo.User;
+import com.voiz.mapper.UsersRepository;
+import com.voiz.vo.Users;
 import com.voiz.util.PasswordEncoder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -13,26 +14,30 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Transactional
 public class UserService {
-    
+
     @Autowired
-    private UserRepository userRepository;
-    
+    private UsersRepository usersRepository;
+
     @Autowired
     private PasswordEncoder passwordEncoder;
-    
+
     @PersistenceContext
     private EntityManager entityManager;
-    
-    private boolean existsByUsernameNative(String username) {
+
+    private boolean existsByUserIdNative(String userId) {
         try {
-            String sql = "SELECT COUNT(*) FROM USERS WHERE USERNAME = ?";
+            String sql = "SELECT COUNT(*) FROM VOYZ_USERS WHERE USER_ID = ?";
             Query query = entityManager.createNativeQuery(sql);
-            query.setParameter(1, username);
+            query.setParameter(1, userId);
             BigDecimal count = (BigDecimal) query.getSingleResult();
             return count.intValue() > 0;
         } catch (Exception e) {
@@ -40,68 +45,63 @@ public class UserService {
         }
     }
 
-    private boolean existsByEmailNative(String email) {
-        try {
-            String sql = "SELECT COUNT(*) FROM USERS WHERE EMAIL = ?";
-            Query query = entityManager.createNativeQuery(sql);
-            query.setParameter(1, email);
-            BigDecimal count = (BigDecimal) query.getSingleResult();
-            return count.intValue() > 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-    
-    public LoginResponseDto login(LoginRequestDto loginRequest) {
-        Optional<User> userOpt = userRepository.findByUsername(loginRequest.getUsername());
-        
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-                // 실제 프로젝트에서는 JWT 토큰을 생성해야 합니다
-                String token = "dummy-token-" + System.currentTimeMillis();
-                
-                return new LoginResponseDto(
-                    token,
-                    user.getUsername(),
-                    user.getName(),
-                    user.getRole(),
-                    "로그인 성공"
-                );
-            } else {
-                return new LoginResponseDto(null, null, null, null, "비밀번호가 일치하지 않습니다.");
-            }
-        } else {
-            return new LoginResponseDto(null, null, null, null, "사용자를 찾을 수 없습니다.");
-        }
-    }
-    
     public boolean registerUser(UserRegistrationDto registrationDto) {
-        if (existsByUsernameNative(registrationDto.getUsername())) {
+        if (existsByUserIdNative(registrationDto.getUserId())) {
+            return false;
+        }
+
+        // 1. 하이픈 제거
+        String rawPhone = registrationDto.getUserPhone();
+        String cleanedPhone = rawPhone.replaceAll("-", "");
+        
+        // 2. 숫자만으로 구성되어 있고 길이가 11이 아니면 실패
+        if (!cleanedPhone.matches("\\d{11}")) {
             return false;
         }
         
-        if (registrationDto.getEmail() != null && existsByEmailNative(registrationDto.getEmail())) {
-            return false;
-        }
-        
-        User user = new User();
-        user.setUsername(registrationDto.getUsername());
-        user.setPassword(passwordEncoder.encode(registrationDto.getPassword()));
-        user.setEmail(registrationDto.getEmail());
-        user.setName(registrationDto.getName());
-        user.setRole(registrationDto.getRole() != null ? registrationDto.getRole() : "USER");
-        
+        Users users = new Users();
+        users.setUserId(registrationDto.getUserId());
+        users.setUserPw(passwordEncoder.encode(registrationDto.getUserPw()));
+
+        users.setUserName(registrationDto.getUserName());
+        users.setStoreName(registrationDto.getStoreName());
+        users.setUserPhone(cleanedPhone);
+        users.setStoreCategory(registrationDto.getStoreCategory());
+        users.setStoreAddress(registrationDto.getStoreAddress());
+
         try {
-            userRepository.save(user);
+            usersRepository.save(users);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
-    
-    public Optional<User> getUserByUsername(String username) {
-        return userRepository.findByUsername(username);
+
+    public Optional<Users> getUserByUsername(String username) {
+        return usersRepository.findByUserName(username);
     }
+
+    public LoginResponseDto login(LoginRequestDto loginDto) {
+
+        Optional<Users> optionalUser = usersRepository.findByUserId(loginDto.getUserId());
+
+        if (optionalUser.isEmpty()
+                || !passwordEncoder.matches(loginDto.getUserPw(), optionalUser.get().getUserPw())) {
+            throw new RuntimeException("잘못된 로그인 정보");
+        }
+        
+        Users users = optionalUser.get();
+
+        LoginResponseDto loginResponseDto = new LoginResponseDto();
+        
+        loginResponseDto.setUserId(users.getUserId());
+        loginResponseDto.setStoreName(users.getStoreName());
+        loginResponseDto.setStoreCategory(users.getStoreCategory());
+        loginResponseDto.setUserName(users.getUserName());
+
+        return loginResponseDto;
+
+    }
+
 }
