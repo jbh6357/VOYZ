@@ -6,14 +6,21 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import java.time.LocalDate
 import java.time.YearMonth
+import androidx.compose.runtime.State
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 
 class ReminderCalendarViewModel : ViewModel() {
 
-    var selectedDate by mutableStateOf(LocalDate.now())
+    private val _selectedDate = MutableStateFlow(LocalDate.now())
+    val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
-    var currentMonth by mutableStateOf(YearMonth.now())
-        private set
+
+    private val _currentMonth = mutableStateOf(YearMonth.now())
+    val currentMonth: State<YearMonth> get() = _currentMonth
+
 
     var events by mutableStateOf<Map<LocalDate, List<ReminderCalendarEvent>>>(
         // 테스트용 이벤트 데이터
@@ -22,46 +29,47 @@ class ReminderCalendarViewModel : ViewModel() {
                 ReminderCalendarEvent("1", "회의"),
                 ReminderCalendarEvent("2", "회의1"),
                 ReminderCalendarEvent("3", "회의2"),
-                ReminderCalendarEvent("4", "회의3")
+                ReminderCalendarEvent("4", "회의3"),
+                ReminderCalendarEvent("5", "회의4")
             ),
-            LocalDate.now().withDayOfMonth(7) to listOf(ReminderCalendarEvent("5", "약속")),
-            LocalDate.now().withDayOfMonth(14) to listOf(ReminderCalendarEvent("6", "생일")),
-            LocalDate.now().withDayOfMonth(21) to listOf(ReminderCalendarEvent("7", "병원")),
-            LocalDate.now().withDayOfMonth(26) to listOf(ReminderCalendarEvent("8", "여행"))
+            LocalDate.now().withDayOfMonth(7) to listOf(ReminderCalendarEvent("6", "약속")),
+            LocalDate.now().withDayOfMonth(14) to listOf(ReminderCalendarEvent("7", "생일")),
+            LocalDate.now().withDayOfMonth(21) to listOf(ReminderCalendarEvent("8", "병원")),
+            LocalDate.now().withDayOfMonth(26) to listOf(ReminderCalendarEvent("9", "여행"))
         )
     )
         private set
 
     fun selectDate(date: LocalDate) {
-        selectedDate = date
+        _selectedDate.value = date
     }
 
     fun clearSelection() {
-        selectedDate = null
+        _selectedDate.value = LocalDate.now() // 또는 고정값
     }
 
     fun goToNextMonth() {
-        currentMonth = currentMonth.plusMonths(1)
+        _currentMonth.value = _currentMonth.value.plusMonths(1)
     }
 
     fun goToPreviousMonth() {
-        currentMonth = currentMonth.minusMonths(1)
+        _currentMonth.value = _currentMonth.value.minusMonths(1)
     }
 
     fun goToNextMonthWithDirection(): Pair<YearMonth, Boolean> {
-        val newMonth = currentMonth.plusMonths(1)
-        currentMonth = newMonth
+        val newMonth = currentMonth.value.plusMonths(1)
+        _currentMonth.value = newMonth
         return newMonth to true // true = 다음 달로 이동
     }
 
     fun goToPreviousMonthWithDirection(): Pair<YearMonth, Boolean> {
-        val newMonth = currentMonth.minusMonths(1)
-        currentMonth = newMonth
+        val newMonth = currentMonth.value.minusMonths(1)
+        _currentMonth.value = newMonth
         return newMonth to false // false = 이전 달로 이동
     }
 
     fun goToMonth(yearMonth: YearMonth) {
-        currentMonth = yearMonth
+        _currentMonth.value = yearMonth
     }
 
     fun addEvent(date: LocalDate, event: ReminderCalendarEvent) {
@@ -77,25 +85,27 @@ class ReminderCalendarViewModel : ViewModel() {
 
     fun goToToday() {
         val today = LocalDate.now()
-        selectedDate = today
-        currentMonth = YearMonth.from(today)
+        _selectedDate.value = today
+        _currentMonth.value = YearMonth.from(today)
     }
 
-    fun updateEventCheckStatus(event: ReminderCalendarEvent, isChecked: Boolean) {
-        val date = events.entries.find { it.value.contains(event) }?.key ?: return
-        val updatedEvents = events[date]?.map {
-            if (it.id == event.id) it.copy(isChecked = isChecked) else it
-        } ?: return
+    private val _reminderEvents = mutableStateOf<Map<LocalDate, List<ReminderCalendarEvent>>>(emptyMap())
+    val reminderEvents: State<Map<LocalDate, List<ReminderCalendarEvent>>> = _reminderEvents
 
-        events = events.toMutableMap().apply {
-            put(date, updatedEvents)
+    fun updateEventCheckStatus(eventId: String, isChecked: Boolean) {
+        events = events.mapValues { (_, eventList) ->
+            eventList.map { event ->
+                if (event.id == eventId) event.copy(isChecked = isChecked) else event
+            }
         }
     }
+
 }
 data class ReminderCalendarEvent(
     val id: String,
     val title: String,
     val description: String? = null,
     val time: String? = null,
-    var isChecked: Boolean = false
+    var isChecked: Boolean = false,
+    val originalIndex: Boolean = false
 )
