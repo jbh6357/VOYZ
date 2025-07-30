@@ -1,4 +1,4 @@
-package com.voyz.presentation.screen.reminder.signup.components
+package com.voyz.presentation.screen.auth.signup.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
