@@ -1,4 +1,4 @@
-package com.voyz.presentation.screen.reminder.signup
+package com.voyz.presentation.screen.auth.signup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
