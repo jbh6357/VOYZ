@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import java.time.LocalDate
 import java.time.YearMonth
+import androidx.compose.runtime.State
 
 
 class ReminderCalendarViewModel : ViewModel() {
@@ -22,12 +23,13 @@ class ReminderCalendarViewModel : ViewModel() {
                 ReminderCalendarEvent("1", "회의"),
                 ReminderCalendarEvent("2", "회의1"),
                 ReminderCalendarEvent("3", "회의2"),
-                ReminderCalendarEvent("4", "회의3")
+                ReminderCalendarEvent("4", "회의3"),
+                ReminderCalendarEvent("5", "회의4")
             ),
-            LocalDate.now().withDayOfMonth(7) to listOf(ReminderCalendarEvent("5", "약속")),
-            LocalDate.now().withDayOfMonth(14) to listOf(ReminderCalendarEvent("6", "생일")),
-            LocalDate.now().withDayOfMonth(21) to listOf(ReminderCalendarEvent("7", "병원")),
-            LocalDate.now().withDayOfMonth(26) to listOf(ReminderCalendarEvent("8", "여행"))
+            LocalDate.now().withDayOfMonth(7) to listOf(ReminderCalendarEvent("6", "약속")),
+            LocalDate.now().withDayOfMonth(14) to listOf(ReminderCalendarEvent("7", "생일")),
+            LocalDate.now().withDayOfMonth(21) to listOf(ReminderCalendarEvent("8", "병원")),
+            LocalDate.now().withDayOfMonth(26) to listOf(ReminderCalendarEvent("9", "여행"))
         )
     )
         private set
@@ -81,21 +83,23 @@ class ReminderCalendarViewModel : ViewModel() {
         currentMonth = YearMonth.from(today)
     }
 
-    fun updateEventCheckStatus(event: ReminderCalendarEvent, isChecked: Boolean) {
-        val date = events.entries.find { it.value.contains(event) }?.key ?: return
-        val updatedEvents = events[date]?.map {
-            if (it.id == event.id) it.copy(isChecked = isChecked) else it
-        } ?: return
+    private val _reminderEvents = mutableStateOf<Map<LocalDate, List<ReminderCalendarEvent>>>(emptyMap())
+    val reminderEvents: State<Map<LocalDate, List<ReminderCalendarEvent>>> = _reminderEvents
 
-        events = events.toMutableMap().apply {
-            put(date, updatedEvents)
+    fun updateEventCheckStatus(eventId: String, isChecked: Boolean) {
+        events = events.mapValues { (_, eventList) ->
+            eventList.map { event ->
+                if (event.id == eventId) event.copy(isChecked = isChecked) else event
+            }
         }
     }
+
 }
 data class ReminderCalendarEvent(
     val id: String,
     val title: String,
     val description: String? = null,
     val time: String? = null,
-    var isChecked: Boolean = false
+    var isChecked: Boolean = false,
+    val originalIndex: Boolean = false
 )

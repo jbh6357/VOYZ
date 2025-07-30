@@ -1,5 +1,8 @@
 package com.voyz.presentation.component.reminder
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,12 +19,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
@@ -32,6 +39,9 @@ import com.voyz.ui.theme.Gray900
 import java.time.LocalDate
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.voyz.presentation.component.reminder.ReminderCalendarEvent
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.key
+import androidx.compose.runtime.setValue
 
 
 @Composable
@@ -41,11 +51,21 @@ fun ReminderListBox(
     viewModel: ReminderCalendarViewModel = viewModel(),
     onEventCheckChange: (ReminderCalendarEvent, Boolean) -> Unit
 ) {
+    val orderMap = remember(events) {
+        events.mapIndexed { index, event -> event.id to index }.toMap()
+    }
+    // ✅ 정렬 로직
+    val sortedEvents = events.sortedWith(
+        compareBy<ReminderCalendarEvent> { it.isChecked }
+            .thenBy { if (it.isChecked) Int.MAX_VALUE else orderMap[it.id] ?: 0 }
+    )
+
+
     if (events.isEmpty()) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 60.dp),
+                .fillMaxSize(),
+
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -63,80 +83,26 @@ fun ReminderListBox(
             verticalArrangement = Arrangement.spacedBy(0.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            val sortedEvents = events.sortedWith(
-                compareBy<ReminderCalendarEvent> { it.isChecked }.thenBy { it.id }
-            )
 
-            sortedEvents.forEachIndexed { index, event ->
-                ReminderItemCard(
-                    title = event.title,
-                    isChecked = event.isChecked,
-                    onCheckChange = { checked ->
-                        viewModel.updateEventCheckStatus(event, checked)
-                        onEventCheckChange(event, checked)
-                    }
-                )
+            sortedEvents.forEach { event ->
+                // ✅ 이게 중요: key는 이렇게 wrapping해야 함
+                key(event.id) {
+                    ReminderItemCard(
+                        title = event.title,
+                        isChecked = event.isChecked,
+                        onCheckChange = { newChecked ->
+                            // 바로 UI에 반영하지 않음
+                        },
+                        onDelayedCheckCommit = { finalChecked ->
+                            viewModel.updateEventCheckStatus(event.id, finalChecked)
+                            onEventCheckChange(event, finalChecked)
+                        }
+                    )
+                }
             }
         }
     }
 }
-        @Composable
-        fun ReminderItemCard(
-            title: String,
-            isChecked: Boolean,
-            onCheckChange: (Boolean) -> Unit,
-            allDay: Boolean = false
-        ) {
-            val backgroundColor = Color(0xFFBBDEFB)
-            val textColor = if (isChecked) Color(0xFF757575) else Gray900
-
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = backgroundColor
-                )
-
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircleCheckbox(
-                        checked = isChecked,
-                        onCheckChange = onCheckChange,
-                        modifier = Modifier
-                            .size(22.dp)
-                            .align(Alignment.Top) // 텍스트 기준으로 정렬 (중앙 아님)
-                    )
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(
-                            text = title,
-                            fontSize = 18.sp,
-                            color = textColor,
-                            fontWeight = FontWeight.Bold,
-                            textDecoration = if (isChecked) TextDecoration.LineThrough else TextDecoration.None
-                        )
-                        Text(
-                            text = "하루종일",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            textDecoration = if (isChecked) TextDecoration.LineThrough else TextDecoration.None
-                        )
-                    }
-                }
-            }
-        }
         @Composable
         fun CircleCheckbox(
             checked: Boolean,
@@ -173,4 +139,81 @@ fun ReminderListBox(
                 }
             }
         }
+        @Composable
+        fun ReminderItemCard(
+            title: String,
+            isChecked: Boolean,
+            onCheckChange: (Boolean) -> Unit,
+            onDelayedCheckCommit: (Boolean) -> Unit,
+            allDay: Boolean = false
+        ) {
+            val backgroundColor = Color(0xFFBBDEFB)
+            var localChecked by remember { mutableStateOf(isChecked) }
+
+            LaunchedEffect(isChecked) {
+                if (localChecked != isChecked) {
+                    localChecked = isChecked
+                }
+            }
+            val textColor = if (localChecked) Color(0xFF757575) else Gray900
+
+            val offsetY by animateDpAsState(
+                targetValue = 0.dp, // 항상 0 (이동 느낌만 살릴 수도 있지만 생략 가능)
+                animationSpec = tween(300)
+            )
+
+            LaunchedEffect(localChecked) {
+                delay(300)
+                onDelayedCheckCommit(localChecked)
+            }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                     .offset(y = offsetY),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = backgroundColor)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircleCheckbox(
+                        checked = localChecked,
+                        onCheckChange = {
+                            localChecked = it
+                            onCheckChange(it)
+                        },
+                        modifier = Modifier
+                            .size(22.dp)
+                            .align(Alignment.Top) // 텍스트 기준으로 정렬 (중앙 아님)
+                    )
+
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = title,
+                            fontSize = 18.sp,
+                            color = textColor,
+                            fontWeight = FontWeight.Bold,
+                            textDecoration = if (localChecked) TextDecoration.LineThrough else TextDecoration.None
+                        )
+                        Text(
+                            text = "하루종일",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            textDecoration = if (localChecked) TextDecoration.LineThrough else TextDecoration.None
+                        )
+                    }
+                }
+            }
+        }
+
 

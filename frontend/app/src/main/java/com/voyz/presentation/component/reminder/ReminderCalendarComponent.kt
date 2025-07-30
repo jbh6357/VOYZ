@@ -32,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.TemporalAdjusters
 
 @Composable
 fun ReminderCalendarComponent(
@@ -265,7 +266,7 @@ private fun CalendarDayCell(
 
 fun getDatesOfWeek(selectedDate: LocalDate?): List<ReminderCalendarDate> {
     val referenceDate = selectedDate ?: LocalDate.now()
-    val startOfWeek = referenceDate.with(DayOfWeek.MONDAY)
+    val startOfWeek = referenceDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
     return (0..6).map {
         val date = startOfWeek.plusDays(it.toLong())
         ReminderCalendarDate(date, true)
@@ -276,7 +277,7 @@ fun getDatesOfMonth(yearMonth: YearMonth): List<ReminderCalendarDate> {
     val firstOfMonth = yearMonth.atDay(1)
     val firstDayOfWeek = firstOfMonth.dayOfWeek.value % 7
     val startDate = firstOfMonth.minusDays(firstDayOfWeek.toLong())
-    val totalDays = 35
+    val totalDays = 42
     return (0 until totalDays).map { offset ->
         val date = startDate.plusDays(offset.toLong())
         ReminderCalendarDate(date = date, isCurrentMonth = date.month == yearMonth.month)
