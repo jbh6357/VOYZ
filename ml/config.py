@@ -2,17 +2,29 @@
 FastAPI 설정 파일
 """
 
+import os
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+
+# 환경 변수 로드
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 # API 설정
 API_CONFIG = {
     "title": "VOIZ Special Day Matching API",
     "version": "1.0.0",
     "description": "특일 매칭 API 서버",
-    "host": "0.0.0.0",
-    "port": 8000,
-    "debug": True
+    "host": os.getenv("FASTAPI_HOST", "0.0.0.0"),
+    "port": int(os.getenv("FASTAPI_PORT", "8000")),
+    "debug": os.getenv("FASTAPI_DEBUG", "True").lower() == "true"
+}
+
+# OpenAI 설정
+OPENAI_CONFIG = {
+    "api_key": OPENAI_API_KEY,
+    "model": "gpt-3.5-turbo",
+    "max_tokens": 1000,
+    "temperature": 0.7
 } 
 
 # 고객 - 데이터 매칭 데이터 모델 정의

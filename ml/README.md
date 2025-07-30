@@ -18,17 +18,33 @@ ml/
 
 ## 설치 및 실행
 
-### 1. 의존성 설치
+### 1. 환경 설정
+
+```bash
+# .env 파일 생성 (최초 1회만)
+cp .env.example .env
+
+# .env 파일에 실제 API 키 입력
+# OPENAI_API_KEY=your-actual-api-key-here
+```
+
+### 2. 의존성 설치
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 서버 실행
+### 3. 서버 실행
 
 ```bash
 python main.py
 ```
+
+### ⚠️ 중요: OpenAI API 키 설정
+
+1. [OpenAI Platform](https://platform.openai.com)에서 API 키 발급
+2. `.env` 파일에 실제 키 입력
+3. **절대 `.env` 파일을 Git에 커밋하지 마세요!**
 
 서버가 `http://localhost:8000`에서 실행됩니다.
 
