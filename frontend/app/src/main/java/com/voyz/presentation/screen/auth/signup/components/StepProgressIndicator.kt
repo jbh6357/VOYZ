@@ -1,4 +1,4 @@
-package com.voyz.presentation.screen.reminder.signup.components
+package com.voyz.presentation.screen.auth.signup.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
