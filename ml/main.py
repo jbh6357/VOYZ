@@ -18,15 +18,6 @@ app = FastAPI(
     description=API_CONFIG["description"]
 )
 
-# 헬스 체크
-@app.get("/health")
-def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "service": API_CONFIG["title"]
-    }
-
 # 특일 - 고객 매칭
 @app.post("/api/match/specialDay")
 def specialDay_match(request: SpecialDayMatchRequest):
