@@ -7,14 +7,20 @@ import androidx.lifecycle.ViewModel
 import java.time.LocalDate
 import java.time.YearMonth
 import androidx.compose.runtime.State
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 
 class ReminderCalendarViewModel : ViewModel() {
 
-    var selectedDate by mutableStateOf(LocalDate.now())
+    private val _selectedDate = MutableStateFlow(LocalDate.now())
+    val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
-    var currentMonth by mutableStateOf(YearMonth.now())
-        private set
+
+    private val _currentMonth = mutableStateOf(YearMonth.now())
+    val currentMonth: State<YearMonth> get() = _currentMonth
+
 
     var events by mutableStateOf<Map<LocalDate, List<ReminderCalendarEvent>>>(
         // 테스트용 이벤트 데이터
@@ -35,35 +41,35 @@ class ReminderCalendarViewModel : ViewModel() {
         private set
 
     fun selectDate(date: LocalDate) {
-        selectedDate = date
+        _selectedDate.value = date
     }
 
     fun clearSelection() {
-        selectedDate = null
+        _selectedDate.value = LocalDate.now() // 또는 고정값
     }
 
     fun goToNextMonth() {
-        currentMonth = currentMonth.plusMonths(1)
+        _currentMonth.value = _currentMonth.value.plusMonths(1)
     }
 
     fun goToPreviousMonth() {
-        currentMonth = currentMonth.minusMonths(1)
+        _currentMonth.value = _currentMonth.value.minusMonths(1)
     }
 
     fun goToNextMonthWithDirection(): Pair<YearMonth, Boolean> {
-        val newMonth = currentMonth.plusMonths(1)
-        currentMonth = newMonth
+        val newMonth = currentMonth.value.plusMonths(1)
+        _currentMonth.value = newMonth
         return newMonth to true // true = 다음 달로 이동
     }
 
     fun goToPreviousMonthWithDirection(): Pair<YearMonth, Boolean> {
-        val newMonth = currentMonth.minusMonths(1)
-        currentMonth = newMonth
+        val newMonth = currentMonth.value.minusMonths(1)
+        _currentMonth.value = newMonth
         return newMonth to false // false = 이전 달로 이동
     }
 
     fun goToMonth(yearMonth: YearMonth) {
-        currentMonth = yearMonth
+        _currentMonth.value = yearMonth
     }
 
     fun addEvent(date: LocalDate, event: ReminderCalendarEvent) {
@@ -79,8 +85,8 @@ class ReminderCalendarViewModel : ViewModel() {
 
     fun goToToday() {
         val today = LocalDate.now()
-        selectedDate = today
-        currentMonth = YearMonth.from(today)
+        _selectedDate.value = today
+        _currentMonth.value = YearMonth.from(today)
     }
 
     private val _reminderEvents = mutableStateOf<Map<LocalDate, List<ReminderCalendarEvent>>>(emptyMap())

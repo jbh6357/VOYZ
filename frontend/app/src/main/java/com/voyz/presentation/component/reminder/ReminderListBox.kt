@@ -1,11 +1,15 @@
 package com.voyz.presentation.component.reminder
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,15 +45,26 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.voyz.presentation.component.reminder.ReminderCalendarEvent
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.navigation.NavController
+import androidx.compose.animation.with
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 
 
+
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ReminderListBox(
     events: List<ReminderCalendarEvent>,
     selectedDate: LocalDate,
+    onDateChange: (LocalDate) -> Unit,
     viewModel: ReminderCalendarViewModel = viewModel(),
-    onEventCheckChange: (ReminderCalendarEvent, Boolean) -> Unit
+    onEventCheckChange: (ReminderCalendarEvent, Boolean) -> Unit,
+    navController: NavController,
+
 ) {
     val orderMap = remember(events) {
         events.mapIndexed { index, event -> event.id to index }.toMap()
@@ -59,48 +74,91 @@ fun ReminderListBox(
         compareBy<ReminderCalendarEvent> { it.isChecked }
             .thenBy { if (it.isChecked) Int.MAX_VALUE else orderMap[it.id] ?: 0 }
     )
+    val currentSelectedDate by rememberUpdatedState(selectedDate)
+    var lastSwipeTime by remember { mutableStateOf(0L) }
+    val debounceMillis = 200L
 
+    var previousDate by remember { mutableStateOf(selectedDate) }
+    val animationDirection = if (selectedDate > previousDate) 1 else -1
+    LaunchedEffect(selectedDate) {
+        previousDate = selectedDate
+    }
 
-    if (events.isEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures { _, dragAmount ->
+                    val now = System.currentTimeMillis()
+                    if (now - lastSwipeTime < debounceMillis) return@detectHorizontalDragGestures
 
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "해당 날짜에 리마인더가 없습니다.",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    } else {
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-
-            sortedEvents.forEach { event ->
-                // ✅ 이게 중요: key는 이렇게 wrapping해야 함
-                key(event.id) {
-                    ReminderItemCard(
-                        title = event.title,
-                        isChecked = event.isChecked,
-                        onCheckChange = { newChecked ->
-                            // 바로 UI에 반영하지 않음
-                        },
-                        onDelayedCheckCommit = { finalChecked ->
-                            viewModel.updateEventCheckStatus(event.id, finalChecked)
-                            onEventCheckChange(event, finalChecked)
-                        }
+                    if (dragAmount > 30) {
+                        onDateChange(currentSelectedDate.minusDays(1))
+                        lastSwipeTime = now
+                    } else if (dragAmount < -30) {
+                        onDateChange(currentSelectedDate.plusDays(1))
+                        lastSwipeTime = now
+                    }
+                }
+            }
+    ) {
+        AnimatedContent(
+            targetState = selectedDate,
+            transitionSpec = {
+                slideInHorizontally(
+                    initialOffsetX = { it * animationDirection }
+                ) with slideOutHorizontally(
+                    targetOffsetX = { -it * animationDirection }
+                )
+            },
+            label = "reminder_slide"
+        ) { date ->
+            val dayEvents = if (date == selectedDate) events else emptyList() // 안정성
+            if (events.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "해당 날짜에 리마인더가 없습니다.",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
+                }
+            } else {
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+
+                    sortedEvents.forEach { event ->
+                        // ✅ 이게 중요: key는 이렇게 wrapping해야 함
+                        key(event.id) {
+                            ReminderItemCard(
+                                title = event.title,
+                                isChecked = event.isChecked,
+                                onCheckChange = { newChecked ->
+                                    // 바로 UI에 반영하지 않음
+                                },
+                                onDelayedCheckCommit = { finalChecked ->
+                                    viewModel.updateEventCheckStatus(event.id, finalChecked)
+                                    onEventCheckChange(event, finalChecked)
+                                },
+                                onClick = {
+                                    navController.navigate("reminder_detail/${event.id}") // 🔥 상세화면 이동
+                                }
+                            )
+                        }
+
+                    }
                 }
             }
         }
+
     }
 }
         @Composable
@@ -145,7 +203,9 @@ fun ReminderListBox(
             isChecked: Boolean,
             onCheckChange: (Boolean) -> Unit,
             onDelayedCheckCommit: (Boolean) -> Unit,
+            onClick: () -> Unit,
             allDay: Boolean = false
+
         ) {
             val backgroundColor = Color(0xFFBBDEFB)
             var localChecked by remember { mutableStateOf(isChecked) }
@@ -171,7 +231,8 @@ fun ReminderListBox(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
-                     .offset(y = offsetY),
+                    .offset(y = offsetY)
+                    .clickable { onClick() },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = backgroundColor)
             ) {
