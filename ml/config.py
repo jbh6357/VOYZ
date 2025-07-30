@@ -5,6 +5,10 @@ FastAPI 설정 파일
 import os
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
+
+# .env 파일에서 환경 변수 로드
+load_dotenv()
 
 # 환경 변수 로드
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -46,3 +50,22 @@ class SpecialDayMatch(BaseModel):
     sm_idx: int
     sd_idx: int
     userId: str
+
+# Content 생성 요청 모델
+class ContentGenerationRequest(BaseModel):
+    name: str
+    type: str
+    category: Optional[str] = None
+    startDate: str
+    endDate: str
+
+# 카테고리 분류 요청 모델
+class CategoryClassificationRequest(BaseModel):
+    name: str
+    type: str
+    category: Optional[str] = None
+
+# 카테고리 분류 응답 모델
+class CategoryClassificationResponse(BaseModel):
+    success: bool
+    categories: List[str]
