@@ -22,7 +22,7 @@ API_CONFIG = {
 # OpenAI 설정
 OPENAI_CONFIG = {
     "api_key": OPENAI_API_KEY,
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-4o-mini",  # 최신 GPT-4o mini 모델 (빠르고 저렴)
     "max_tokens": 1000,
     "temperature": 0.7
 } 
