@@ -6,6 +6,7 @@ import com.voiz.dto.UserRegistrationDto;
 import com.voiz.mapper.UsersRepository;
 import com.voiz.vo.Users;
 import com.voiz.util.PasswordEncoder;
+import com.voiz.service.JwtTokenService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -29,6 +30,9 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtTokenService jwtTokenService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -93,12 +97,17 @@ public class UserService {
         
         Users users = optionalUser.get();
 
+        Map<String, String> tokens = jwtTokenService.generateTokens(users);
+
         LoginResponseDto loginResponseDto = new LoginResponseDto();
         
         loginResponseDto.setUserId(users.getUserId());
         loginResponseDto.setStoreName(users.getStoreName());
         loginResponseDto.setStoreCategory(users.getStoreCategory());
         loginResponseDto.setUserName(users.getUserName());
+        loginResponseDto.setAccessToken(tokens.get("accessToken"));
+        loginResponseDto.setRefreshToken(tokens.get("refreshToken"));
+        loginResponseDto.setTokenType(tokens.get("tokenType"));
 
         return loginResponseDto;
 
