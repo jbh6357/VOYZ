@@ -124,7 +124,7 @@ public class CalendarService {
 	    LocalDate from = ym.minusMonths(1).atDay(1);          // 전월 1일
 	    LocalDate to = ym.plusMonths(1).atEndOfMonth();       // 다음월 말일
 		
-	    List<DaySuggestionDto> daySuggestionList = specialDayRepository.findSpecialDaysWithSuggestion(calendarIdx, from, to);
+	    List<DaySuggestionDto> daySuggestionList = specialDayRepository.findSpecialDaysWithSuggestion(userId, calendarIdx, from, to);
 		return daySuggestionList;
 	}
 }
