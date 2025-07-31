@@ -43,8 +43,8 @@ public class CalendarController {
 	
 	@PostMapping("/reminder")
 	@Operation(summary = "리마인더 등록", description = "사용자가 새로운 리마인더 일정을 등록할 때 사용하는 API입니다.")
-	public ResponseEntity<Void> createReminder(@RequestBody ReminderDto reminderDto, @RequestParam String userId) {
-	    calendarService.createReminder(reminderDto, userId);
+	public ResponseEntity<Void> createReminder(@RequestParam int ssuIdx, @RequestParam String userId) {
+	    calendarService.createReminder(ssuIdx, userId);
 	    return ResponseEntity.ok().build(); 
 	}
 	
