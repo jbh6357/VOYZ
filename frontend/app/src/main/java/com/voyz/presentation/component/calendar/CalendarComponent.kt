@@ -131,6 +131,7 @@ fun CalendarComponent(
                 yearMonth = animatedCurrentMonth,
                 selectedDate = selectedDate,
                 marketingOpportunities = dailyOpportunities,
+                calendarHeight = 420.dp,
                 onDateClick = { date ->
                     // 마케팅 기회가 있는 날짜 클릭 시 처리
                     val dailyOpps = dailyOpportunities[date]

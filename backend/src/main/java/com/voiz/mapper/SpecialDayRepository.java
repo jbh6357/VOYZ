@@ -16,18 +16,20 @@ import com.voiz.vo.SpecialDay;
 @Repository
 public interface SpecialDayRepository extends JpaRepository<SpecialDay, Integer> {
 	
-	@Query("SELECT new com.voiz.dto.MatchSpecialDayDto(s.sd_idx, s.name, s.category) FROM SpecialDay s")
+	@Query("SELECT new com.voiz.dto.MatchSpecialDayDto(s.sdIdx, s.name, s.category) FROM SpecialDay s")
 	List<MatchSpecialDayDto> findForMatch();
 	
 	@Query("""
 		    SELECT new com.voiz.dto.DaySuggestionDto(d, ds)
 		    FROM SpecialDay d
-		    LEFT JOIN SpecialDayMatch dm ON d.sd_idx = dm.sd_idx
-		    LEFT JOIN SpecialDaySuggest ds ON dm.sm_idx = ds.sm_idx
+		    LEFT JOIN SpecialDayMatch dm ON d.sdIdx = dm.sd_idx
+		    And dm.userId = :userId
+		    LEFT JOIN SpecialDaySuggest ds ON dm.sm_idx = ds.smIdx
 		    AND ds.calendarIdx = :calendarIdx
 		    WHERE d.startDate BETWEEN :from AND :to
 		""")
 		List<DaySuggestionDto> findSpecialDaysWithSuggestion(
+			@Param("userId") String userId,
 		    @Param("calendarIdx") int calendarIdx,
 		    @Param("from") LocalDate from,
 		    @Param("to") LocalDate to

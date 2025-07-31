@@ -2,48 +2,33 @@
 FastAPI 설정 파일
 """
 
+import os
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+from dotenv import load_dotenv
+
+# .env 파일에서 환경 변수 로드
+load_dotenv()
+
+# 환경 변수 로드
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
 # API 설정
 API_CONFIG = {
-    "title": "VOIZ Data Analysis API",
+    "title": "VOIZ Special Day Matching API",
     "version": "1.0.0",
-    "description": "Spring Boot에서 호출할 수 있는 데이터 분석 API 서버",
-    "host": "0.0.0.0",
-    "port": 8000,
-    "debug": True
+    "description": "특일 매칭 API 서버",
+    "host": os.getenv("FASTAPI_HOST", "0.0.0.0"),
+    "port": int(os.getenv("FASTAPI_PORT", "8000")),
+    "debug": os.getenv("FASTAPI_DEBUG", "True").lower() == "true"
 }
 
-# 지원하는 모델 타입
-SUPPORTED_MODELS = {
-    "test": "테스트 모델 - 간단한 평균 기반 예측",
-    "linear": "선형 회귀 모델 - 추세 기반 예측",
-    "average": "평균 기반 모델 - 평균값 예측"
-}
-
-# 데이터 모델 정의
-class PredictionRequest(BaseModel):
-    data: List[float]
-    model_type: str = "linear"
-
-class AnalysisRequest(BaseModel):
-    data: List[float]
-    analysis_type: str
-
-class SalesData(BaseModel):
-    sales: List[float]
-    dates: List[str]
-
-# 샘플 데이터
-SAMPLE_DATA = {
-    "sales_data": [100, 150, 200, 180, 220, 250, 280, 300],
-    "dates": [
-        "2024-01", "2024-02", "2024-03", "2024-04",
-        "2024-05", "2024-06", "2024-07", "2024-08"
-    ],
-    "categories": ["전자제품", "의류", "식품", "가구"],
-    "category_sales": [45, 30, 15, 10]
+# OpenAI 설정
+OPENAI_CONFIG = {
+    "api_key": OPENAI_API_KEY,
+    "model": "gpt-4o-mini",  # 최신 GPT-4o mini 모델 (빠르고 저렴)
+    "max_tokens": 1000,
+    "temperature": 0.7
 } 
 
 # 고객 - 데이터 매칭 데이터 모델 정의
@@ -65,3 +50,39 @@ class SpecialDayMatch(BaseModel):
     sm_idx: int
     sd_idx: int
     userId: str
+
+# Content 생성 요청 모델
+class ContentGenerationRequest(BaseModel):
+    name: str
+    type: str
+    category: Optional[str] = None
+    startDate: str
+    endDate: str
+
+# 카테고리 분류 요청 모델
+class CategoryClassificationRequest(BaseModel):
+    name: str
+    type: str
+    category: Optional[str] = None
+
+# 카테고리 분류 응답 모델
+class CategoryClassificationResponse(BaseModel):
+    success: bool
+    categories: List[str]
+
+# 제안 생성 요청 모델
+class CreateSuggestRequest(BaseModel):
+    name: str
+    type: str
+    storeCategory: str
+
+# 제안 생성 응답 모델
+class CreateSuggestResponse(BaseModel):
+    success: bool
+    title: str
+    description: str
+    targetCustomer: str
+    suggestedAction: str
+    expectedEffect: str
+    confidence: float  # 문자열에서 숫자로 변경
+    priority: str

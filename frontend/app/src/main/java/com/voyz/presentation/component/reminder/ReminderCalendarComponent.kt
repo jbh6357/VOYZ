@@ -25,32 +25,44 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 
 @Composable
 fun ReminderCalendarComponent(
     modifier: Modifier = Modifier,
     viewModel: ReminderCalendarViewModel = viewModel(),
     isWeekly: Boolean = false,
+    calendarHeight: Dp,
     onDateSelected: (LocalDate) -> Unit
 ) {
-    val currentMonth = viewModel.currentMonth
-    val selectedDate = viewModel.selectedDate
+    val currentMonth by viewModel.currentMonth
+    val selectedDate by viewModel.selectedDate.collectAsState()
     var totalDrag by remember { mutableStateOf(0f) }
-    val datesToShow = remember(currentMonth, selectedDate, isWeekly) {
-        if (isWeekly) getDatesOfWeek(selectedDate) else getDatesOfMonth(currentMonth)
+    val monthData by remember(currentMonth, selectedDate, isWeekly) {
+        derivedStateOf {
+            if (isWeekly) ReminderMonthData(getDatesOfWeek(selectedDate), 1)
+            else getDatesOfMonth(currentMonth)
+        }
     }
+
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .fillMaxHeight()
+            .height(calendarHeight)
             .background(MaterialTheme.colorScheme.background)
             .pointerInput(Unit) {
                 detectHorizontalDragGestures(
@@ -67,7 +79,7 @@ fun ReminderCalendarComponent(
     ) {
         CalendarHeader(currentMonth = currentMonth)
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier) {
             AnimatedContent(
                 targetState = currentMonth,
                 transitionSpec = {
@@ -85,15 +97,23 @@ fun ReminderCalendarComponent(
                 modifier = Modifier.fillMaxSize()
             ) {
                 SimpleCalendarGrid(
-                    dates = datesToShow,
+                    dates = monthData.dates,
+                    numberOfWeeks = monthData.numberOfWeeks,
                     selectedDate = selectedDate,
                     events = viewModel.events,
+                    calendarHeight = calendarHeight,
                     onDateClick = { date ->
-                        if (date == selectedDate) viewModel.clearSelection() else {
-                            viewModel.selectDate(date)
-                            onDateSelected(date)
+                        // 항상 클릭한 날짜 선택
+                        val clickedMonth = YearMonth.from(date)
+                        if (clickedMonth != currentMonth) {
+                            viewModel.goToMonth(clickedMonth)
                         }
-                    }
+                        viewModel.selectDate(date)
+                        onDateSelected(date)
+
+                    },
+                    isWeekly = isWeekly
+
                 )
             }
         }
@@ -153,18 +173,22 @@ private fun DaysOfWeekHeader() {
 @Composable
 private fun SimpleCalendarGrid(
     dates: List<ReminderCalendarDate>,
+    numberOfWeeks: Int,
     selectedDate: LocalDate?,
     events: Map<LocalDate, List<ReminderCalendarEvent>>,
-    onDateClick: (LocalDate) -> Unit
+    onDateClick: (LocalDate) -> Unit,
+    isWeekly: Boolean,
+    calendarHeight: Dp
 ) {
+    val rawRowHeight = calendarHeight / numberOfWeeks
+    val rowHeight = rawRowHeight * 0.76f
+
     Column(modifier = Modifier.fillMaxWidth()) {
         DaysOfWeekHeader()
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(horizontal = 8.dp),
+                .fillMaxWidth(),
             userScrollEnabled = false
         ) {
             items(dates) { calendarDate ->
@@ -174,11 +198,11 @@ private fun SimpleCalendarGrid(
                     isSelected = selectedDate == calendarDate.date,
                     events = events[calendarDate.date] ?: emptyList(),
                     onClick = {
-                        if (calendarDate.isCurrentMonth) onDateClick(calendarDate.date)
+                        onDateClick(calendarDate.date)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(1f)
+                        .height(rowHeight)
                 )
             }
         }
@@ -198,7 +222,7 @@ private fun CalendarDayCell(
     val isCheckedExist = events.any { it.isChecked }
     Column(
         modifier = modifier
-            .clickable(enabled = isCurrentMonth) { onClick() }
+            .clickable { onClick() }
             .padding(4.dp),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -265,22 +289,39 @@ private fun CalendarDayCell(
 
 fun getDatesOfWeek(selectedDate: LocalDate?): List<ReminderCalendarDate> {
     val referenceDate = selectedDate ?: LocalDate.now()
-    val startOfWeek = referenceDate.with(DayOfWeek.MONDAY)
+    val startOfWeek = referenceDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
     return (0..6).map {
         val date = startOfWeek.plusDays(it.toLong())
         ReminderCalendarDate(date, true)
     }
 }
+data class ReminderMonthData(
+    val dates: List<ReminderCalendarDate>,
+    val numberOfWeeks: Int
+)
 
-fun getDatesOfMonth(yearMonth: YearMonth): List<ReminderCalendarDate> {
-    val firstOfMonth = yearMonth.atDay(1)
-    val firstDayOfWeek = firstOfMonth.dayOfWeek.value % 7
-    val startDate = firstOfMonth.minusDays(firstDayOfWeek.toLong())
-    val totalDays = 35
-    return (0 until totalDays).map { offset ->
-        val date = startDate.plusDays(offset.toLong())
-        ReminderCalendarDate(date = date, isCurrentMonth = date.month == yearMonth.month)
+fun getDatesOfMonth(yearMonth: YearMonth): ReminderMonthData {
+    val firstDayOfMonth = yearMonth.atDay(1)
+    val lastDayOfMonth = yearMonth.atEndOfMonth()
+    val start = firstDayOfMonth.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+    val end = lastDayOfMonth.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY))
+
+    var allDates = (0..ChronoUnit.DAYS.between(start, end)).map {
+        start.plusDays(it)
     }
+
+    if (allDates.size < 35) {
+        val needed = 35 - allDates.size
+        allDates = allDates + List(needed) { i -> end.plusDays((i + 1).toLong()) }
+    }
+
+    val finalDates = allDates.take(42)
+    val numberOfWeeks = (finalDates.size + 6) / 7
+
+    return ReminderMonthData(
+        dates = finalDates.map { date -> ReminderCalendarDate(date, date.month == yearMonth.month) },
+        numberOfWeeks = numberOfWeeks
+    )
 }
 
 data class ReminderCalendarDate(val date: LocalDate, val isCurrentMonth: Boolean)
@@ -288,5 +329,8 @@ data class ReminderCalendarDate(val date: LocalDate, val isCurrentMonth: Boolean
 @Composable
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, widthDp = 400, heightDp = 700)
 fun ReminderCalendarComponentPreview() {
-    ReminderCalendarComponent(onDateSelected = {})
+    ReminderCalendarComponent(
+        calendarHeight = 400.dp, // 💡 프리뷰용 고정값
+        onDateSelected = {}
+    )
 }

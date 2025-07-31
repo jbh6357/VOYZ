@@ -2,40 +2,44 @@ package com.voyz.presentation.screen.reminder
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.with
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.voyz.presentation.component.fab.FloatingActionMenu
-import com.voyz.presentation.component.reminder.ReminderCalendarComponent
-import com.voyz.presentation.component.reminder.ReminderCalendarEvent
-import com.voyz.presentation.component.reminder.ReminderCalendarViewModel
-import com.voyz.presentation.component.reminder.ReminderDayInfoBox
-import com.voyz.presentation.component.reminder.ReminderListBox
+import com.voyz.presentation.component.reminder.*
 import com.voyz.presentation.component.sidebar.SidebarComponent
 import com.voyz.presentation.component.topbar.CommonTopBar
 import java.time.LocalDate
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.zIndex
-
+import java.time.YearMonth
 
 @RequiresApi(Build.VERSION_CODES.O)
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ReminderScreen(
     navController: NavController,
@@ -48,21 +52,29 @@ fun ReminderScreen(
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
     val sidebarWidth = with(density) { 280.dp.toPx() }
-    val RemindercalendarViewModel: ReminderCalendarViewModel = viewModel()
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
-    val selectedDate = RemindercalendarViewModel.selectedDate
-    val selectedEvents: List<ReminderCalendarEvent> =
-        remember(selectedDate, RemindercalendarViewModel.events) {
-            RemindercalendarViewModel.getEventsForDate(selectedDate ?: LocalDate.MIN)
-        }
+    val viewModel: ReminderCalendarViewModel = viewModel()
+    val selectedDate by viewModel.selectedDate.collectAsState()
+    val selectedEvents = remember(selectedDate, viewModel.events) {
+        viewModel.getEventsForDate(selectedDate)
+    }
 
+    var isWeekly by remember { mutableStateOf(false) }
     val animatedOffset by animateFloatAsState(
         targetValue = if (isSidebarOpen) sidebarWidth else 0f,
         animationSpec = tween(durationMillis = 200),
         label = "sidebar_offset"
     )
+
     var isFabExpanded by remember { mutableStateOf(false) }
+
+    val calendarTargetHeight = if (isWeekly) screenHeight * 0.15f else screenHeight * 0.4f
+    val animatedCalendarHeight by animateDpAsState(
+        targetValue = calendarTargetHeight,
+        animationSpec = tween(300),
+        label = "calendar_height"
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -78,25 +90,19 @@ fun ReminderScreen(
                                 dragOffset = 0f
                             }
                         ) { _, dragAmount ->
-                            val newOffset = (dragOffset + dragAmount).coerceIn(0f, sidebarWidth)
-                            dragOffset = newOffset
+                            dragOffset = (dragOffset + dragAmount).coerceIn(0f, sidebarWidth)
                         }
                     }
                 },
             topBar = {
                 CommonTopBar(
                     onMenuClick = { isSidebarOpen = true },
-                    onSearchClick = {
-                        navController.navigate("search")
-                    },
+                    onSearchClick = { navController.navigate("search") },
                     onAlarmClick = onAlarmClick,
-                    onTodayClick = {
-                        RemindercalendarViewModel.goToToday()
-                    },
+                    onTodayClick = { viewModel.goToToday() },
                     today = today
                 )
             },
-
             floatingActionButton = {
                 FloatingActionMenu(
                     isExpanded = isFabExpanded,
@@ -115,52 +121,78 @@ fun ReminderScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                // 상단 절반: 캘린더
+                // 상단 : 캘린더
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),// 화면의 절반 높이
-
+                        .height(animatedCalendarHeight)
                 ) {
-                    ReminderCalendarComponent(
-                        modifier = Modifier.fillMaxSize(),
-                        viewModel = RemindercalendarViewModel,
-                        isWeekly = false,
-                        onDateSelected = { RemindercalendarViewModel.selectDate(it) }
-                    )
+                    AnimatedContent(
+                        targetState = isWeekly,
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(300)) with fadeOut(animationSpec = tween(300))
+                        },
+                        label = "calendar_mode_switch"
+                    ) { weekly ->
+                        ReminderCalendarComponent(
+                            modifier = Modifier.fillMaxWidth()
+                                .height(animatedCalendarHeight),
+                            calendarHeight = animatedCalendarHeight,
+                            viewModel = viewModel,
+                            isWeekly = weekly,
+                            onDateSelected = { viewModel.selectDate(it) }
+                        )
+                    }
                 }
 
-                Box(// 하단
+                // 하단 : 리마인더 리스트
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        .pointerInput(Unit) {
+                            detectVerticalDragGestures { _, dragAmount ->
+                                if (dragAmount < -30) isWeekly = true
+                                else if (dragAmount > 30) isWeekly = false
+                            }
+                        },
                     contentAlignment = Alignment.TopStart
                 ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(-16.dp)
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        verticalArrangement = Arrangement.Top
                     ) {
                         ReminderDayInfoBox(
                             selectedDate = selectedDate ?: LocalDate.now(),
-                            weatherIcon = "🌤️",
+                            weatherIcon = "\uD83C\uDF24️",
                             temperature = "30°C",
                             events = selectedEvents
                         )
 
-                        // ⬇️ 리마인더 리스트
                         ReminderListBox(
                             events = selectedEvents,
                             selectedDate = selectedDate ?: LocalDate.now(),
+                            viewModel = viewModel,
                             onEventCheckChange = { event, isChecked ->
-                                RemindercalendarViewModel.updateEventCheckStatus(event, isChecked)
+                                viewModel.updateEventCheckStatus(event.id, isChecked)
+                            },
+                            navController = navController,
+                            onDateChange = { newDate ->
+                                // ① 새로 선택된 날짜의 YearMonth 얻기
+                                val newMonth = YearMonth.from(newDate)
+                                // ② 현재 캘린더가 보고 있는 달과 다르면 month 전환
+                                if (newMonth != viewModel.currentMonth.value) {
+                                    viewModel.goToMonth(newMonth)
+                                }
+                                // ③ 실제 날짜 선택
+                                viewModel.selectDate(newDate)
                             }
                         )
                     }
                 }
             }
-
         }
 
         if (isSidebarOpen) {
@@ -201,11 +233,12 @@ fun ReminderScreen(
             }
         }
     }
-    @RequiresApi(Build.VERSION_CODES.O)
-    @Preview(showBackground = true)
-    @Composable
-    fun ReminderScreenPreview() {
-        val navController = rememberNavController()
-        ReminderScreen(navController = navController)
-    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Preview(showBackground = true)
+@Composable
+fun ReminderScreenPreview() {
+    val navController = rememberNavController()
+    ReminderScreen(navController = navController)
 }

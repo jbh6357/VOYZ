@@ -45,6 +45,30 @@ fun LoginScreen(
         }
     }
     
+    // 자동 로그인 체크 중일 때 로딩 화면
+    if (uiState.isAutoLoginChecking) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(48.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "자동 로그인 중...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            }
+        }
+        return
+    }
+    
     Column(
         modifier = modifier
             .fillMaxSize()

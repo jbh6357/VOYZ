@@ -71,4 +71,60 @@ public class FastApiClient {
     	String endpoint = "/api/match/" + modelName;
         return postDataToFastApi(endpoint, inputData);
     }
+    
+    /**
+     * 특일 컨텐츠 생성 메서드
+     * @param name 특일명
+     * @param type 특일 유형
+     * @param category 카테고리 (선택)
+     * @return 생성된 컨텐츠
+     */
+    public ResponseEntity<String> generateSpecialDayContent(String name, String type, String category) {
+        String endpoint = "/api/content/generate";
+        
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", name);
+        data.put("type", type);
+        data.put("category", category);
+        data.put("startDate", ""); // 필요시 추가
+        data.put("endDate", "");   // 필요시 추가
+        
+        return postDataToFastApi(endpoint, data);
+    }
+    
+    /**
+     * 특일 카테고리 분류 메서드
+     * @param name 특일명
+     * @param type 특일 유형
+     * @param category 카테고리 (선택)
+     * @return 분류된 카테고리 목록
+     */
+    public ResponseEntity<String> classifySpecialDayCategories(String name, String type, String category) {
+        String endpoint = "/api/category/classify";
+        
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", name);
+        data.put("type", type);
+        data.put("category", category);
+        
+        return postDataToFastApi(endpoint, data);
+    }
+
+    /**
+     * 
+     * @param name
+     * @param type
+     * @param storeCategory
+     * @return
+     */
+	public ResponseEntity<String> createSpecialDaySugForUser(String name, String type, String storeCategory) {
+		String endpoint = "/api/suggest/create";
+		
+		Map<String, Object> data = new HashMap<>();
+        data.put("name", name);
+        data.put("type", type);
+        data.put("storeCategory", storeCategory);
+		
+        return postDataToFastApi(endpoint, data);
+	}
 } 

@@ -18,7 +18,7 @@ public class SpecialDay {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "special_day_seq")
     @SequenceGenerator(name = "special_day_seq", sequenceName = "SPECIAL_DAY_SEQUENCE", allocationSize = 1)
     @Column(name = "SD_IDX")
-    private int sd_idx;
+    private int sdIdx;
 	
 	@Column(name = "NAME", nullable = false)
     private String name;
@@ -38,5 +38,7 @@ public class SpecialDay {
 	@Column(name = "IS_HOLIDAY", nullable = false)
 	private int isHoliday;
 	
+	@Column(name = "CONTENT", length = 500)
+	private String content;
 	
 }

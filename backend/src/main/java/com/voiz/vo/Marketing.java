@@ -27,7 +27,7 @@ public class Marketing {
 	@Column(name = "TYPE", nullable = false)
     private String type;
 	
-	@Column(name = "CONTENT", nullable = false)
+	@Column(name = "CONTENT", nullable = false, length = 1000)
     private String content;
 	
 	@Column(name = "START_DATE", nullable = false)
@@ -45,6 +45,24 @@ public class Marketing {
 	@Column(name = "REMINDER_IDX", nullable = false)
     private int reminder_idx;
 	
+	@Column(name = "DESCRIPTION", nullable = false)
+    private String description;
+
+    @Column(name = "TARGET_CUSTOMER", nullable = false)
+    private String targetCustomer;
+
+    @Column(name = "SUGGESTED_ACTION", nullable = false)
+    private String suggestedAction;
+
+    @Column(name = "EXPECTED_EFFECT", nullable = false)
+    private String expectedEffect;
+
+    @Column(name = "CONFIDENCE", nullable = false)
+    private Float confidence;
+
+    @Column(name = "PRIORITY", nullable = false)
+    private String priority;
+    
 	@PrePersist
     protected void onCreate() {
 		fixedAt = LocalDateTime.now();
