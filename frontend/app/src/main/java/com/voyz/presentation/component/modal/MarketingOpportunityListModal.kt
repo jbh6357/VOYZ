@@ -485,12 +485,12 @@ private fun MarketingOpportunityItem(
                             )
                         }
                         
-                        // 신뢰도
+                        // 신뢰도 - 안전한 백분율 변환
                         Text(
-                            text = if (opportunity.confidence > 1.0f) {
-                                "${opportunity.confidence.toInt()}%" // 이미 백분율인 경우
-                            } else {
-                                "${(opportunity.confidence * 100).toInt()}%" // 소수점인 경우 (0.0-1.0)
+                            text = when {
+                                opportunity.confidence > 100f -> "${(opportunity.confidence / 100).toInt()}%" // 8550 -> 85%
+                                opportunity.confidence > 1.0f -> "${opportunity.confidence.toInt()}%" // 85.5 -> 85%
+                                else -> "${(opportunity.confidence * 100).toInt()}%" // 0.855 -> 85%
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MarketingColors.TextSecondary,

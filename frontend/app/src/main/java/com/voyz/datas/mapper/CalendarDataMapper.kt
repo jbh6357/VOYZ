@@ -200,7 +200,13 @@ object CalendarDataMapper {
         storeCategory: String, 
         mlConfidence: Float?
     ): Float {
-        val baseConfidence = (mlConfidence ?: 85f) / 100f
+        // ML API에서 오는 값 정규화 (85.5 -> 0.855, 85 -> 0.85)
+        val normalizedConfidence = when {
+            mlConfidence == null -> 85f
+            mlConfidence > 1.0f -> mlConfidence  // 이미 백분율 형태 (85.5)
+            else -> mlConfidence * 100f  // 소수점 형태 (0.855 -> 85.5)
+        }
+        val baseConfidence = normalizedConfidence / 100f
         
         // 1. 특일 유형별 기본 가중치
         val typeWeight = when {
@@ -250,10 +256,13 @@ object CalendarDataMapper {
             .coerceIn(0.3f, 0.95f)
         
         Log.d("CalendarDataMapper", 
-            "Dynamic confidence for ${specialDay.name} + $storeCategory: " +
-            "base=$baseConfidence, type=$typeWeight, category=$categoryWeight, " +
-            "seasonal=$seasonalWeight → final=$finalConfidence"
-        )
+            "=== CONFIDENCE DEBUG ===")
+        Log.d("CalendarDataMapper", 
+            "Input mlConfidence: $mlConfidence → normalized: $normalizedConfidence → base: $baseConfidence")
+        Log.d("CalendarDataMapper", 
+            "Weights - type: $typeWeight, category: $categoryWeight, seasonal: $seasonalWeight")
+        Log.d("CalendarDataMapper", 
+            "FINAL CONFIDENCE: $finalConfidence (for ${specialDay.name})")
         
         return finalConfidence
     }
