@@ -69,3 +69,19 @@ class CategoryClassificationRequest(BaseModel):
 class CategoryClassificationResponse(BaseModel):
     success: bool
     categories: List[str]
+
+# 제안 생성 요청 모델
+class CreateSuggestRequest(BaseModel):
+    name: str
+    type: str
+    storeCategory: str
+
+# 제안 생성 응답 모델
+class CreateSuggestResponse(BaseModel):
+    title: str
+    description: str
+    targetCustomer: str
+    suggestedAction: str
+    expectedEffect: str
+    confidence: str
+    priority: str
