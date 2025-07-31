@@ -258,11 +258,19 @@ object CalendarDataMapper {
         Log.d("CalendarDataMapper", 
             "=== CONFIDENCE DEBUG ===")
         Log.d("CalendarDataMapper", 
-            "Input mlConfidence: $mlConfidence → normalized: $normalizedConfidence → base: $baseConfidence")
+            "특일: ${specialDay.name}, 업종: $storeCategory")
+        Log.d("CalendarDataMapper", 
+            "Input mlConfidence: $mlConfidence")
+        Log.d("CalendarDataMapper", 
+            "normalizedConfidence: $normalizedConfidence")
+        Log.d("CalendarDataMapper", 
+            "baseConfidence: $baseConfidence")
         Log.d("CalendarDataMapper", 
             "Weights - type: $typeWeight, category: $categoryWeight, seasonal: $seasonalWeight")
         Log.d("CalendarDataMapper", 
-            "FINAL CONFIDENCE: $finalConfidence (for ${specialDay.name})")
+            "FINAL CONFIDENCE: $finalConfidence")
+        Log.d("CalendarDataMapper", 
+            "=========================")
         
         return finalConfidence
     }
