@@ -105,34 +105,6 @@ class ContentService:
             # GPT API 실패 시 기본 메시지 반환
             return f"{name}에 대한 마케팅 기회들을 확인해보세요."
         
-    @staticmethod
-    def create_special_day_suggest(name: str, type_name: str, storeCategory: str) -> CreateSuggestResponse:
-        """
-        LLM을 활용해 특일 마케팅 제안 생성
-
-        Args:
-            name (str): 특일명
-            type_name (str): 특일 유형
-            storeCategory (str): 음식점 업종
-
-        Returns:
-            CreateSuggestResponse: 생성된 마케팅 제안 응답
-        """
-
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            print("OpenAI API 키가 없습니다.")
-            return CreateSuggestResponse(
-                success=False,
-                title="",
-                description=f"{name}에 대한 마케팅 기회들을 확인해보세요.",
-                targetCustomer="",
-                suggestedAction="",
-                expectedEffect="",
-                confidence="",
-                priority="",
-                dataSource="default-fallback"
-            )
 
     @staticmethod
     def calculate_confidence(special_day_name: str, day_type: str, store_category: str) -> float:
@@ -195,6 +167,21 @@ class ContentService:
             CreateSuggestResponse: 생성된 마케팅 제안 응답
         """
 
+        # API 키 확인
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            print("OpenAI API 키가 없습니다.")
+            return CreateSuggestResponse(
+                success=False,
+                title=f"{name} 특별 이벤트",
+                description=f"{name}에 대한 마케팅 기회들을 확인해보세요.",
+                targetCustomer="일반 고객",
+                suggestedAction=f"{name} 테마 활용 마케팅",
+                expectedEffect="고객 관심도 향상 기대",
+                confidence=50.0,
+                priority="중"
+            )
+        
         # 먼저 신뢰도 계산
         calculated_confidence = ContentService.calculate_confidence(name, type_name, storeCategory)
         
@@ -265,20 +252,25 @@ class ContentService:
                 def extract_field(label):
                     for line in content.splitlines():
                         if line.startswith(label):
-                            return line.split(":", 1)[-1].strip()
-                    return ""
+                            value = line.split(":", 1)[-1].strip()
+                            return value if value else f"{name} 마케팅 제안"  # 빈 값일 때 기본값 설정
+                    return f"{name} 마케팅 제안"  # 필드를 찾지 못했을 때 기본값
 
                 # 디버그: 실제 GPT 응답 확인
                 print(f"=== GPT 원본 응답 ===")
-                print(content)
+                print(repr(content))  # 특수 문자까지 표시
+                print(f"=== 줄별 분석 ===")
+                for i, line in enumerate(content.splitlines()):
+                    print(f"[{i}] '{line}'")
                 print(f"=== 파싱 결과 ===")
-                print(f"제목: {extract_field('제목')}")
-                print(f"설명: {extract_field('설명')}")
-                print(f"타겟: {extract_field('타겟')}")
-                print(f"액션: {extract_field('액션')}")
-                print(f"효과: {extract_field('효과')}")
-                print(f"신뢰도: {extract_field('신뢰도')}")
-                print(f"우선순위: {extract_field('우선순위')}")
+                print(f"제목: '{extract_field('제목')}'")
+                print(f"설명: '{extract_field('설명')}'")
+                print(f"타겟: '{extract_field('타겟')}'")
+                print(f"액션: '{extract_field('액션')}'")
+                print(f"효과: '{extract_field('효과')}'")
+                print(f"신뢰도: '{extract_field('신뢰도')}'")
+                print(f"우선순위: '{extract_field('우선순위')}'")
+                print(f"=========================")
                 
                 return CreateSuggestResponse(
                     success=True,

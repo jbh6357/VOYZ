@@ -78,6 +78,7 @@ class CreateSuggestRequest(BaseModel):
 
 # 제안 생성 응답 모델
 class CreateSuggestResponse(BaseModel):
+    success: bool
     title: str
     description: str
     targetCustomer: str
