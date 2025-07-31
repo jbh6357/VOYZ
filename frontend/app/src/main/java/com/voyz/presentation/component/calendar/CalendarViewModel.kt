@@ -187,5 +187,10 @@ class CalendarViewModel(
     fun getOpportunitiesForDate(date: LocalDate): DailyMarketingOpportunities? {
         return dailyOpportunities[date]
     }
+    fun goToToday() {
+        val today = LocalDate.now()
+        selectedDate = today
+        currentMonth = YearMonth.from(today) // ✅ 현재 월도 변경해줘야 애니메이션/캘린더 이동
+    }
 }
 

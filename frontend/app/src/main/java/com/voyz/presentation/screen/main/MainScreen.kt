@@ -19,15 +19,6 @@ import com.voyz.presentation.screen.main.components.OverlayManager
 import com.voyz.presentation.component.calendar.CalendarViewModel
 import java.time.LocalDate
 
-/**
- * 메인 화면 - 리팩토링된 버전
- * 
- * 주요 개선사항:
- * - 상태 관리를 MainScreenState로 분리
- * - UI 컴포넌트를 MainContent와 OverlayManager로 분리
- * - 드래그 제스처 로직을 별도 컴포넌트로 분리
- * - 코드 가독성과 유지보수성 향상
- */
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
@@ -37,62 +28,40 @@ fun MainScreen(
     onTodayClick: () -> Unit = {},
     today: LocalDate = LocalDate.now()
 ) {
-    var screenState by remember { mutableStateOf(MainScreenState()) }
-    
-    // CalendarViewModel을 MainScreen 레벨에서 유지하여 상태 보존
+    var state by remember { mutableStateOf(MainScreenState()) }
     val context = LocalContext.current
-    val sharedCalendarViewModel = remember(context) { CalendarViewModel(context) }
+    val vm = remember(context) { CalendarViewModel(context) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 메인 컨텐츠 (캘린더 + FAB)
         MainContent(
-            state = screenState,
-            calendarViewModel = sharedCalendarViewModel, // ViewModel 전달
+            state = state,
+            calendarViewModel = vm,
             onSearchClick = onSearchClick,
             onAlarmClick = onAlarmClick,
-            onTodayClick = onTodayClick,
-            onSidebarOpen = { 
-                screenState = screenState.openSidebar() 
-            },
-            onDragOffsetChange = { offset ->
-                screenState = screenState.updateDragOffset(offset)
-            },
-            onFabToggle = {
-                screenState = screenState.toggleFab()
-            },
-            onDateClick = { date, opportunities ->
-                android.util.Log.d("MainScreen", "onDateClick - date: $date")
-                android.util.Log.d("MainScreen", "onDateClick - date.year: ${date.year}")
-                android.util.Log.d("MainScreen", "onDateClick - date.monthValue: ${date.monthValue}")
-                android.util.Log.d("MainScreen", "onDateClick - date.dayOfMonth: ${date.dayOfMonth}")
-                screenState = screenState.openOpportunityModal(date, opportunities)
+            onTodayClick = { vm.goToToday() },
+            onSidebarOpen = { state = state.openSidebar() },
+            onDragOffsetChange = { offset -> state = state.updateDragOffset(offset) },
+            onFabToggle = { state = state.toggleFab() },
+            onDateClick = { date, opps ->
+                state = state.openOpportunityModal(date, opps)
             },
             onMarketingCreateClick = {
-                screenState = screenState.closeFab()
+                state = state.closeFab()
                 navController.navigate("marketing_create")
             },
             onReminderCreateClick = {
-                screenState = screenState.closeFab()
+                state = state.closeFab()
                 navController.navigate("reminder_create")
             }
         )
 
-        // 오버레이 요소들 (사이드바, 모달, FAB 배경)
         OverlayManager(
-            state = screenState,
+            state = state,
             navController = navController,
-            onSidebarClose = {
-                screenState = screenState.closeSidebar()
-            },
-            onFabClose = {
-                screenState = screenState.closeFab()
-            },
-            onModalClose = {
-                screenState = screenState.closeOpportunityModal()
-            },
-            onDateChange = { date, opportunities ->
-                screenState = screenState.updateSelectedDate(date, opportunities)
-            }
+            onSidebarClose = { state = state.closeSidebar() },
+            onFabClose = { state = state.closeFab() },
+            onModalClose = { state = state.closeOpportunityModal() },
+            onDateChange = { date, opps -> state = state.updateSelectedDate(date, opps) }
         )
     }
 }
@@ -101,8 +70,6 @@ fun MainScreen(
 @Preview(showBackground = true, widthDp = 400, heightDp = 800)
 @Composable
 fun MainScreenPreview() {
-    val context = LocalContext.current
-    val fakeNavController = rememberNavController()
-
-    MainScreen(navController = fakeNavController)
+    val fakeNav = rememberNavController()
+    MainScreen(navController = fakeNav)
 }
