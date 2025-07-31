@@ -103,6 +103,7 @@ fun MainContent(
             contentAlignment = Alignment.BottomEnd
         ) {
             FloatingActionMenu(
+                modifier = Modifier.blur(0.dp), // FAB는 블러 효과 제거
                 isExpanded = state.isFabExpanded,
                 onExpandedChange = { onFabToggle() },
                 onMarketingCreateClick = onMarketingCreateClick,

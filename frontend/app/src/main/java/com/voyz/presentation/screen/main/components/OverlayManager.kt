@@ -31,12 +31,11 @@ fun OverlayManager(
     onDateChange: (LocalDate, List<MarketingOpportunity>) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // FAB 메뉴가 열렸을 때 배경 차단 오버레이 (FAB 영역 제외)
+    // FAB 메뉴가 열렸을 때 배경 차단 오버레이 (전체 화면)
     if (state.isFabExpanded) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 200.dp, end = 200.dp) // FAB 영역 제외
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
