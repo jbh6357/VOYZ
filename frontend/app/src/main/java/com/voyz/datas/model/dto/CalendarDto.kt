@@ -26,7 +26,8 @@ data class SpecialDayDto(
     val category: String?,
     val startDate: LocalDate,
     val endDate: LocalDate,
-    val isHoliday: Int
+    val isHoliday: Int,
+    val content: String?
 )
 
 /**
@@ -39,7 +40,14 @@ data class SpecialDaySuggestDto(
     val startDate: LocalDate,
     val endDate: LocalDate,
     val smIdx: Int, // 백엔드 필드명과 일치
-    val calendarIdx: Int
+    val calendarIdx: Int,
+    val description: String? = null,
+    val targetCustomer: String? = null,
+    val suggestedAction: String? = null,
+    val expectedEffect: String? = null,
+    val confidence: Float? = null,
+    val priority: String? = null,
+    val dataSource: String? = null
 )
 
 /**

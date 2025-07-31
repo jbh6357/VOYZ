@@ -45,25 +45,38 @@ public class CalendarService {
 		}
 	}
 
-	public void createReminder(ReminderDto reminderDto, String userId) {
+	public void createReminder(int ssuIdx, String userId) {
 		System.out.println("=== createReminder ===");
 		System.out.println("userId: " + userId);
-		System.out.println("title: " + reminderDto.getTitle());
-		System.out.println("content: " + reminderDto.getContent());
-		System.out.println("startDate: " + reminderDto.getStartDate());
-		System.out.println("endDate: " + reminderDto.getEndDate());
-		
+		System.out.println("ssuIdx: " + ssuIdx);
+
 		int reminderIdx = reminderRepository.findReminderIdxByUserId(userId);
 		System.out.println("reminderIdx: " + reminderIdx);
 		
 		Marketing marketing = new Marketing();
-		marketing.setContent(reminderDto.getContent());
-		marketing.setTitle(reminderDto.getTitle());
-		marketing.setStartDate(reminderDto.getStartDate());
-		marketing.setEndDate(reminderDto.getEndDate());
+		
+		Optional<SpecialDaySuggest> optionalSuggest = specialDaySuggestRepository.findById(ssuIdx);
+		
+		if(!optionalSuggest.isPresent()) {
+			throw new RuntimeException("잘못된 제안 아이디 정보");
+		}
+		
+		SpecialDaySuggest suggest = optionalSuggest.get();
+		
+		marketing.setContent(suggest.getContent());
+		marketing.setTitle(suggest.getTitle());
+		marketing.setStartDate(suggest.getStartDate());
+		marketing.setEndDate(suggest.getEndDate());
 		marketing.setReminder_idx(reminderIdx);
 		marketing.setStatus("진행전");
 		marketing.setType("1");
+		
+		marketing.setDescription(suggest.getDescription());
+		marketing.setTargetCustomer(suggest.getTargetCustomer());
+		marketing.setSuggestedAction(suggest.getSuggestedAction());
+		marketing.setExpectedEffect(suggest.getExpectedEffect());
+		marketing.setConfidence(suggest.getConfidence());
+		marketing.setPriority(suggest.getPriority());
 		
 		System.out.println("Before save - startDate: " + marketing.getStartDate() + ", endDate: " + marketing.getEndDate());
 		marketingRepository.save(marketing);
@@ -111,7 +124,7 @@ public class CalendarService {
 	    LocalDate from = ym.minusMonths(1).atDay(1);          // 전월 1일
 	    LocalDate to = ym.plusMonths(1).atEndOfMonth();       // 다음월 말일
 		
-	    List<DaySuggestionDto> daySuggestionList = specialDayRepository.findSpecialDaysWithSuggestion(calendarIdx, from, to);
+	    List<DaySuggestionDto> daySuggestionList = specialDayRepository.findSpecialDaysWithSuggestion(userId, calendarIdx, from, to);
 		return daySuggestionList;
 	}
 }

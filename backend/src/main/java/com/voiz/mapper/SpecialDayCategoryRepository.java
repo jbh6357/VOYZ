@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.voiz.vo.SpecialDayCategory;
 
 @Repository
-public interface SpecialDayCategoryRepository extends JpaRepository<SpecialDayCategory, Long> {
+public interface SpecialDayCategoryRepository extends JpaRepository<SpecialDayCategory, Integer> {
     
     /**
      * 특정 특일의 모든 카테고리 조회

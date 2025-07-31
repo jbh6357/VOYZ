@@ -40,6 +40,8 @@ public class UserController {
         boolean success = userService.registerUser(registrationDto);
 
         if (success) {
+            // 회원가입 성공 후 즉시 응답하고, 별도로 비동기 처리 시작
+            userService.startAsyncProcessing(registrationDto.getUserId(), registrationDto.getStoreCategory());
             return ResponseEntity.ok("회원가입이 성공적으로 완료되었습니다.");
         } else {
             return ResponseEntity.badRequest().body("회원가입에 실패했습니다. 이미 존재하는 사용자명 또는 이메일입니다.");
