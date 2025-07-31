@@ -18,7 +18,8 @@ fun ReminderDayInfoBox(
     selectedDate: LocalDate,
     weatherIcon: String,
     temperature: String,
-    events: List<ReminderCalendarEvent>
+    events: List<ReminderCalendarEvent>,
+    modifier: Modifier = Modifier
 ) {
     val day = selectedDate.dayOfMonth         // 숫자 날짜
     val dayOfWeek =

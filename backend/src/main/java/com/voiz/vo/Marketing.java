@@ -27,7 +27,7 @@ public class Marketing {
 	@Column(name = "TYPE", nullable = false)
     private String type;
 	
-	@Column(name = "CONTENT", nullable = false)
+	@Column(name = "CONTENT", nullable = false, length = 1000)
     private String content;
 	
 	@Column(name = "START_DATE", nullable = false)
