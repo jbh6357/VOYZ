@@ -1,6 +1,7 @@
 package com.voyz.presentation.screen.management
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,10 +30,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.voyz.datas.datastore.UserPreferencesManager
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,10 +55,24 @@ fun UserProfileScreen(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val userPreferencesManager = remember { UserPreferencesManager(context) }
+    
     var userName by remember { mutableStateOf("관리자") }
     var userEmail by remember { mutableStateOf("admin@voyz.com") }
     var userRole by remember { mutableStateOf("Admin") }
     var userDepartment by remember { mutableStateOf("운영팀") }
+    var shouldNavigateToLogin by remember { mutableStateOf(false) }
+    
+    // 로그아웃 후 로그인 화면으로 이동
+    LaunchedEffect(shouldNavigateToLogin) {
+        if (shouldNavigateToLogin) {
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -145,7 +165,14 @@ fun UserProfileScreen(
                         text = "로그아웃",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(vertical = 12.dp)
+                        modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            .clickable {
+                                coroutineScope.launch {
+                                    userPreferencesManager.logout()
+                                    shouldNavigateToLogin = true
+                                }
+                            }
                     )
                 }
             )
