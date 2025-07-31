@@ -86,6 +86,11 @@ def create_suggest(request: CreateSuggestRequest):
             storeCategory=request.storeCategory
         )
         
+        # 계산된 confidence를 직접 사용 (문자열이 아닌 숫자)
+        calculated_confidence = ContentService.calculate_confidence(
+            request.name, request.type, request.storeCategory
+        )
+        
         return {
             "success": True,
             "title": result.title,
@@ -93,7 +98,7 @@ def create_suggest(request: CreateSuggestRequest):
             "targetCustomer": result.targetCustomer,
             "suggestedAction": result.suggestedAction,
             "expectedEffect": result.expectedEffect,
-            "confidence": result.confidence,
+            "confidence": calculated_confidence,  # 숫자값 직접 사용
             "priority": result.priority
         }
         

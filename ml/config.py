@@ -83,5 +83,5 @@ class CreateSuggestResponse(BaseModel):
     targetCustomer: str
     suggestedAction: str
     expectedEffect: str
-    confidence: str
+    confidence: float  # 문자열에서 숫자로 변경
     priority: str
