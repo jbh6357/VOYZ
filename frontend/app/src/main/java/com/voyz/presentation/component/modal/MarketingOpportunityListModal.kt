@@ -189,19 +189,24 @@ fun MarketingOpportunityListModal(
                                 opportunities.forEachIndexed { index, opp ->
                                     android.util.Log.d("Modal", "[$index] ID: ${opp.id}, Title: ${opp.title}")
                                 }
-                                val reminderCount = opportunities.count { it.title.startsWith("[리마인더]") }
-                                val suggestionCount = opportunities.size - reminderCount
+                                val reminderCount = opportunities.count { it.id.startsWith("reminder_") }
+                                val suggestionCount = opportunities.count { it.id.startsWith("suggestion_") }
+                                val opportunityCount = opportunities.count { it.id.startsWith("special_day_") }
                                 android.util.Log.d("Modal", "Reminder count: $reminderCount, Suggestion count: $suggestionCount")
                                 android.util.Log.d("Modal", "=== End MarketingOpportunityListModal ===")
                                 
                                 Text(
                                     text = when {
-                                        reminderCount > 0 && suggestionCount > 0 -> 
-                                            "리마인더 ${reminderCount}개, 제안 ${suggestionCount}개"
+                                        reminderCount > 0 && (suggestionCount + opportunityCount) > 0 -> 
+                                            "리마인더 ${reminderCount}개, 제안/기회 ${suggestionCount + opportunityCount}개"
                                         reminderCount > 0 -> 
                                             "${reminderCount}개의 리마인더"
-                                        else -> 
+                                        suggestionCount > 0 && opportunityCount > 0 ->
+                                            "제안 ${suggestionCount}개, 기회 ${opportunityCount}개"
+                                        suggestionCount > 0 ->
                                             "${suggestionCount}개의 제안"
+                                        else -> 
+                                            "${opportunityCount}개의 기회"
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MarketingColors.Primary,
@@ -346,19 +351,28 @@ private fun MarketingOpportunityItem(
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (opportunity.title.startsWith("[리마인더]")) {
-                // 리마인더 타입별 색상
-                when (opportunity.priority) {
-                    Priority.HIGH -> Color(0xFFFF4444).copy(alpha = 0.4f) // 마케팅 -> 빨간색
-                    Priority.MEDIUM -> Color(0xFF2196F3).copy(alpha = 0.4f) // 일정 -> 파란색
-                    else -> Color(0xFF2196F3).copy(alpha = 0.4f) // 기본값 파란색
+            containerColor = when {
+                opportunity.id.startsWith("reminder_") -> {
+                    // 리마인더 타입별 색상
+                    when (opportunity.priority) {
+                        Priority.HIGH -> Color(0xFFFF4444).copy(alpha = 0.4f) // 마케팅 -> 빨간색
+                        Priority.MEDIUM -> Color(0xFF2196F3).copy(alpha = 0.4f) // 일정 -> 파란색
+                        else -> Color(0xFF2196F3).copy(alpha = 0.4f) // 기본값 파란색
+                    }
                 }
-            } else {
-                // 특일 제안 색상
-                when (opportunity.priority) {
-                    Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f) // 제안 있음 -> 노란색
-                    Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 제안 없음 -> 회색
-                    else -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 기본값 회색
+                opportunity.id.startsWith("suggestion_") -> {
+                    Color(0xFFFFC107).copy(alpha = 0.4f) // 제안 -> 노란색
+                }
+                opportunity.id.startsWith("special_day_") -> {
+                    Color(0xFF9E9E9E).copy(alpha = 0.4f) // 기회 -> 회색
+                }
+                else -> {
+                    // 기존 로직 유지
+                    when (opportunity.priority) {
+                        Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f)
+                        Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
+                        else -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
+                    }
                 }
             }
         ),

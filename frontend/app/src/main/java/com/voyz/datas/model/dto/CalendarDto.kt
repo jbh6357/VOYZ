@@ -38,7 +38,7 @@ data class SpecialDaySuggestDto(
     val content: String,
     val startDate: LocalDate,
     val endDate: LocalDate,
-    val sm_idx: Int, // 백엔드 필드명과 일치
+    val smIdx: Int, // 백엔드 필드명과 일치
     val calendarIdx: Int
 )
 
