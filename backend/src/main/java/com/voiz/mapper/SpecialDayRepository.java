@@ -23,7 +23,7 @@ public interface SpecialDayRepository extends JpaRepository<SpecialDay, Integer>
 		    SELECT new com.voiz.dto.DaySuggestionDto(d, ds)
 		    FROM SpecialDay d
 		    LEFT JOIN SpecialDayMatch dm ON d.sdIdx = dm.sd_idx
-		    LEFT JOIN SpecialDaySuggest ds ON dm.sm_idx = ds.sm_idx
+		    LEFT JOIN SpecialDaySuggest ds ON dm.sm_idx = ds.smIdx
 		    AND ds.calendarIdx = :calendarIdx
 		    WHERE d.startDate BETWEEN :from AND :to
 		""")
