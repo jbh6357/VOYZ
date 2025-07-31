@@ -6,6 +6,7 @@ import com.voyz.datas.model.dto.UserRegistrationRequest
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface UserApiService {
@@ -15,4 +16,7 @@ interface UserApiService {
     
     @POST("users/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+    
+    @POST("auth/auto-login")
+    suspend fun autoLogin(@Header("Authorization") authorization: String): Response<Map<String, Any>>
 }
