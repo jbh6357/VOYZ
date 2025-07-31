@@ -48,7 +48,13 @@ fun NavGraph(navController: NavHostController) {
         }
         composable("find") { IdPwFindScreen() }
         composable("main") {
-            MainScreen(navController = navController)
+            MainScreen(navController = navController,
+                onSearchClick = {
+                    navController.navigate("search")  // ✅ 검색 페이지로 이동
+                },
+                onAlarmClick = {
+                    navController.navigate("alarm")  // ✅ 알림 → 알림제안 화면으로 이동
+                })
         }
         composable("reminder") {
             ReminderScreen(
