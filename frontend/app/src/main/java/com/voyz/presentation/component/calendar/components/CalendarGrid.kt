@@ -24,33 +24,44 @@ fun MarketingCalendarGrid(
     selectedDate: LocalDate?,
     marketingOpportunities: Map<LocalDate, DailyMarketingOpportunities>,
     onDateClick: (LocalDate) -> Unit,
-    calendarHeight: Dp
+    calendarHeight: Dp,
+    isWeekly: Boolean = false
 ) {
     // 1) 이번 달의 날짜와 주 수 계산
-    val monthData = remember(yearMonth) { getMarketingDatesOfMonth(yearMonth) }
+    fun getWeekData(date: LocalDate): MarketingMonthData {
+        val start = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+        val weekDates = (0L..6L).map { offset ->
+            MarketingCalendarDate(start.plusDays(offset), true)
+        }
+        return MarketingMonthData(dates = weekDates, numberOfWeeks = 1)
+    }
+    val monthData = if (isWeekly && selectedDate != null) {
+        remember(selectedDate) { getWeekData(selectedDate) }
+    } else {
+        remember(yearMonth) { getMarketingDatesOfMonth(yearMonth) }
+    }
     val days = monthData.dates
-    val numberOfWeeks = monthData.numberOfWeeks
+    val rows = monthData.numberOfWeeks
 
-    // 2) 셀 높이 = 전체 달력 높이 ÷ 주 수
-    val cellHeight = calendarHeight / numberOfWeeks
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
+        userScrollEnabled = false,
         modifier = Modifier
-            .fillMaxWidth()
             .height(calendarHeight)
+            .fillMaxWidth()
             .padding(horizontal = 8.dp)
     ) {
         items(days) { dateData ->
             MarketingCalendarDayCell(
                 modifier = Modifier
-                    .height(cellHeight)
+                    .height(calendarHeight / rows)
                     .fillMaxWidth(),
-                date = dateData.date,
+                date = dateData.date,                         // ← dateData 로 바꿨어요
                 isCurrentMonth = dateData.isCurrentMonth,
                 isSelected = selectedDate == dateData.date,
                 dailyOpportunities = marketingOpportunities[dateData.date],
-                onClick = { onDateClick(dateData.date) }
+                onClick = { onDateClick(dateData.date) }       // ← dateData
             )
         }
     }

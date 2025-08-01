@@ -4,11 +4,13 @@ import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,7 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -30,7 +34,8 @@ import com.voyz.presentation.component.calendar.CalendarViewModel
 import com.voyz.ui.theme.MarketingColors
 import java.time.LocalDate
 import java.time.YearMonth
-import kotlin.math.abs
+import com.voyz.presentation.component.calendar.components.getMarketingDatesOfMonth
+
 
 @Composable
 fun CalendarComponent(
@@ -43,51 +48,61 @@ fun CalendarComponent(
     val userId by userPrefs.userId.collectAsState(initial = null)
     val isLoggedIn by userPrefs.isLoggedIn.collectAsState(initial = false)
 
+
     // 뷰모델
     val calendarViewModel = viewModel ?: remember(context) { CalendarViewModel(context) }
     val currentMonth = calendarViewModel.currentMonth
     val selectedDate = calendarViewModel.selectedDate
     val dailyOpps = calendarViewModel.dailyOpportunities
 
-    // 드래그 트래킹
-    var totalDrag by remember { mutableStateOf(0f) }
 
     // 데이터 로딩
     LaunchedEffect(userId, isLoggedIn, currentMonth) {
-        Log.d("CalendarComponent", "Loading calendar data - user=$userId, loggedIn=$isLoggedIn, month=$currentMonth")
         if (isLoggedIn && userId != null) {
             calendarViewModel.loadCalendarData(userId!!)
+
+            if (calendarViewModel.selectedDate == null) {
+                calendarViewModel.selectDate(LocalDate.now())
+            }
         }
     }
+    var totalDrag by remember { mutableStateOf(0f) }
+
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Color.White)
-            .pointerInput(Unit) {
+            .pointerInput(userId) {
                 detectHorizontalDragGestures(
-                    onDragStart = { totalDrag = 0f },
+                    onDragStart = {
+                        totalDrag = 0f // 드래그 시작 시 초기화
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        totalDrag += dragAmount
+                    },
                     onDragEnd = {
-                        if (abs(totalDrag) > 100 && userId != null) {
-                            if (totalDrag > 0) calendarViewModel.goToPreviousMonth(userId!!)
-                            else calendarViewModel.goToNextMonth(userId!!)
+                        if (userId != null) {
+                            when {
+                                totalDrag > 50f -> calendarViewModel.goToPreviousMonth(userId!!)
+                                totalDrag < -50f -> calendarViewModel.goToNextMonth(userId!!)
+                            }
                         }
-                        totalDrag = 0f
+                        totalDrag = 0f // 리셋
                     }
-                ) { _, delta -> totalDrag += delta }
+                )
             }
     ) {
-        // ─── 헤더 ───
         CalendarHeader(currentMonth)
         DaysOfWeekHeader()
 
-        // ─── 달력 그리기 영역 ───
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .background(Color.White)
         ) {
-            val calendarHeight = maxHeight
 
             AnimatedContent(
                 targetState = currentMonth,
@@ -95,31 +110,38 @@ fun CalendarComponent(
                     val isNext = targetState > initialState
                     val dir = if (isNext) 1 else -1
                     slideInHorizontally(
-                        initialOffsetX = { it * dir },
+                        initialOffsetX = { fullWidth -> fullWidth * dir },
                         animationSpec = tween(200, easing = FastOutSlowInEasing)
                     ) togetherWith slideOutHorizontally(
-                        targetOffsetX = { -it * dir },
+                        targetOffsetX = { fullWidth -> -fullWidth * dir },
                         animationSpec = tween(200, easing = FastOutSlowInEasing)
                     )
                 }
-            ) { animatedMonth: YearMonth ->
+            ) { month ->
                 MarketingCalendarGrid(
-                    yearMonth            = animatedMonth,
-                    selectedDate         = selectedDate,
+                    yearMonth             = month,
+                    selectedDate          = selectedDate,
                     marketingOpportunities = dailyOpps,
-                    onDateClick          = { date ->
-                        dailyOpps[date]?.opportunities
+                    calendarHeight = maxHeight,     // 전체 높이 넘겨 줌
+                    isWeekly = false,   // ← 주 단위 여부
+                    onDateClick           = { date ->
+                        // 날짜 클릭 로직 (달 이동 + 모달)
+                        val clicked = YearMonth.from(date)
+                        if (clicked != month && userId != null) {
+                            calendarViewModel.goToMonth(clicked, userId!!)
+                        }
+                        dailyOpps[date]
+                            ?.opportunities
                             ?.takeIf { it.isNotEmpty() }
                             ?.let { onDateClick(date, it) }
-                        if (date == selectedDate) calendarViewModel.clearSelection()
-                        else calendarViewModel.selectDate(date)
-                    },
-                    calendarHeight       = calendarHeight  // ← 여기서 넘긴 높이로만 셀 높이 계산
+                        calendarViewModel.selectDate(date)
+                    }
                 )
             }
         }
     }
 }
+
 
 @Composable
 private fun CalendarHeader(currentMonth: YearMonth) {

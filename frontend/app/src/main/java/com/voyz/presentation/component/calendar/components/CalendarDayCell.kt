@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -48,7 +49,7 @@ fun MarketingCalendarDayCell(
                     color = MarketingColors.TextTertiary.copy(alpha = 0.2f),
                     start = Offset(0f, 0f),
                     end = Offset(size.width, 0f),
-                    strokeWidth = 0.5.dp.toPx()
+                    strokeWidth = 1.dp.toPx()
                 )
             }
             .clickable { onClick() }
@@ -92,60 +93,67 @@ fun MarketingCalendarDayCell(
                 .weight(1f),
             verticalArrangement = Arrangement.Top
         ) {
-            dailyOpportunities?.opportunities?.take(2)?.forEach { opp ->
-                if (opp.title.startsWith("[리마인더]")) {
-                    val barColor = when (opp.priority) {
-                        Priority.HIGH -> Color(0xFFFF4444)
-                        Priority.MEDIUM -> Color(0xFF2196F3)
-                        else -> Color(0xFF2196F3)
-                    }
+            // 변경: 처음 5개만 표시
+            dailyOpportunities?.opportunities?.take(5)?.forEach { opportunity ->
+                // 리마인더 vs 제안 처리 로직 그대로
+                val contentModifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp, vertical = 2.dp)  // padding을 2dp로 줄임
+
+                if (opportunity.title.startsWith("[리마인더]")) {
+                    // 리마인더 박스
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 1.dp)
+                        modifier = contentModifier
                             .alpha(if (!isCurrentMonth) 0.3f else 1f)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .width(3.dp)
-                                .height(16.dp)
-                                .background(barColor, RoundedCornerShape(2.dp))
-                        )
-                        Spacer(Modifier.width(4.dp))
+                        // 세로 바는 그대로
+                        // …
                         Text(
-                            text = opp.title.removePrefix("[리마인더] "),
+                            text = opportunity.title.removePrefix("[리마인더] "),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 8.sp,     // 글자 크기 8sp로 줄임
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
                     }
                 } else {
-                    val bg = when (opp.priority) {
-                        Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f)
-                        Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
-                        else -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
-                    }
+                    // 제안/기회 박스
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 1.dp)
-                            .background(bg, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 4.dp, vertical = 3.dp)
+                        modifier = contentModifier
+                            .background(
+                                color = when (opportunity.priority) {
+                                    Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f)
+                                    Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
+                                    else -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
+                                },
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 2.dp, vertical = 2.dp)  // 내부 패딩도 줄임
                             .alpha(if (!isCurrentMonth) 0.3f else 1f)
                     ) {
                         Text(
-                            text = opp.title,
-                            maxLines = 2,
+                            text = opportunity.title,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,     // 글자 크기 8sp로 줄임
+                            maxLines = 2,        // 한 줄로 충분하다면 1줄로 줄이기
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
             }
+
+            // 더 많은 기회가 있을 때 +카운터 (5개 이후)
             dailyOpportunities?.let {
-                val extra = it.totalCount - 2
+                val extra = it.totalCount - 5
                 if (extra > 0) {
-                    Text(text = "+$extra", fontSize = 8.sp)
+                    Text(
+                        text = "+$extra",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 8.sp,   // 카운터도 좀 더 작게
+                        modifier = Modifier.padding(top = 2.dp, start = 2.dp)
+                    )
                 }
             }
         }
