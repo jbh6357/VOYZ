@@ -234,19 +234,19 @@ private fun UserProfileSection(
 private fun getDefaultMenuItems(navController: NavController): List<SidebarMenuItem> {
     return listOf(
         SidebarMenuItem(
-            id = "dashboard",
-            title = "대시보드",
-            route = "main",
+            id = "reminder",
+            title = "리마인더",
+            route = "dashboard",
             onClick = {
-                navController.navigate("main")
+                navController.navigate("dashboard")
             }
         ),
         SidebarMenuItem(
-            id = "reminder",
-            title = "리마인더",
-            route = "reminder",
+            id = "dashboard",
+            title = "일정 관리",
+            route = "main",
             onClick = {
-                navController.navigate("reminder")
+                navController.navigate("main")
             }
         ),
         SidebarMenuItem(
