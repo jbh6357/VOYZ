@@ -3,6 +3,7 @@ package com.voiz.service;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -97,5 +98,23 @@ public class MenuService {
 	    }
 	    menusRepository.deleteById(menuIdx);
 		
+	}
+
+	public List<Menus> getMenusByUserId(String userId) {
+		return menusRepository.findAllByUserId(userId);	
+	}
+
+	public void updateMenu(int menuIdx, String menuName, int menuPrice) {
+		Optional<Menus> optionalMenu = menusRepository.findById(menuIdx);
+	    if (optionalMenu.isEmpty()) {
+	        throw new IllegalArgumentException("해당 메뉴가 존재하지 않습니다. menuIdx = " + menuIdx);
+	    }
+
+	    Menus menu = optionalMenu.get();
+	    menu.setMenuName(menuName);
+	    menu.setMenuPrice(menuPrice);
+	    menu.setUpdatedAt(LocalDateTime.now());
+
+	    menusRepository.save(menu);
 	}
 }

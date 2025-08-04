@@ -262,16 +262,17 @@ async def extract_text(file: UploadFile = File(...)):
 def translateMenu(req: TranslateRequest):
     # 요청 받은 메뉴명
     source_text = req.menuName
+    targetLanguage = req.targetLanguage
     # 번역 클라이언트 생성
     translate_client = translate.Client()
     # 번역 실행
     result = translate_client.translate(
         source_text,
-        target_language="en"  # 필요 시 동적으로 받아도 됨
+        target_language= targetLanguage  
     )
 
     return {
-        "original": source_text,
+        "targetLanguage": targetLanguage,
         "translated": result["translatedText"]
     }
 
