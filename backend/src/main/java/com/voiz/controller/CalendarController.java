@@ -7,13 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.voiz.dto.DaySuggestionDto;
-import com.voiz.dto.ReminderDto;
 import com.voiz.service.CalendarService;
 import com.voiz.vo.Marketing;
 import com.voiz.vo.SpecialDaySuggest;
@@ -43,8 +41,8 @@ public class CalendarController {
 	
 	@PostMapping("/reminder")
 	@Operation(summary = "리마인더 등록", description = "사용자가 새로운 리마인더 일정을 등록할 때 사용하는 API입니다.")
-	public ResponseEntity<Void> createReminder(@RequestBody ReminderDto reminderDto, @RequestParam String userId) {
-	    calendarService.createReminder(reminderDto, userId);
+	public ResponseEntity<Void> createReminder(@RequestParam int ssuIdx, @RequestParam String userId) {
+	    calendarService.createReminder(ssuIdx, userId);
 	    return ResponseEntity.ok().build(); 
 	}
 	

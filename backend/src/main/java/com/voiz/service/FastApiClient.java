@@ -109,4 +109,22 @@ public class FastApiClient {
         
         return postDataToFastApi(endpoint, data);
     }
+
+    /**
+     * 
+     * @param name
+     * @param type
+     * @param storeCategory
+     * @return
+     */
+	public ResponseEntity<String> createSpecialDaySugForUser(String name, String type, String storeCategory) {
+		String endpoint = "/api/suggest/create";
+		
+		Map<String, Object> data = new HashMap<>();
+        data.put("name", name);
+        data.put("type", type);
+        data.put("storeCategory", storeCategory);
+		
+        return postDataToFastApi(endpoint, data);
+	}
 } 

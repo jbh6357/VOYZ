@@ -7,6 +7,7 @@ import com.voyz.datas.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class LoginUiState(
@@ -19,7 +20,8 @@ data class LoginUiState(
     val loginAttempts: Int = 0,
     val isUserIdError: Boolean = false,
     val isPasswordError: Boolean = false,
-    val errorType: LoginErrorType? = null
+    val errorType: LoginErrorType? = null,
+    val isAutoLoginChecking: Boolean = true
 )
 
 enum class LoginErrorType {
@@ -37,6 +39,10 @@ class LoginViewModel(
     
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+    
+    init {
+        checkAutoLogin()
+    }
     
     fun updateUserId(userId: String) {
         _uiState.value = _uiState.value.copy(userId = userId)
@@ -89,9 +95,10 @@ class LoginViewModel(
                 if (response.isSuccessful && response.body() != null) {
                     val loginResponse = response.body()!!
                     
-                    // DataStore에 사용자 정보 저장
+                    // DataStore에 사용자 정보 저장 (실제 JWT 토큰 사용)
                     userPreferencesManager.saveLoginInfo(
-                        accessToken = "dummy_token", // JWT 없으므로 임시값
+                        accessToken = loginResponse.accessToken,
+                        refreshToken = loginResponse.refreshToken,
                         userId = loginResponse.userId,
                         username = loginResponse.userName,
                         email = null,
@@ -156,5 +163,39 @@ class LoginViewModel(
     
     fun resetLoginAttempts() {
         _uiState.value = _uiState.value.copy(loginAttempts = 0)
+    }
+    
+    /**
+     * 자동 로그인 확인
+     */
+    private fun checkAutoLogin() {
+        viewModelScope.launch {
+            try {
+                val accessToken = userPreferencesManager.accessToken.first()
+                
+                if (accessToken != null) {
+                    // 저장된 토큰이 있으면 자동 로그인 시도
+                    val response = userRepository.autoLogin(accessToken)
+                    
+                    if (response.isSuccessful && response.body() != null) {
+                        _uiState.value = _uiState.value.copy(
+                            isAutoLoginChecking = false,
+                            isLoginSuccess = true
+                        )
+                    } else {
+                        // 토큰이 유효하지 않으면 저장된 정보 삭제
+                        userPreferencesManager.logout()
+                        _uiState.value = _uiState.value.copy(isAutoLoginChecking = false)
+                    }
+                } else {
+                    // 저장된 토큰이 없으면 일반 로그인 화면 표시
+                    _uiState.value = _uiState.value.copy(isAutoLoginChecking = false)
+                }
+            } catch (e: Exception) {
+                // 오류 발생 시 저장된 정보 삭제하고 로그인 화면 표시
+                userPreferencesManager.logout()
+                _uiState.value = _uiState.value.copy(isAutoLoginChecking = false)
+            }
+        }
     }
 }

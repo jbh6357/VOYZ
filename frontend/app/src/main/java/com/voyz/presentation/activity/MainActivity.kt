@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.voyz.presentation.navigation.NavGraph
+import com.voyz.presentation.component.GlobalToastHost
 import com.voyz.ui.theme.VOYZTheme
 
 class MainActivity : ComponentActivity() {
@@ -31,6 +32,9 @@ class MainActivity : ComponentActivity() {
                         .padding(WindowInsets.systemBars.asPaddingValues())
                 ) {
                     NavGraph(navController = navController)
+                    
+                    // 전역 Toast 표시
+                    GlobalToastHost()
                 }
             }
         }
