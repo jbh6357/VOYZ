@@ -3,8 +3,10 @@ package com.voiz.controller;
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -49,5 +51,34 @@ public class MenuController {
         return ResponseEntity.ok(result);
 	}
 	
+	@PostMapping("/")
+	@Operation(summary = "메뉴 등록", description = "메뉴를 등록합니다.")
+	public ResponseEntity<String> createMenu(
+			@RequestParam String userId,
+			@RequestParam String menuName,
+			@RequestParam int menuPrice){
+		
+		menuService.createMenu(userId, menuName, menuPrice);
+		return ResponseEntity.ok().build(); 
+	}
+	
+	@PostMapping(value = "/{menuIdx}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@Operation(summary = "메뉴 이미지 업로드", description = "메뉴 이미지를 업로드합니다.")
+	public ResponseEntity<String> uploadMenuImage(
+			@PathVariable int menuIdx,
+			@Parameter(description = "업로드할 이미지 파일", required = true)
+			@RequestPart("file") MultipartFile file) throws IOException {
+		
+		try {
+	        String imageUrl = menuService.uploadMenuImage(menuIdx, file);
+	        return ResponseEntity.ok("이미지 업로드 성공: " + imageUrl);
+	    } catch (IllegalArgumentException e) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+	    } catch (IOException e) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("파일 저장 실패: " + e.getMessage());
+	    } catch (Exception e) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("알 수 없는 오류 발생");
+	    }
+	}
 
 }
