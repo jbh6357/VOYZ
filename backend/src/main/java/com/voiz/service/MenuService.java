@@ -89,4 +89,13 @@ public class MenuService {
 		}	
 		return null;
 	}
+
+	public void deleteMenu(int menuIdx) {
+		Optional<Menus> optionalMenu = menusRepository.findById(menuIdx);
+	    if (optionalMenu.isEmpty()) {
+	        throw new IllegalArgumentException("해당 메뉴가 존재하지 않습니다. menuIdx = " + menuIdx);
+	    }
+	    menusRepository.deleteById(menuIdx);
+		
+	}
 }

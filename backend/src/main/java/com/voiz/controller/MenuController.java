@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -60,6 +61,13 @@ public class MenuController {
 		
 		menuService.createMenu(userId, menuName, menuPrice);
 		return ResponseEntity.ok().build(); 
+	}
+	
+	@DeleteMapping("/{menuIdx}")
+	@Operation(summary = "메뉴 삭제", description = "해당 메뉴를 삭제합니다.")
+	public ResponseEntity<Void> deleteMenu(@PathVariable int menuIdx) {
+	    menuService.deleteMenu(menuIdx);
+	    return ResponseEntity.noContent().build(); 
 	}
 	
 	@PostMapping(value = "/{menuIdx}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
