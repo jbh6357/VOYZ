@@ -49,14 +49,18 @@ fun ReminderCalendarComponent(
     val currentMonth by viewModel.currentMonth
     val selectedDate by viewModel.selectedDate.collectAsState()
     var totalDrag by remember { mutableStateOf(0f) }
+    val animationKey: Any? = if (isWeekly) {
+        // 주간 모드에서는 해당 주의 시작일(日요일)을 기준으로 애니메이션 결정
+        selectedDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+    } else {
+        currentMonth
+    }
     val monthData by remember(currentMonth, selectedDate, isWeekly) {
         derivedStateOf {
             if (isWeekly) ReminderMonthData(getDatesOfWeek(selectedDate), 1)
             else getDatesOfMonth(currentMonth)
         }
     }
-
-    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
 
     Column(
@@ -69,7 +73,14 @@ fun ReminderCalendarComponent(
                     onDragStart = { totalDrag = 0f },
                     onDragEnd = {
                         if (kotlin.math.abs(totalDrag) > 100) {
-                            if (totalDrag > 0) viewModel.goToPreviousMonth() else viewModel.goToNextMonth()
+                            if (isWeekly) {
+                                val currentDate = viewModel.selectedDate.value
+                                val newDate = if (totalDrag > 0) currentDate.minusWeeks(1) else currentDate.plusWeeks(1)
+                                viewModel.selectDate(newDate)
+                                viewModel.goToMonth(YearMonth.from(newDate))
+                            } else {
+                                if (totalDrag > 0) viewModel.goToPreviousMonth() else viewModel.goToNextMonth()
+                            }
                         }
                         totalDrag = 0f
                     }
@@ -79,11 +90,16 @@ fun ReminderCalendarComponent(
     ) {
         CalendarHeader(currentMonth = currentMonth)
 
+
         Box(modifier = Modifier) {
             AnimatedContent(
-                targetState = currentMonth,
+                targetState = animationKey,
                 transitionSpec = {
-                    val isNext = targetState > initialState
+                    val isNext = (animationKey as? Comparable<Any>)
+                        ?.let { newState ->
+                            val oldState = initialState as? Comparable<Any>
+                            if (oldState != null) newState > oldState else true
+                        } ?: true
                     val direction = if (isNext) 1 else -1
                     slideInHorizontally(
                         initialOffsetX = { it * direction },
@@ -93,7 +109,7 @@ fun ReminderCalendarComponent(
                         animationSpec = tween(200, easing = FastOutSlowInEasing)
                     )
                 },
-                label = "calendar_month_transition",
+                label = "calendar_transition",
                 modifier = Modifier.fillMaxSize()
             ) {
                 SimpleCalendarGrid(
@@ -103,17 +119,12 @@ fun ReminderCalendarComponent(
                     events = viewModel.events,
                     calendarHeight = calendarHeight,
                     onDateClick = { date ->
-                        // 항상 클릭한 날짜 선택
                         val clickedMonth = YearMonth.from(date)
-                        if (clickedMonth != currentMonth) {
-                            viewModel.goToMonth(clickedMonth)
-                        }
+                        if (clickedMonth != currentMonth) viewModel.goToMonth(clickedMonth)
                         viewModel.selectDate(date)
                         onDateSelected(date)
-
                     },
                     isWeekly = isWeekly
-
                 )
             }
         }
@@ -147,25 +158,30 @@ private fun CalendarHeader(currentMonth: YearMonth) {
 private fun DaysOfWeekHeader() {
     val daysOfWeek = listOf("일", "월", "화", "수", "목", "금", "토")
 
-    Row(
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(7),
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .fillMaxWidth(),
+        userScrollEnabled = false
     ) {
-        daysOfWeek.forEachIndexed { index, dayName ->
+        items(daysOfWeek.size) { index ->
+            val dayName = daysOfWeek[index]
             val textColor = when (index) {
-                0 -> androidx.compose.ui.graphics.Color(0xFFE57373)
-                6 -> androidx.compose.ui.graphics.Color(0xFF9E9E9E)
-                else -> androidx.compose.ui.graphics.Color(0xFF333333)
+                0 -> Color(0xFFE57373)
+                6 -> Color(0xFF9E9E9E)
+                else -> Color(0xFF333333)
             }
-            Text(
-                text = dayName,
-                modifier = Modifier.weight(1f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
-                color = textColor
-            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Text(
+                    text = dayName,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Normal,
+                    color = textColor
+                )
+            }
         }
     }
 }
@@ -229,9 +245,10 @@ private fun CalendarDayCell(
     ) {
         Text(
             text = date.dayOfMonth.toString(),
+            fontSize = 16.sp,
             color = textColor,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Normal,
+            fontWeight = FontWeight.Medium,
             modifier = Modifier
                 .padding(2.dp)
                 .then(

@@ -1,13 +1,16 @@
 package com.voyz.presentation.component.calendar
 
-import androidx.compose.animation.AnimatedContent
+import android.util.Log
+import androidx.compose.animation.Animatedontent
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Divider
@@ -16,159 +19,166 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlin.math.abs
-import android.util.Log
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.platform.LocalContext
 import com.voyz.datas.datastore.UserPreferencesManager
 import com.voyz.datas.model.MarketingOpportunity
 import com.voyz.presentation.component.calendar.components.MarketingCalendarGrid
+import com.voyz.presentation.component.calendar.CalendarViewModel
 import com.voyz.ui.theme.MarketingColors
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlin.math.abs
 
 @Composable
 fun CalendarComponent(
     modifier: Modifier = Modifier,
     viewModel: CalendarViewModel? = null,
+    isWeekly: Boolean = false, // feat/des/reminder의 기능 추가
     onDateClick: (LocalDate, List<MarketingOpportunity>) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
     val userPreferencesManager = remember { UserPreferencesManager(context) }
-    val userId = userPreferencesManager.userId.collectAsState(initial = null)
-    val isLoggedIn = userPreferencesManager.isLoggedIn.collectAsState(initial = false)
-    
-    // 전달받은 ViewModel이 있으면 사용, 없으면 새로 생성
+    val userId by userPreferencesManager.userId.collectAsState(initial = null)
+    val isLoggedIn by userPreferencesManager.isLoggedIn.collectAsState(initial = false)
+
+    // 뷰모델
     val calendarViewModel = viewModel ?: remember(context) { CalendarViewModel(context) }
-    
     val currentMonth = calendarViewModel.currentMonth
     val selectedDate = calendarViewModel.selectedDate
     val dailyOpportunities = calendarViewModel.dailyOpportunities
     val isLoading = calendarViewModel.isLoading
-    var totalDrag by remember { mutableStateOf(0f) }
-    
-    // 사용자 ID가 있으면 캘린더 데이터 로딩
-    LaunchedEffect(userId.value, isLoggedIn.value, currentMonth) {
+
+    // 데이터 로딩
+    LaunchedEffect(userId, isLoggedIn, currentMonth) {
         Log.d("CalendarComponent", "LaunchedEffect triggered")
-        Log.d("CalendarComponent", "- userId: ${userId.value}")
-        Log.d("CalendarComponent", "- isLoggedIn: ${isLoggedIn.value}")
+        Log.d("CalendarComponent", "- userId: $userId")
+        Log.d("CalendarComponent", "- isLoggedIn: $isLoggedIn")
         Log.d("CalendarComponent", "- currentMonth: $currentMonth")
-        Log.d("CalendarComponent", "- Current system date: ${java.time.LocalDate.now()}")
+        Log.d("CalendarComponent", "- Current system date: ${LocalDate.now()}")
         
-        if (isLoggedIn.value && userId.value != null) {
-            val id = userId.value!!
-            Log.d("CalendarComponent", "User is logged in. Loading calendar data for user: $id")
-            calendarViewModel.loadCalendarData(id)
+        if (isLoggedIn && userId != null) {
+            Log.d("CalendarComponent", "User is logged in. Loading calendar data for user: $userId")
+            calendarViewModel.loadCalendarData(userId!!)
+
+            // feat/des/reminder의 기능: 첫 로드 시 오늘 날짜 선택
+            if (calendarViewModel.selectedDate == null) {
+                calendarViewModel.selectDate(LocalDate.now())
+            }
         } else {
             Log.w("CalendarComponent", "User not logged in or userId is null. Skipping data load.")
-            Log.w("CalendarComponent", "- isLoggedIn: ${isLoggedIn.value}, userId: ${userId.value}")
+            Log.w("CalendarComponent", "- isLoggedIn: $isLoggedIn, userId: $userId")
         }
     }
+    
+    var totalDrag by remember { mutableStateOf(0f) }
 
     Column(
         modifier = modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
+            .fillMaxSize()
             .background(Color.White)
-            .pointerInput(Unit) {
+            .pointerInput(userId) {
                 detectHorizontalDragGestures(
-                    onDragStart = { 
-                        totalDrag = 0f
+                    onDragStart = {
+                        totalDrag = 0f // 드래그 시작 시 초기화
                     },
-                    onDragEnd = { 
-                        if (abs(totalDrag) > 100) {
-                            userId.value?.let { id ->
-                            if (totalDrag > 0) {
-                                                            calendarViewModel.goToPreviousMonth(id)
-                            } else {
-                        calendarViewModel.goToNextMonth(id)
-                                }
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        totalDrag += dragAmount
+                    },
+                    onDragEnd = {
+                        if (userId != null) {
+                            // 드래그 임계값을 설정 가능하도록 (기본값 50f)
+                            val threshold = if (isWeekly) 30f else 50f
+                            when {
+                                totalDrag > threshold -> calendarViewModel.goToPreviousMonth(userId!!)
+                                totalDrag < -threshold -> calendarViewModel.goToNextMonth(userId!!)
                             }
                         }
-                        totalDrag = 0f
+                        totalDrag = 0f // 리셋
                     }
-                ) { _, dragAmount ->
-                    totalDrag += dragAmount
-                }
-            },
-        verticalArrangement = Arrangement.Top
-    ) {
-        // 캘린더 헤더
-        CalendarHeader(
-            currentMonth = currentMonth
-        )
-        
-        // 요일 헤더
-        DaysOfWeekHeader()
-        
-        // 애니메이션이 적용된 캘린더 그리드
-        AnimatedContent(
-            targetState = currentMonth,
-            transitionSpec = {
-                val isNext = targetState > initialState
-                val slideDirection = if (isNext) 1 else -1
-                
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> slideDirection * fullWidth },
-                    animationSpec = tween(200, easing = FastOutSlowInEasing)
-                ) togetherWith slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> -slideDirection * fullWidth },
-                    animationSpec = tween(200, easing = FastOutSlowInEasing)
                 )
-            },
-            label = "calendar_month_transition"
-        ) { animatedCurrentMonth ->
-            MarketingCalendarGrid(
-                yearMonth = animatedCurrentMonth,
-                selectedDate = selectedDate,
-                marketingOpportunities = dailyOpportunities,
-                calendarHeight = 420.dp,
-                onDateClick = { date ->
-                    // 마케팅 기회가 있는 날짜 클릭 시 처리
-                    val dailyOpps = dailyOpportunities[date]
-                    if (dailyOpps != null && dailyOpps.opportunities.isNotEmpty()) {
-                        onDateClick(date, dailyOpps.opportunities)
+            }
+    ) {
+        CalendarHeader(currentMonth)
+        DaysOfWeekHeader()
+
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color.White)
+        ) {
+            AnimatedContent(
+                targetState = currentMonth,
+                transitionSpec = {
+                    val isNext = targetState > initialState
+                    val dir = if (isNext) 1 else -1
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth * dir },
+                        animationSpec = tween(200, easing = FastOutSlowInEasing)
+                    ) togetherWith slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth * dir },
+                        animationSpec = tween(200, easing = FastOutSlowInEasing)
+                    )
+                },
+                label = "calendar_month_transition"
+            ) { month ->
+                MarketingCalendarGrid(
+                    yearMonth = month,
+                    selectedDate = selectedDate,
+                    marketingOpportunities = dailyOpportunities,
+                    calendarHeight = maxHeight, // BoxWithConstraints에서 제공하는 동적 높이
+                    isWeekly = isWeekly, // feat/des/reminder의 기능
+                    onDateClick = { date ->
+                        // 날짜 클릭 로직 통합
+                        val clicked = YearMonth.from(date)
+                        if (clicked != month && userId != null) {
+                            calendarViewModel.goToMonth(clicked, userId!!)
+                        }
+                        
+                        val dailyOpps = dailyOpportunities[date]
+                        if (dailyOpps != null && dailyOpps.opportunities.isNotEmpty()) {
+                            onDateClick(date, dailyOpps.opportunities)
+                        }
+                        
+                        // dev 브랜치의 clearSelection 기능 통합
+                        if (date == selectedDate) {
+                            calendarViewModel.clearSelection()
+                        } else {
+                            calendarViewModel.selectDate(date)
+                        }
                     }
-                    if (date == selectedDate) {
-                        calendarViewModel.clearSelection()
-                    } else {
-                        calendarViewModel.selectDate(date)
-                    }
-                }
-            )
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun CalendarHeader(
-    currentMonth: YearMonth
-) {
+private fun CalendarHeader(currentMonth: YearMonth) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp, bottom = 20.dp, start = 40.dp, end = 40.dp),
+            .padding(top = 12.dp, bottom = 20.dp, start = 40.dp, end = 40.dp), // dev 브랜치의 padding
         contentAlignment = Alignment.Center
     ) {
-        // 애니메이션이 적용된 월 텍스트
         Crossfade(
-            targetState = currentMonth,
+            targetState = currentMonth, 
             animationSpec = tween(200, easing = FastOutSlowInEasing),
             label = "month_text_transition"
-        ) { animatedMonth: YearMonth ->
+        ) { animatedMonth ->
             Text(
                 text = "${animatedMonth.monthValue}월",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Normal,
+                fontWeight = FontWeight.Normal, // dev 브랜치의 스타일
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -182,16 +192,15 @@ private fun DaysOfWeekHeader() {
     }
     
     Column {
-        // 요일 헤더만 표시
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp) // dev 브랜치의 padding
         ) {
             daysOfWeek.forEachIndexed { index, dayName ->
                 val textColor = when (index) {
                     0 -> MarketingColors.HighPriority // 일요일
-                    6 -> MarketingColors.TextSecondary // 토요일  
+                    6 -> MarketingColors.TextSecondary // 토요일
                     else -> MarketingColors.TextPrimary // 평일
                 }
                 
@@ -200,13 +209,13 @@ private fun DaysOfWeekHeader() {
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Medium, // dev 브랜치의 스타일
                     color = textColor
                 )
             }
         }
         
-        // 구분선
+        // dev 브랜치의 구분선
         Divider(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             color = MarketingColors.TextTertiary.copy(alpha = 0.3f),
@@ -214,10 +223,6 @@ private fun DaysOfWeekHeader() {
         )
     }
 }
-
-// MarketingCalendarGrid는 이제 별도 파일로 분리됨
-
-// MarketingCalendarDayCell과 CalendarDate는 이제 별도 파일로 분리됨
 
 @Preview(showBackground = true, widthDp = 400, heightDp = 700)
 @Composable
