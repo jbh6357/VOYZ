@@ -158,4 +158,14 @@ public class FastApiClient {
 		return restTemplate.exchange(url, HttpMethod.POST, request, String.class);
 	}
 
+	public ResponseEntity<String> requestTranslate(String menuName, String targetLanguage) {
+		String endpoint = "/api/translate";
+		
+		Map<String, Object> data = new HashMap<>();
+        data.put("menuName", menuName);
+        data.put("targetLanguage", targetLanguage);
+        
+        return postDataToFastApi(endpoint, data);
+	}
+
 } 

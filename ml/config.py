@@ -91,3 +91,8 @@ class CreateSuggestResponse(BaseModel):
 class MenuItem(BaseModel):
     name: str
     price: int
+
+# 번역 요청 모델
+class TranslateRequest(BaseModel):
+    menuName: str
+    targetLanguage: str

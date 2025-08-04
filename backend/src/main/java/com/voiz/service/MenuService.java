@@ -19,4 +19,11 @@ public class MenuService {
 		
 		return response.getBody();
 	}
+
+	public String sendToMlServer(String menuName, String targetLanguage) {
+
+		ResponseEntity<String> response = fastApiClient.requestTranslate(menuName, targetLanguage);
+		
+		return response.getBody();
+	}
 }

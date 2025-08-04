@@ -38,5 +38,16 @@ public class MenuController {
         return ResponseEntity.ok(result);
 		
 	}
+	
+	@PostMapping("/translate")
+	@Operation(summary = "메뉴명 번역", description = "한글 메뉴명을 번역한 결과를 반환합니다. targetLanguage 코드 : 영어 en, 중국어(간체) zh-CN, 일본어 ja 등")
+	public ResponseEntity<String> translateMenu(
+			@RequestParam String menuName,
+			@RequestParam String targetLanguage){
+		
+		String result = menuService.sendToMlServer(menuName, targetLanguage);
+        return ResponseEntity.ok(result);
+	}
+	
 
 }

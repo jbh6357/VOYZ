@@ -15,7 +15,8 @@ from services.category_service import CategoryService
 import os
 from google.cloud import vision
 import re
-from config import MenuItem
+from google.cloud import translate_v2 as translate
+from config import MenuItem, TranslateRequest
 # FastAPI 앱 생성
 app = FastAPI(
     title=API_CONFIG["title"],
@@ -256,6 +257,23 @@ async def extract_text(file: UploadFile = File(...)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/translate")
+def translateMenu(req: TranslateRequest):
+    # 요청 받은 메뉴명
+    source_text = req.menuName
+    # 번역 클라이언트 생성
+    translate_client = translate.Client()
+    # 번역 실행
+    result = translate_client.translate(
+        source_text,
+        target_language="en"  # 필요 시 동적으로 받아도 됨
+    )
+
+    return {
+        "original": source_text,
+        "translated": result["translatedText"]
+    }
 
 if __name__ == "__main__":
     import uvicorn
