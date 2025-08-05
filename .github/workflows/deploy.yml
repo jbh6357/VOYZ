@@ -80,9 +80,23 @@ jobs:
                       cd ~/app
                       nohup java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Djava.net.preferIPv4Stack=true -Dserver.address=0.0.0.0 -Dspring.jpa.hibernate.ddl-auto=none -Djwt.secret="${{ secrets.JWT_SECRET }}" *.jar > app.log 2>&1 &
 
-                      # 실행 확인
-                      sleep 10
-                      curl -f http://localhost:8081 || exit 1
+                      # 실행 확인 (더 긴 대기시간)
+                      echo "Waiting for application to start..."
+                      sleep 30
+
+                      # 여러 번 재시도
+                      for i in {1..5}; do
+                        if curl -f http://localhost:8081; then
+                          echo "Application started successfully!"
+                          exit 0
+                        fi
+                        echo "Attempt $i failed, waiting 5 more seconds..."
+                        sleep 5
+                      done
+
+                      echo "Application failed to start"
+                      cat app.log
+                      exit 1
 
     deploy-ml:
         runs-on: ubuntu-latest
