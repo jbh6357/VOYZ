@@ -147,10 +147,16 @@ jobs:
                   command_timeout: 600s
                   script: |
                       cd /home/ubuntu/voyz-ml
-
+                      
+                      # Python venv 패키지 설치 (필요시)
+                      sudo apt update
+                      sudo apt install -y python3.12-venv
+                      
                       # Python 가상환경 설정
-                      python3 -m venv venv || true
+                      rm -rf venv
+                      python3 -m venv venv
                       source venv/bin/activate
+                      pip install --upgrade pip
                       pip install -r requirements.txt
 
                       # 환경변수 파일 생성
