@@ -1,7 +1,7 @@
 name: Deploy VOYZ Application
 on:
   push:
-    branches: [ main, feat/des/web-app ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -51,12 +51,40 @@ jobs:
         cd backend
         ./mvnw clean package -DskipTests
     
-    # 빌드 아티팩트 업로드
-    - name: Upload JAR artifact
-      uses: actions/upload-artifact@v4
+    # EC2 배포
+    - name: Deploy to EC2
+      uses: appleboy/scp-action@v0.1.8
       with:
-        name: voyz-app
-        path: backend/target/*.jar
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_PRIVATE_KEY }}
+        timeout: 120s
+        source: "backend/target/*.jar"
+        target: "~/app"
+        strip_components: 2
+        debug: true
+    
+    # EC2에서 앱 재시작
+    - name: Restart application on EC2
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_PRIVATE_KEY }}
+        timeout: 120s
+        command_timeout: 10m
+        debug: true
+        script: |
+          # 기존 프로세스 종료
+          sudo pkill -f 'java.*voiz' || true
+          
+          # 새 앱 실행
+          cd ~/app
+          nohup java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Djava.net.preferIPv4Stack=true -Dserver.address=0.0.0.0 -Djwt.secret="${{ secrets.JWT_SECRET }}" *.jar > app.log 2>&1 &
+          
+          # 실행 확인
+          sleep 10
+          curl -f http://localhost:8081 || exit 1
   
   deploy-ml:
     runs-on: ubuntu-latest
@@ -75,12 +103,39 @@ jobs:
         cd ml
         pip install -r requirements.txt
     
-    - name: Test ML API
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        GOOGLE_APPLICATION_CREDENTIALS: /tmp/google-credentials.json
-      run: |
-        cd ml
-        # GitHub Secrets에서 Google 인증 정보를 파일로 저장
-        echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}' > /tmp/google-credentials.json
-        python -c "import main; print('ML API 모듈 로드 성공')"
+    - name: Deploy ML to EC2
+      uses: appleboy/scp-action@v0.1.8
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_PRIVATE_KEY }}
+        timeout: 120s
+        source: "ml/*"
+        target: "~/ml-app"
+        strip_components: 1
+        debug: true
+    
+    - name: Setup and restart ML service
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_PRIVATE_KEY }}
+        timeout: 120s
+        command_timeout: 10m
+        debug: true
+        script: |
+          # ML 서비스 설정
+          cd ~/ml-app
+          python3 -m venv venv || true
+          source venv/bin/activate
+          pip install -r requirements.txt
+          
+          # 환경 변수 설정
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/ml-app/google-credentials.json" >> .env
+          echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}' > google-credentials.json
+          
+          # ML 서비스 재시작
+          sudo pkill -f 'uvicorn.*main:app' || true
+          nohup venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 > ml.log 2>&1 &

@@ -18,12 +18,11 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        // React 라우팅을 위한 설정 - 모든 경로를 index.html로 포워딩
-        registry.addViewController("/{spring:\\w+}")
+        // React SPA 라우팅을 위한 설정
+        // API 경로가 아닌 모든 경로를 index.html로 포워딩
+        registry.addViewController("/")
                 .setViewName("forward:/index.html");
-        registry.addViewController("/**/{spring:\\w+}")
-                .setViewName("forward:/index.html");
-        registry.addViewController("/{spring:\\w+}/**{spring:?!(\\.js|\\.css|\\.ico|\\.png|\\.jpg|\\.gif|\\.svg|\\.woff|\\.ttf|\\.eot)$}")
+        registry.addViewController("/{path:[^\\.]*}")
                 .setViewName("forward:/index.html");
     }
 }
