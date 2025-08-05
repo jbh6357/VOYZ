@@ -32,3 +32,6 @@ google-cloud-vision==3.10.2
 
 # 멀티파트 폼데이터 지원
 python-multipart==0.0.20
+
+# Google Translate API 클라이언트
+google-cloud-translate==3.21.1
