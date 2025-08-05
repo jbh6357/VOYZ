@@ -78,7 +78,7 @@ jobs:
 
                       # 새 앱 실행
                       cd ~/app
-                      nohup java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Djava.net.preferIPv4Stack=true -Dserver.address=0.0.0.0 -Djwt.secret="${{ secrets.JWT_SECRET }}" *.jar > app.log 2>&1 &
+                      nohup java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Djava.net.preferIPv4Stack=true -Dserver.address=0.0.0.0 -Dspring.jpa.hibernate.ddl-auto=none -Djwt.secret="${{ secrets.JWT_SECRET }}" *.jar > app.log 2>&1 &
 
                       # 실행 확인
                       sleep 10
