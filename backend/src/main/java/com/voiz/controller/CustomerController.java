@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.voiz.dto.MenusDto;
 import com.voiz.service.OrderService;
+import com.voiz.vo.Menus;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,4 +34,15 @@ public class CustomerController {
 		List<MenusDto> menus= orderService.getCustomerMenus(userId, language);
 		return ResponseEntity.ok(menus);
 	}
+	
+	@GetMapping("/menu/detail/{menuIdx}")
+	@Operation(summary = "고객용 메뉴 상세 조회", description = "메뉴 하나에 대한 상세 정보를 언어에 맞게 반환합니다.")
+	public ResponseEntity<Menus> getCustomerMenuDetail(
+	        @PathVariable int menuIdx,
+	        @RequestParam String language) {
+
+	    Menus menu = orderService.getCustomerMenuDetail(menuIdx, language);
+	    return ResponseEntity.ok(menu);
+	}
+	
 }
