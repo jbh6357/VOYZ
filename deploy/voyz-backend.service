@@ -1,0 +1,32 @@
+[Unit]
+Description=VOYZ Spring Boot Application
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+
+# 환경 변수
+Environment="JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64"
+Environment="PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="SPRING_PROFILES_ACTIVE=prod"
+Environment="JWT_SECRET=YOUR_JWT_SECRET_HERE"
+Environment="TZ=Asia/Seoul"
+
+# 작업 디렉토리
+WorkingDirectory=/opt/voyz/backend
+
+# 실행 명령
+ExecStart=/usr/lib/jvm/java-17-openjdk-amd64/bin/java -jar -Xmx512m -Xms256m voyz.jar
+
+# 재시작 정책
+Restart=on-failure
+RestartSec=10
+
+# 로그
+StandardOutput=append:/var/log/voyz/backend.log
+StandardError=append:/var/log/voyz/backend-error.log
+
+[Install]
+WantedBy=multi-user.target

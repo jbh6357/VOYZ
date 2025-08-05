@@ -1,0 +1,31 @@
+[Unit]
+Description=VOYZ ML Service (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+
+# 환경 변수
+Environment="PATH=/opt/voyz/ml/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONPATH=/opt/voyz/ml"
+Environment="OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE"
+Environment="GOOGLE_APPLICATION_CREDENTIALS=/opt/voyz/ml/google-credentials.json"
+
+# 작업 디렉토리
+WorkingDirectory=/opt/voyz/ml
+
+# 실행 명령
+ExecStart=/opt/voyz/ml/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 --env-file .env.production
+
+# 재시작 정책
+Restart=on-failure
+RestartSec=10
+
+# 로그
+StandardOutput=append:/var/log/voyz/ml.log
+StandardError=append:/var/log/voyz/ml-error.log
+
+[Install]
+WantedBy=multi-user.target
