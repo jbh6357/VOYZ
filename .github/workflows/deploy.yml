@@ -1,7 +1,7 @@
 name: Deploy VOYZ Application
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feat/des/web-app ]
   pull_request:
     branches: [ main ]
 
@@ -21,12 +21,12 @@ jobs:
     # React 앱 빌드
     - name: Install React dependencies
       run: |
-        cd WEBAPP
+        cd webapp
         npm install
     
     - name: Build React app
       run: |
-        cd WEBAPP
+        cd webapp
         npm run build
         
     # Java 설정 (Spring Boot 빌드용)
@@ -40,7 +40,7 @@ jobs:
     - name: Copy React build to Spring Boot
       run: |
         rm -rf backend/src/main/resources/static/*
-        cp -r WEBAPP/dist/* backend/src/main/resources/static/
+        cp -r webapp/dist/* backend/src/main/resources/static/
     
     # Spring Boot 빌드
     - name: Grant execute permission for mvnw
