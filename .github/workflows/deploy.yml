@@ -76,20 +76,18 @@ jobs:
                       # 기존 프로세스 종료
                       sudo pkill -f 'java.*voiz' || true
 
-                      # 새 앱 실행 (직접 실행 방식)
+                      # 새 앱 실행 (screen 사용)
                       cd ~/app
 
-                      # 백그라운드에서 실행하되 disown으로 세션과 분리
-                      java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Djava.net.preferIPv4Stack=true -Dserver.address=0.0.0.0 -Dspring.jpa.hibernate.ddl-auto=none -Djwt.secret="${{ secrets.JWT_SECRET }}" *.jar > app.log 2>&1 & 
-                      JAVA_PID=$!
-                      disown $JAVA_PID
+                      # screen을 사용해서 백그라운드에서 실행
+                      screen -dmS voyz java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Djava.net.preferIPv4Stack=true -Dserver.address=0.0.0.0 -Dspring.jpa.hibernate.ddl-auto=none -Djwt.secret="${{ secrets.JWT_SECRET }}" *.jar
 
-                      echo "Java application started with PID: $JAVA_PID"
+                      echo "Java application started in screen session 'voyz'"
                       echo "Waiting for application to start..."
-                      sleep 20
+                      sleep 25
 
                       # 여러 번 재시도
-                      for i in {1..5}; do
+                      for i in {1..6}; do
                         if curl -f http://localhost:8081; then
                           echo "Application started successfully!"
                           exit 0
@@ -99,7 +97,10 @@ jobs:
                       done
 
                       echo "Application failed to start"
-                      cat app.log
+                      echo "Screen sessions:"
+                      screen -ls
+                      echo "Checking if Java process is running:"
+                      ps aux | grep java
                       exit 1
 
     deploy-ml:
