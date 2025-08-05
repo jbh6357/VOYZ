@@ -1,13 +1,16 @@
 package com.voiz.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.voiz.dto.OrderRequestDto;
 import com.voiz.service.OrderService;
+import com.voiz.vo.Orders;
 import com.voiz.vo.OrdersItems;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,4 +47,17 @@ public class OrderController {
         return ResponseEntity.ok("주문이 성공적으로 수정되었습니다.");
     }
 	
+	@GetMapping("/restaurant/{userId}")
+	@Operation(summary = "매장별 주문 목록 조회", description = "userId, status, date(yyyy-mm-dd)에 해당하는 주문 목록을 조회합니다. date가 없으면 오늘 날짜로 조회합니다.")
+	public ResponseEntity<List<Orders>> getOrdersByUserIdAndStatusAndDate(
+	        @PathVariable String userId,
+	        @RequestParam String status,
+	        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+	    if (date == null) {
+	        date = LocalDate.now(); // 오늘 날짜로 대체
+	    }
+
+	    List<Orders> orders = orderService.getOrdersByUserIdAndStatusAndDate(userId, status, date);
+	    return ResponseEntity.ok(orders);
+	}
 }

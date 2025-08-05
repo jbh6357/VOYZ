@@ -1,5 +1,6 @@
 package com.voiz.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -166,6 +167,12 @@ public class OrderService {
 
         ordersRepository.save(order);
         
+	}
+
+	public List<Orders> getOrdersByUserIdAndStatusAndDate(String userId, String status, LocalDate date) {
+		String formattedDate = date.toString();
+		List<Orders> orders = ordersRepository.findByUserIdAndStatusAndDate(userId, status, formattedDate);
+		return orders;
 	}
 	
 
