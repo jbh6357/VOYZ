@@ -29,10 +29,10 @@ import com.voyz.presentation.screen.management.operation.OperationManagementMenu
 import com.voyz.presentation.screen.management.operation.OperationManagementMenuInputScreen
 import com.voyz.presentation.screen.management.operation.OperationManagementMenuProcessingScreen
 
-
 @Composable
 fun NavGraph(navController: NavHostController) {
     val imageUri = remember { mutableStateOf<Uri?>(null) }
+    
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(
@@ -132,7 +132,7 @@ fun NavGraph(navController: NavHostController) {
         composable("operation_management_menu_input") {
             OperationManagementMenuInputScreen(navController = navController)
         }
-
+        
         composable("customer_management") {
             CustomerManagementScreen(navController = navController)
         }
@@ -211,6 +211,5 @@ fun NavGraph(navController: NavHostController) {
                 marketingIdx = marketingIdx
             )
         }
-
     }
 }
