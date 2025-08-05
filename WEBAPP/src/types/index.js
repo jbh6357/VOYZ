@@ -14,7 +14,8 @@ export const LANGUAGES = {
 }
 
 export const COUNTRY_FLAGS = {
-  'US': '[US]', 'JP': '[JP]', 'CN': '[CN]', 'ES': '[ES]', 'FR': '[FR]',
-  'DE': '[DE]', 'KR': '[KR]', 'GB': '[GB]', 'IT': '[IT]', 'RU': '[RU]',
-  'AE': '[AE]', 'TH': '[TH]', 'VN': '[VN]'
+  'US': 'US', 'JP': 'JP', 'CN': 'CN', 'ES': 'ES', 'FR': 'FR',
+  'DE': 'DE', 'KR': 'KR', 'GB': 'GB', 'IT': 'IT', 'RU': 'RU',
+  'AE': 'AE', 'TH': 'TH', 'VN': 'VN', 'CA': 'CA', 'AU': 'AU',
+  'NZ': 'NZ'
 }

@@ -11,16 +11,21 @@ const TossPaymentWidget = ({ isOpen, totalPrice, selectedLang, onPaymentComplete
   // 처리중 카운트다운
   useEffect(() => {
     if (paymentStep === 'processing' && countdown > 0) {
+      console.log(`⏰ 토스 결제 카운트다운: ${countdown}초 남음`)
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
       return () => clearTimeout(timer)
     } else if (paymentStep === 'processing' && countdown === 0) {
-      onPaymentComplete({ 
+      console.log('✅ 토스 결제 완료, onPaymentComplete 호출')
+      const paymentDetails = { 
         status: 'success', 
         message: '토스페이 결제 완료',
-        orderId: 'toss_order_' + Date.now()
-      })
+        orderId: 'toss_order_' + Date.now(),
+        totalPrice: totalPrice
+      }
+      console.log('📤 전달할 결제 정보:', paymentDetails)
+      onPaymentComplete(paymentDetails)
     }
-  }, [paymentStep, countdown])
+  }, [paymentStep, countdown, onPaymentComplete, totalPrice])
 
   // 토스페이먼츠 SDK 로드
   useEffect(() => {
@@ -65,7 +70,6 @@ const TossPaymentWidget = ({ isOpen, totalPrice, selectedLang, onPaymentComplete
       
     } catch (error) {
       console.error('결제 요청 실패:', error)
-      setPaymentProcessing(false)
       
       // 테스트 환경에서는 에러나도 성공으로 처리
       if (error.code === 'USER_CANCEL') {
@@ -77,7 +81,8 @@ const TossPaymentWidget = ({ isOpen, totalPrice, selectedLang, onPaymentComplete
           onPaymentComplete({ 
             status: 'success', 
             message: '테스트 결제 완료 (에러 발생했지만 성공처리)',
-            orderId: 'test_order_' + Date.now()
+            orderId: 'test_order_' + Date.now(),
+            totalPrice: totalPrice
           })
         }, 1000)
       }
@@ -119,7 +124,6 @@ const TossPaymentWidget = ({ isOpen, totalPrice, selectedLang, onPaymentComplete
 
         {paymentStep === 'api-call' && (
           <div className="toss-processing-step">
-            <div className="processing-icon">POPUP</div>
             <div className="processing-text">결제창 열기 중...</div>
             <div className="processing-detail">팝업 창에서 결제를 진행하세요</div>
           </div>
@@ -127,7 +131,6 @@ const TossPaymentWidget = ({ isOpen, totalPrice, selectedLang, onPaymentComplete
 
         {paymentStep === 'processing' && (
           <div className="toss-processing-step">
-            <div className="processing-icon">LOADING</div>
             <div className="processing-text">결제 진행 중...</div>
             <div className="processing-detail">
               {countdown > 0 ? `${countdown}초 후 완료` : '완료 중...'}

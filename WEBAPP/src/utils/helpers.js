@@ -15,15 +15,17 @@ export const getItemDescription = (item, selectedLang) => {
 }
 
 export const getReviewText = (review, selectedLang, reviewViewMode) => {
+  if (!review || !review.text) {
+    return ''
+  }
+  
   if (reviewViewMode === 'original') {
-    return review.originalText
+    // 리뷰어의 국가에 따라 원본 언어 결정
+    return review.countryCode === 'KR' ? review.text.ko : review.text.en
   }
   
-  if (review.translations && review.translations[selectedLang]) {
-    return review.translations[selectedLang]
-  }
-  
-  return review.originalText
+  // 선택된 언어로 표시
+  return review.text[selectedLang] || review.text.en || review.text.ko || ''
 }
 
 export const formatPrice = (price, selectedLang) => {
@@ -38,9 +40,22 @@ export const getFilteredReviews = (reviews, selectedCountryFilter) => {
 }
 
 export const getUniqueCountries = (reviews, getCountryFlag) => {
+  const countryNames = {
+    'US': 'United States',
+    'KR': 'South Korea',
+    'IT': 'Italy',
+    'CA': 'Canada',
+    'JP': 'Japan',
+    'AU': 'Australia',
+    'GB': 'United Kingdom',
+    'FR': 'France',
+    'NZ': 'New Zealand',
+    'CN': 'China'
+  }
+  
   const countries = reviews.map(review => ({
     code: review.countryCode,
-    name: review.country,
+    name: countryNames[review.countryCode] || review.countryCode,
     flag: getCountryFlag(review.countryCode)
   }))
   return [...new Map(countries.map(item => [item.code, item])).values()]

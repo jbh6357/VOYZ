@@ -62,11 +62,11 @@ const ReviewModal = ({ item, selectedLang, isOpen, onClose }) => {
                 <span className="review-flag">[{getCountryFlag(review.countryCode)}]</span>
                 {review.user}
               </span>
-              <span className="review-country">({review.country})</span>
+              <span className="review-country">({review.countryCode})</span>
             </div>
             <div className="review-text">"{getReviewText(review, selectedLang, reviewViewMode)}"</div>
-            {reviewViewMode === 'translated' && getReviewText(review, selectedLang, reviewViewMode) !== review.originalText && (
-              <div className="original-text">원문: "{review.originalText}"</div>
+            {reviewViewMode === 'translated' && selectedLang !== (review.countryCode === 'KR' ? 'ko' : 'en') && (
+              <div className="original-text">원문: "{review.countryCode === 'KR' ? review.text.ko : review.text.en}"</div>
             )}
           </div>
         ))}
