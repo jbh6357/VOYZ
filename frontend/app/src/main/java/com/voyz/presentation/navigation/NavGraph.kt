@@ -1,6 +1,9 @@
 package com.voyz.presentation.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -10,7 +13,7 @@ import com.voyz.presentation.screen.auth.signup.SignUpScreen
 import com.voyz.presentation.screen.main.MainScreen
 import com.voyz.presentation.screen.auth.IdPwFindScreen
 import com.voyz.presentation.screen.reminder.ReminderScreen
-import com.voyz.presentation.screen.management.OperationManagementScreen
+import com.voyz.presentation.screen.management.operation.OperationManagementScreen
 import com.voyz.presentation.screen.management.CustomerManagementScreen
 import com.voyz.presentation.screen.management.SettingsScreen
 import com.voyz.presentation.screen.management.UserProfileScreen
@@ -21,9 +24,15 @@ import com.voyz.presentation.screen.marketing.MarketingOpportunityDetailScreen
 import com.voyz.presentation.screen.reminder.ReminderDetailScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.voyz.presentation.screen.management.operation.OperationManagementMenuConfirmScreen
+import com.voyz.presentation.screen.management.operation.OperationManagementMenuUploadScreen
+import com.voyz.presentation.screen.management.operation.OperationManagementMenuInputScreen
+import com.voyz.presentation.screen.management.operation.OperationManagementMenuProcessingScreen
+
 
 @Composable
 fun NavGraph(navController: NavHostController) {
+    val imageUri = remember { mutableStateOf<Uri?>(null) }
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(
@@ -95,6 +104,35 @@ fun NavGraph(navController: NavHostController) {
             OperationManagementScreen(navController = navController)
         }
         
+        composable("operation_management_menu_upload") {
+            val imageUriState = remember { mutableStateOf<Uri?>(null) }
+
+            OperationManagementMenuUploadScreen(
+                navController = navController,
+                imageUri = imageUriState.value,
+                onImageSelected = { imageUriState.value = it },
+                onDeleteImage = { imageUriState.value = null },
+                onNextStep = {
+                    navController.navigate("operation_management_menu_processing")
+                }
+            )
+        }
+
+        composable("operation_management_menu_processing") {
+            OperationManagementMenuProcessingScreen(navController = navController)
+        }
+
+        composable("operation_management_menu_confirm") {
+            OperationManagementMenuConfirmScreen(
+                navController = navController,
+                imageUri = imageUri.value
+            )
+        }
+
+        composable("operation_management_menu_input") {
+            OperationManagementMenuInputScreen(navController = navController)
+        }
+
         composable("customer_management") {
             CustomerManagementScreen(navController = navController)
         }
@@ -173,5 +211,6 @@ fun NavGraph(navController: NavHostController) {
                 marketingIdx = marketingIdx
             )
         }
+
     }
 }
