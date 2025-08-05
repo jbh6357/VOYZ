@@ -119,6 +119,10 @@ public class OrderService {
         order.setTotalAmount(String.valueOf(totalAmount));
         ordersRepository.save(order);
 	}
+
+	public List<OrdersItems> getOrderItems(int orderIdx) {
+		return ordersItemsRepository.findAllByOrderIdx(orderIdx);
+	}
 	
 
 }
