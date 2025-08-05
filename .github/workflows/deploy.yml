@@ -22,7 +22,7 @@ jobs:
     - name: Install React dependencies
       run: |
         cd WEBAPP
-        npm ci
+        npm install
     
     - name: Build React app
       run: |
