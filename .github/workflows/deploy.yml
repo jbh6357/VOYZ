@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     # Node.js 설정 (React 빌드용)
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
@@ -33,7 +33,7 @@ jobs:
         
     # Java 설정 (Spring Boot 빌드용)
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
@@ -55,7 +55,7 @@ jobs:
     
     # 빌드 아티팩트 업로드
     - name: Upload JAR artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: voyz-app
         path: backend/target/*.jar
@@ -65,7 +65,7 @@ jobs:
     needs: build-and-deploy
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Python
       uses: actions/setup-python@v4
