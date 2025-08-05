@@ -1,14 +1,22 @@
 package com.voiz.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.voiz.util.MultipartFileResource;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import java.util.Map;
+import java.io.IOException;
 import java.util.HashMap;
 
 @Service
@@ -127,4 +135,37 @@ public class FastApiClient {
 		
         return postDataToFastApi(endpoint, data);
 	}
+	
+	/**
+	 * OCR 실행
+	 * @param file 전송 파일
+	 * @return 텍스트 추출 결과
+	 * @throws IOException 
+	 */
+	public ResponseEntity<String> requestOcr(MultipartFile file) throws IOException{
+		 String endpoint = "/api/ocr";
+		 String url = fastApiBaseUrl + endpoint;
+
+		// MultiValueMap으로 multipart 데이터 구성
+		MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+		body.add("file", new MultipartFileResource(file));
+		    
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+		    
+		HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+		    
+		return restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+	}
+
+	public ResponseEntity<String> requestTranslate(String menuName, String targetLanguage) {
+		String endpoint = "/api/translate";
+		
+		Map<String, Object> data = new HashMap<>();
+        data.put("menuName", menuName);
+        data.put("targetLanguage", targetLanguage);
+        
+        return postDataToFastApi(endpoint, data);
+	}
+
 } 
