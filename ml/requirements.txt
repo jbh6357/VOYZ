@@ -15,8 +15,7 @@ pydantic>=2.5.0
 # 타입 힌트 지원 (Python 3.8+ 에서는 기본 포함이지만 명시적으로 포함)
 typing-extensions>=4.8.0
 
-# 추가 유틸리티 (선택사항)
-python-multipart==0.0.6
+# 추가 유틸리티 (선택사항) - 중복 제거됨
 
 # OpenAI API 클라이언트
 openai==1.54.3
