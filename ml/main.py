@@ -24,8 +24,10 @@ app = FastAPI(
     description=API_CONFIG["description"]
 )
 
-# 환경변수로 인증 설정
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.getenv('GOOGLE_CREDENTIALS_PATH')
+# 환경변수로 인증 설정 (선택사항)
+google_credentials_path = os.getenv('GOOGLE_CREDENTIALS_PATH')
+if google_credentials_path:
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = google_credentials_path
 
 # 특일 - 고객 매칭
 @app.post("/api/match/specialDay")
