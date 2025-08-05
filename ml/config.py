@@ -86,3 +86,13 @@ class CreateSuggestResponse(BaseModel):
     expectedEffect: str
     confidence: float  # 문자열에서 숫자로 변경
     priority: str
+
+# 메뉴 OCR 모델 설정
+class MenuItem(BaseModel):
+    name: str
+    price: int
+
+# 번역 요청 모델
+class TranslateRequest(BaseModel):
+    menuName: str
+    targetLanguage: str
