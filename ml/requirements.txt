@@ -26,3 +26,12 @@ python-dotenv==1.0.0
 
 # 추가 의존성
 setuptools>=65.0.0 
+
+# Google OCR API 클라이언트
+google-cloud-vision==3.10.2
+
+# 멀티파트 폼데이터 지원
+python-multipart==0.0.20
+
+# Google Translate API 클라이언트
+google-cloud-translate==3.21.1
