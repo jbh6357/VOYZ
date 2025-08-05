@@ -78,6 +78,9 @@ jobs:
     - name: Test ML API
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GOOGLE_APPLICATION_CREDENTIALS: /tmp/google-credentials.json
       run: |
         cd ml
+        # GitHub Secrets에서 Google 인증 정보를 파일로 저장
+        echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}' > /tmp/google-credentials.json
         python -c "import main; print('ML API 모듈 로드 성공')"
