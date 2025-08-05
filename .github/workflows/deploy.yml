@@ -79,7 +79,7 @@ jobs:
                       Type=simple
                       User=ubuntu
                       WorkingDirectory=/home/ubuntu/voyz-app
-                      ExecStart=/usr/bin/java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Dserver.port=8081 -Djwt.secret=${{ secrets.JWT_SECRET }} /home/ubuntu/voyz-app/voiz-0.0.1-SNAPSHOT.jar
+                      ExecStart=/usr/bin/java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Dserver.port=8081 -Dspring.jpa.hibernate.ddl-auto=none -Djwt.secret=${{ secrets.JWT_SECRET }} /home/ubuntu/voyz-app/voiz-0.0.1-SNAPSHOT.jar
                       Restart=always
                       RestartSec=10
                       StandardOutput=journal
