@@ -33,9 +33,9 @@ public class MenuService {
 
 	public String sendToMlServer(String menuName, String targetLanguage) {
 
-		ResponseEntity<String> response = fastApiClient.requestTranslate(menuName, targetLanguage);
+		String response = fastApiClient.requestTranslate(menuName, targetLanguage);
 		
-		return response.getBody();
+		return response;
 	}
 
 	public void createMenu(String userId, String menuName, int menuPrice, String menuDescription) {
