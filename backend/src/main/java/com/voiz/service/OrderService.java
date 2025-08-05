@@ -174,6 +174,16 @@ public class OrderService {
 		List<Orders> orders = ordersRepository.findByUserIdAndStatusAndDate(userId, status, formattedDate);
 		return orders;
 	}
+
+	public void updateOrderStatus(int orderIdx, String status) {
+		Optional<Orders> optionalOrder = ordersRepository.findById(orderIdx);
+		if(optionalOrder.isEmpty()) {
+			throw new RuntimeException("잘못된 주문Idx입니다.");
+		}
+		Orders order = optionalOrder.get();
+		order.setStatus(status);
+		ordersRepository.save(order);
+	}
 	
 
 }

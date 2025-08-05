@@ -60,4 +60,11 @@ public class OrderController {
 	    List<Orders> orders = orderService.getOrdersByUserIdAndStatusAndDate(userId, status, date);
 	    return ResponseEntity.ok(orders);
 	}
+	
+	@PutMapping("/{orderIdx}/status")
+	@Operation(summary = "주문 상태 변경", description = "주문번호에 해당하는 주문의 상태를 변경합니다.")
+	public ResponseEntity<String> updateOrderStatus(@PathVariable int orderIdx, @RequestParam String status) {
+	   orderService.updateOrderStatus(orderIdx, status);
+	   return ResponseEntity.ok("주문 상태가 성공적으로 변경되었습니다.");
+	}
 }
