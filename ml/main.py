@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 from datetime import datetime
 
 # 설정 및 모델 import
-from config import API_CONFIG, SpecialDayMatchRequest, ContentGenerationRequest, CategoryClassificationRequest
+from config import API_CONFIG, SpecialDayMatchRequest, ContentGenerationRequest, CategoryClassificationRequest, CreateSuggestRequest, CreateSuggestResponse
 from models.match_models import MatchModels
 from services.content_service import ContentService
 from services.category_service import CategoryService
@@ -74,6 +74,36 @@ def classify_categories(request: CategoryClassificationRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"카테고리 분류 실패: {str(e)}")
+    
+# 특일 제안 생성
+@app.post("/api/suggest/create")
+def create_suggest(request: CreateSuggestRequest):
+    """ 특일 제안 생성 """
+    try:
+        result = ContentService.create_special_day_suggest(
+            name=request.name,
+            type_name=request.type,
+            storeCategory=request.storeCategory
+        )
+        
+        # 계산된 confidence를 직접 사용 (문자열이 아닌 숫자)
+        calculated_confidence = ContentService.calculate_confidence(
+            request.name, request.type, request.storeCategory
+        )
+        
+        return {
+            "success": True,
+            "title": result.title,
+            "description": result.description,
+            "targetCustomer": result.targetCustomer,
+            "suggestedAction": result.suggestedAction,
+            "expectedEffect": result.expectedEffect,
+            "confidence": calculated_confidence,  # 숫자값 직접 사용
+            "priority": result.priority
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"제안 생성 실패: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

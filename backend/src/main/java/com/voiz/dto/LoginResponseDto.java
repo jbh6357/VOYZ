@@ -12,4 +12,7 @@ public class LoginResponseDto {
     private String userName;
     private String storeName;
     private String storeCategory;
+    private String accessToken;
+    private String refreshToken;
+    private String tokenType;
 } 

@@ -189,19 +189,24 @@ fun MarketingOpportunityListModal(
                                 opportunities.forEachIndexed { index, opp ->
                                     android.util.Log.d("Modal", "[$index] ID: ${opp.id}, Title: ${opp.title}")
                                 }
-                                val reminderCount = opportunities.count { it.title.startsWith("[리마인더]") }
-                                val suggestionCount = opportunities.size - reminderCount
+                                val reminderCount = opportunities.count { it.id.startsWith("reminder_") }
+                                val suggestionCount = opportunities.count { it.id.startsWith("suggestion_") }
+                                val opportunityCount = opportunities.count { it.id.startsWith("special_day_") }
                                 android.util.Log.d("Modal", "Reminder count: $reminderCount, Suggestion count: $suggestionCount")
                                 android.util.Log.d("Modal", "=== End MarketingOpportunityListModal ===")
                                 
                                 Text(
                                     text = when {
-                                        reminderCount > 0 && suggestionCount > 0 -> 
-                                            "리마인더 ${reminderCount}개, 제안 ${suggestionCount}개"
+                                        reminderCount > 0 && (suggestionCount + opportunityCount) > 0 -> 
+                                            "리마인더 ${reminderCount}개, 제안/기회 ${suggestionCount + opportunityCount}개"
                                         reminderCount > 0 -> 
                                             "${reminderCount}개의 리마인더"
-                                        else -> 
+                                        suggestionCount > 0 && opportunityCount > 0 ->
+                                            "제안 ${suggestionCount}개, 기회 ${opportunityCount}개"
+                                        suggestionCount > 0 ->
                                             "${suggestionCount}개의 제안"
+                                        else -> 
+                                            "${opportunityCount}개의 기회"
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MarketingColors.Primary,
@@ -346,142 +351,196 @@ private fun MarketingOpportunityItem(
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (opportunity.title.startsWith("[리마인더]")) {
-                // 리마인더 타입별 색상
-                when (opportunity.priority) {
-                    Priority.HIGH -> Color(0xFFFF4444).copy(alpha = 0.4f) // 마케팅 -> 빨간색
-                    Priority.MEDIUM -> Color(0xFF2196F3).copy(alpha = 0.4f) // 일정 -> 파란색
-                    else -> Color(0xFF2196F3).copy(alpha = 0.4f) // 기본값 파란색
+            containerColor = when {
+                opportunity.id.startsWith("reminder_") -> {
+                    // 리마인더 타입별 색상
+                    when (opportunity.priority) {
+                        Priority.HIGH -> Color(0xFFFF4444).copy(alpha = 0.4f) // 마케팅 -> 빨간색
+                        Priority.MEDIUM -> Color(0xFF2196F3).copy(alpha = 0.4f) // 일정 -> 파란색
+                        else -> Color(0xFF2196F3).copy(alpha = 0.4f) // 기본값 파란색
+                    }
                 }
-            } else {
-                // 특일 제안 색상
-                when (opportunity.priority) {
-                    Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f) // 제안 있음 -> 노란색
-                    Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 제안 없음 -> 회색
-                    else -> Color(0xFF9E9E9E).copy(alpha = 0.4f) // 기본값 회색
+                opportunity.id.startsWith("suggestion_") -> {
+                    Color(0xFFFFC107).copy(alpha = 0.4f) // 제안 -> 노란색
+                }
+                opportunity.id.startsWith("special_day_") -> {
+                    Color(0xFF9E9E9E).copy(alpha = 0.4f) // 기회 -> 회색
+                }
+                else -> {
+                    // 기존 로직 유지
+                    when (opportunity.priority) {
+                        Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f)
+                        Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
+                        else -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
+                    }
                 }
             }
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // 헤더 (카테고리, 우선순위, 신뢰도)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        if (opportunity.id.startsWith("special_day_")) {
+            // 순수 기회 - 미니멀한 표시
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
             ) {
+                // 타이틀과 카테고리 좌우 배치
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = opportunity.category.emoji,
-                        style = MaterialTheme.typography.titleMedium
+                        text = opportunity.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MarketingColors.TextPrimary,
+                        modifier = Modifier.weight(1f)
                     )
+                    
                     Text(
-                        text = opportunity.category.displayName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MarketingColors.TextSecondary
+                        text = "${opportunity.category.emoji} ${opportunity.category.displayName}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MarketingColors.TextTertiary
                     )
                 }
                 
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // 설명 - 2줄까지 표시
+                Text(
+                    text = opportunity.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MarketingColors.TextSecondary,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+            }
+        } else {
+            // 리마인더/제안 - 상세한 표시
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                // 헤더 (카테고리, 우선순위, 신뢰도)
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 우선순위 배지
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = if (opportunity.title.startsWith("[리마인더]")) {
-                                    // 리마인더 타입별 색상
-                                    when (opportunity.priority) {
-                                        Priority.HIGH -> Color(0xFFFF4444) // 마케팅 -> 빨간색
-                                        Priority.MEDIUM -> Color(0xFF2196F3) // 일정 -> 파란색
-                                        else -> Color(0xFF2196F3) // 기본값 파란색
-                                    }
-                                } else {
-                                    // 특일 제안 색상
-                                    when (opportunity.priority) {
-                                        Priority.MEDIUM -> Color(0xFFFFC107) // 제안 있음 -> 노란색
-                                        Priority.LOW -> Color(0xFF9E9E9E) // 제안 없음 -> 회색
-                                        else -> Color(0xFF9E9E9E) // 기본값 회색
-                                    }
-                                },
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = opportunity.priority.displayName,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (opportunity.priority == Priority.MEDIUM && !opportunity.title.startsWith("[리마인더]")) {
-                                // 노란색 배경(제안 있음)에는 검은색 텍스트
-                                Color.Black
-                            } else {
-                                // 나머지는 흰색 텍스트
-                                Color.White
-                            },
-                            fontWeight = FontWeight.Bold
+                            text = opportunity.category.emoji,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = opportunity.category.displayName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MarketingColors.TextSecondary
                         )
                     }
                     
-                    // 신뢰도
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // 우선순위 배지
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = when {
+                                        opportunity.id.startsWith("reminder_") -> {
+                                            when (opportunity.priority) {
+                                                Priority.HIGH -> Color(0xFFFF4444)
+                                                Priority.MEDIUM -> Color(0xFF2196F3)
+                                                else -> Color(0xFF2196F3)
+                                            }
+                                        }
+                                        else -> {
+                                            when (opportunity.priority) {
+                                                Priority.MEDIUM -> Color(0xFFFFC107)
+                                                Priority.LOW -> Color(0xFF9E9E9E)
+                                                else -> Color(0xFF9E9E9E)
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = opportunity.priority.displayName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (opportunity.priority == Priority.MEDIUM && !opportunity.id.startsWith("reminder_")) {
+                                    Color.Black
+                                } else {
+                                    Color.White
+                                },
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        
+                        // 신뢰도 - 안전한 백분율 변환
+                        Text(
+                            text = when {
+                                opportunity.confidence > 100f -> "${(opportunity.confidence / 100).toInt()}%" // 8550 -> 85%
+                                opportunity.confidence > 1.0f -> "${opportunity.confidence.toInt()}%" // 85.5 -> 85%
+                                else -> "${(opportunity.confidence * 100).toInt()}%" // 0.855 -> 85%
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MarketingColors.TextSecondary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // 제목
+                Text(
+                    text = opportunity.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MarketingColors.TextPrimary
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // 설명
+                Text(
+                    text = opportunity.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MarketingColors.TextSecondary,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // 하단 정보
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "${(opportunity.confidence * 100).toInt()}%",
+                        text = "👥 ${opportunity.targetCustomer}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MarketingColors.TextSecondary,
+                        color = MarketingColors.TextSecondary
+                    )
+                    
+                    Text(
+                        text = "자세히 보기 →",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MarketingColors.Primary,
                         fontWeight = FontWeight.Medium
                     )
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // 제목
-            Text(
-                text = opportunity.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MarketingColors.TextPrimary
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // 설명
-            Text(
-                text = opportunity.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MarketingColors.TextSecondary,
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // 하단 정보
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "👥 ${opportunity.targetCustomer}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MarketingColors.TextSecondary
-                )
-                
-                Text(
-                    text = "자세히 보기 →",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MarketingColors.Primary,
-                    fontWeight = FontWeight.Medium
-                )
             }
         }
     }

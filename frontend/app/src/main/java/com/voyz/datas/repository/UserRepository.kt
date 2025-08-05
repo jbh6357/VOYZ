@@ -47,4 +47,11 @@ class UserRepository {
         
         return apiService.login(request)
     }
+    
+    /**
+     * 자동 로그인 (토큰 검증)
+     */
+    suspend fun autoLogin(accessToken: String): Response<Map<String, Any>> {
+        return apiService.autoLogin("Bearer $accessToken")
+    }
 }

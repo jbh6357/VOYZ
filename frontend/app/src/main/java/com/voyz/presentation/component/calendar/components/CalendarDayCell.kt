@@ -32,6 +32,7 @@ fun MarketingCalendarDayCell(
     isCurrentMonth: Boolean,
     isSelected: Boolean,
     dailyOpportunities: DailyMarketingOpportunities?,
+    maxOpportunitiesToShow: Int = 3, // 표시할 기회 개수를 파라미터로 설정 가능
     onClick: () -> Unit
 ) {
     val textColor = when {
@@ -64,13 +65,17 @@ fun MarketingCalendarDayCell(
         ) {
             Text(
                 text = date.dayOfMonth.toString(),
-                color = textColor,
+                color = if (isSelected) Color.White else textColor,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium,
                 modifier = if (isSelected) {
-                    Modifier.background(Color(0xFF2196F3), CircleShape)
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                    Modifier.background(
+                        Color(0xFF2196F3),
+                        CircleShape
+                    ).padding(horizontal = 6.dp, vertical = 2.dp)
                 } else Modifier.padding(2.dp)
             )
+            
             val today = LocalDate.now()
             val startOfWeek = today.minusDays(today.dayOfWeek.value % 7L)
             val endOfWeek = startOfWeek.plusDays(6)
@@ -80,79 +85,177 @@ fun MarketingCalendarDayCell(
                 }
                 Text(
                     text = emoji,
+                    style = MaterialTheme.typography.labelSmall,
                     fontSize = 10.sp,
                     modifier = if (!isCurrentMonth) Modifier.alpha(0.3f) else Modifier
                 )
             }
         }
 
-        // 마케팅 기회 영역 (weight 사용)
+        // 마케팅 기회 영역
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
             verticalArrangement = Arrangement.Top
         ) {
-            // 변경: 처음 5개만 표시
-            dailyOpportunities?.opportunities?.take(5)?.forEach { opportunity ->
-                // 리마인더 vs 제안 처리 로직 그대로
+            dailyOpportunities?.opportunities?.take(maxOpportunitiesToShow)?.forEach { opportunity ->
                 val contentModifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 2.dp, vertical = 2.dp)  // padding을 2dp로 줄임
+                    .padding(horizontal = 2.dp, vertical = 1.dp) // feat/des/reminder의 컴팩트한 패딩
 
-                if (opportunity.title.startsWith("[리마인더]")) {
-                    // 리마인더 박스
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = contentModifier
-                            .alpha(if (!isCurrentMonth) 0.3f else 1f)
-                    ) {
-                        // 세로 바는 그대로
-                        // …
-                        Text(
-                            text = opportunity.title.removePrefix("[리마인더] "),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 8.sp,     // 글자 크기 8sp로 줄임
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                } else {
-                    // 제안/기회 박스
-                    Box(
-                        modifier = contentModifier
-                            .background(
-                                color = when (opportunity.priority) {
-                                    Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f)
-                                    Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
-                                    else -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
-                                },
-                                shape = RoundedCornerShape(4.dp)
+                when {
+                    // ID 기반 구분 (dev의 개선사항)
+                    opportunity.id.startsWith("reminder_") -> {
+                        val barColor = when (opportunity.priority) {
+                            Priority.HIGH -> Color(0xFFFF4444) // 마케팅 -> 빨간색
+                            Priority.MEDIUM -> Color(0xFF2196F3) // 일정 -> 파란색
+                            else -> Color(0xFF2196F3) // 기본값 파란색
+                        }
+                        
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = contentModifier
+                                .alpha(if (!isCurrentMonth) 0.3f else 1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(3.dp)
+                                    .height(14.dp) // 조금 더 작게
+                                    .background(barColor, RoundedCornerShape(2.dp))
                             )
-                            .padding(horizontal = 2.dp, vertical = 2.dp)  // 내부 패딩도 줄임
-                            .alpha(if (!isCurrentMonth) 0.3f else 1f)
-                    ) {
-                        Text(
-                            text = opportunity.title,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 10.sp,     // 글자 크기 8sp로 줄임
-                            maxLines = 2,        // 한 줄로 충분하다면 1줄로 줄이기
-                            overflow = TextOverflow.Ellipsis
-                        )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = opportunity.title.removePrefix("[리마인더] "),
+                                color = MarketingColors.TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 8.sp, // feat/des/reminder의 작은 폰트
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    
+                    // AI 제안
+                    opportunity.id.startsWith("suggestion_") -> {
+                        Box(
+                            modifier = contentModifier
+                                .background(
+                                    Color(0xFFFFC107).copy(alpha = 0.4f), // 제안 -> 노란색
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 3.dp, vertical = 2.dp) // 더 작은 내부 패딩
+                                .alpha(if (!isCurrentMonth) 0.3f else 1f)
+                        ) {
+                            Text(
+                                text = opportunity.title,
+                                color = MarketingColors.TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 8.sp, // feat/des/reminder의 작은 폰트
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 10.sp,
+                                textAlign = TextAlign.Start
+                            )
+                        }
+                    }
+                    
+                    // 기념일/특별한 날
+                    opportunity.id.startsWith("special_day_") -> {
+                        Box(
+                            modifier = contentModifier
+                                .background(
+                                    Color(0xFF9E9E9E).copy(alpha = 0.4f), // 기회 -> 회색
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 3.dp, vertical = 2.dp)
+                                .alpha(if (!isCurrentMonth) 0.3f else 1f)
+                        ) {
+                            Text(
+                                text = opportunity.title,
+                                color = MarketingColors.TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 8.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 10.sp,
+                                textAlign = TextAlign.Start
+                            )
+                        }
+                    }
+                    
+                    // 타이틀 기반 리마인더 (하위 호환성)
+                    opportunity.title.startsWith("[리마인더]") -> {
+                        val barColor = when (opportunity.priority) {
+                            Priority.HIGH -> Color(0xFFFF4444)
+                            Priority.MEDIUM -> Color(0xFF2196F3)
+                            else -> Color(0xFF2196F3)
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = contentModifier
+                                .alpha(if (!isCurrentMonth) 0.3f else 1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(3.dp)
+                                    .height(14.dp)
+                                    .background(barColor, RoundedCornerShape(2.dp))
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = opportunity.title.removePrefix("[리마인더] "),
+                                color = MarketingColors.TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 8.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    
+                    // 기본 케이스
+                    else -> {
+                        val backgroundColor = when (opportunity.priority) {
+                            Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f)
+                            Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
+                            else -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
+                        }
+                        Box(
+                            modifier = contentModifier
+                                .background(backgroundColor, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 3.dp, vertical = 2.dp)
+                                .alpha(if (!isCurrentMonth) 0.3f else 1f)
+                        ) {
+                            Text(
+                                text = opportunity.title,
+                                color = MarketingColors.TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 8.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 10.sp,
+                                textAlign = TextAlign.Start
+                            )
+                        }
                     }
                 }
             }
-
-            // 더 많은 기회가 있을 때 +카운터 (5개 이후)
+            
+            // 더 많은 기회가 있을 때 카운터 표시
             dailyOpportunities?.let {
-                val extra = it.totalCount - 5
+                val extra = it.totalCount - maxOpportunitiesToShow
                 if (extra > 0) {
                     Text(
                         text = "+$extra",
+                        color = MarketingColors.TextSecondary,
                         style = MaterialTheme.typography.labelSmall,
-                        fontSize = 8.sp,   // 카운터도 좀 더 작게
-                        modifier = Modifier.padding(top = 2.dp, start = 2.dp)
+                        fontSize = 8.sp, // feat/des/reminder의 작은 폰트
+                        modifier = Modifier
+                            .padding(top = 2.dp, start = 2.dp)
+                            .alpha(if (!isCurrentMonth) 0.3f else 1.0f)
                     )
                 }
             }
