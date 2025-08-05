@@ -35,7 +35,13 @@ public class OrderController {
         return ResponseEntity.ok(items);
     }
 	
-	
-	
+	@PutMapping("/{orderIdx}")
+	@Operation(summary = "주문 수정", description = "주문번호에 해당하는 주문 정보를 수정합니다.")
+	public ResponseEntity<String> createOrder2(
+			@PathVariable int orderIdx,
+			@RequestBody OrderRequestDto requestDto) {
+        orderService.updateOrder(orderIdx, requestDto);
+        return ResponseEntity.ok("주문이 성공적으로 수정되었습니다.");
+    }
 	
 }

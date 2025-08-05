@@ -12,4 +12,6 @@ public interface OrdersItemsRepository extends JpaRepository<OrdersItems, Intege
 
 	List<OrdersItems> findAllByOrderIdx(int orderIdx);
 
+	void deleteByOrderIdx(int orderIdx);
+
 }

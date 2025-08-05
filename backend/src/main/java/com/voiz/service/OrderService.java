@@ -80,8 +80,8 @@ public class OrderService {
         order.setUserId(dto.getUserId());
         order.setTableIdx(dto.getTableIdx());
         order.setOrderNumber(String.valueOf(maxOrderNumber + 1));
-        order.setTotalAmount("0"); // 총액 계산 전임
-        order.setSpecialRequests(dto.getSpecialRequest());
+        order.setTotalAmount(0); // 총액 계산 전임
+        order.setSpecialRequests(dto.getSpecialRequests());
         order.setStatus("주문완료");
         order.setOrderLanguage(dto.getOrderLanguage());
         order.setCreatedAt(LocalDateTime.now());
@@ -92,7 +92,6 @@ public class OrderService {
         // 3. 주문 상세 정보 입력
         int totalAmount = 0;
         for (OrderRequestDto.OrderDetailRequest detail : dto.getOrderDetails()) {
-            // 단가, 총액은 실제 비즈니스 로직에 맞게 추출해야 함
         	
         	Optional<Menus> optionalMenu = menusRepository.findById(detail.getMenuIdx());
             if(optionalMenu.isEmpty()) {
@@ -110,18 +109,63 @@ public class OrderService {
             item.setUnitPrice(unitPrice);
             item.setTotalPrice(totalPrice);
             item.setItemOptions(detail.getMenuOption());
-            item.setSpecialRequests(detail.getSpecialRequest());
+            item.setSpecialRequests(detail.getSpecialRequests());
 
             ordersItemsRepository.save(item);
         }
         
         // 3. 총액 업데이트
-        order.setTotalAmount(String.valueOf(totalAmount));
+        order.setTotalAmount(totalAmount);
         ordersRepository.save(order);
 	}
 
 	public List<OrdersItems> getOrderItems(int orderIdx) {
 		return ordersItemsRepository.findAllByOrderIdx(orderIdx);
+	}
+	
+	@Transactional
+	public void updateOrder(int orderIdx, OrderRequestDto dto) {
+		// 1. orderIdx가 orderIdx인 OrdersItems 모두 삭제
+	    ordersItemsRepository.deleteByOrderIdx(orderIdx);
+		// 2 다시 주문 상세 정보 입력(총액도 다시 계산)
+        int totalAmount = 0;
+        for (OrderRequestDto.OrderDetailRequest detail : dto.getOrderDetails()) {
+        	
+        	Optional<Menus> optionalMenu = menusRepository.findById(detail.getMenuIdx());
+            if(optionalMenu.isEmpty()) {
+            	throw new RuntimeException("잘못된 메뉴Idx입니다.");
+            }
+        	Menus menu = optionalMenu.get();
+        	int unitPrice = menu.getMenuPrice(); 
+            int totalPrice = unitPrice * detail.getQuantity();
+            totalAmount += totalPrice;
+
+            OrdersItems item = new OrdersItems();
+            item.setOrderIdx(orderIdx);
+            item.setMenuIdx(detail.getMenuIdx());
+            item.setQuantity(detail.getQuantity());
+            item.setUnitPrice(unitPrice);
+            item.setTotalPrice(totalPrice);
+            item.setItemOptions(detail.getMenuOption());
+            item.setSpecialRequests(detail.getSpecialRequests());
+
+            ordersItemsRepository.save(item);
+        }
+		// 3 requestDto, 총액 정보 원래 orderIdx가 orderIdx인 Orders에 반영(업뎃시간도)
+        Optional<Orders> optionalOrder = ordersRepository.findById(orderIdx);
+        
+        if(optionalOrder.isEmpty()) {
+        	throw new RuntimeException("잘못된 주문Idx입니다.");
+        }
+        
+        Orders order = optionalOrder.get();
+        order.setTotalAmount(totalAmount);
+        order.setSpecialRequests(dto.getSpecialRequests());
+        order.setOrderLanguage(dto.getOrderLanguage());
+        order.setUpdatedAt(LocalDateTime.now());
+
+        ordersRepository.save(order);
+        
 	}
 	
 

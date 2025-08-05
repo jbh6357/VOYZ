@@ -30,7 +30,7 @@ public class Orders {
     private String orderNumber;
 
     @Column(name = "TOTAL_AMOUNT")
-    private String totalAmount;
+    private int totalAmount;
 
     @Column(name = "SPECIAL_REQUESTS")
     private String specialRequests;
