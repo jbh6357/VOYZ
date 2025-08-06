@@ -61,9 +61,10 @@ public class MenuController {
 	public ResponseEntity<String> createMenu(
 			@RequestParam String userId,
 			@RequestParam String menuName,
-			@RequestParam int menuPrice){
+			@RequestParam int menuPrice,
+			@RequestParam String menuDescription){
 		
-		menuService.createMenu(userId, menuName, menuPrice);
+		menuService.createMenu(userId, menuName, menuPrice, menuDescription);
 		return ResponseEntity.ok().build(); 
 	}
 	
@@ -79,9 +80,10 @@ public class MenuController {
 	public ResponseEntity<Void> updateMenu(
 	        @PathVariable int menuIdx,
 	        @RequestParam String menuName,
-	        @RequestParam int menuPrice) {
+	        @RequestParam int menuPrice,
+	        @RequestParam String menuDescription) {
 
-	    menuService.updateMenu(menuIdx, menuName, menuPrice);
+	    menuService.updateMenu(menuIdx, menuName, menuPrice, menuDescription);
 	    return ResponseEntity.ok().build();
 	}
 	

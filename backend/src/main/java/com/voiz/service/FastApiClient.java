@@ -9,6 +9,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.voiz.util.MultipartFileResource;
 
 import org.springframework.http.HttpHeaders;
@@ -158,14 +160,27 @@ public class FastApiClient {
 		return restTemplate.exchange(url, HttpMethod.POST, request, String.class);
 	}
 
-	public ResponseEntity<String> requestTranslate(String menuName, String targetLanguage) {
+	public String requestTranslate(String text, String targetLanguage) {
+		if (targetLanguage.equals("ko")) return text; // 원문 그대로 반환
+		
 		String endpoint = "/api/translate";
 		
 		Map<String, Object> data = new HashMap<>();
-        data.put("menuName", menuName);
+        data.put("text", text);
         data.put("targetLanguage", targetLanguage);
-        
-        return postDataToFastApi(endpoint, data);
+        	
+        ResponseEntity<String> response = postDataToFastApi(endpoint, data);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode jsonNode = objectMapper.readTree(response.getBody());
+                return jsonNode.get("translated").asText();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return text; // 번역 실패 시 원문 그대로 반환
 	}
 
 } 

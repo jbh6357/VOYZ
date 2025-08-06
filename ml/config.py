@@ -94,5 +94,5 @@ class MenuItem(BaseModel):
 
 # 번역 요청 모델
 class TranslateRequest(BaseModel):
-    menuName: str
+    text: str
     targetLanguage: str
