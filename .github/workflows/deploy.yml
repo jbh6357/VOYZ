@@ -1,151 +1,162 @@
-name: Deploy VOYZ Application
+name: Deploy VOYZ - AI Marketing Agent
+
 on:
     push:
-        branches: [main]
+        branches: [main, dev]
     pull_request:
-        branches: [main]
+        branches: [main, dev]
 
 jobs:
     build-and-deploy:
         runs-on: ubuntu-latest
 
         steps:
-            - uses: actions/checkout@v4
+            # 코드 체크아웃
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-            # Node.js 설정 (React 빌드용)
-            - name: Set up Node.js
+            # Node.js 설정 (React 빌드)
+            - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: '18'
 
-            # React 앱 빌드
-            - name: Install React dependencies
+            # React 웹앱 빌드
+            - name: Build React Web App
               run: |
                   cd WEBAPP
-                  npm install
-
-            - name: Build React app
-              run: |
-                  cd WEBAPP
+                  npm ci
                   npm run build
 
-            # Java 설정 (Spring Boot 빌드용)
-            - name: Set up JDK 17
+            # Java 17 설정
+            - name: Setup JDK 17
               uses: actions/setup-java@v4
               with:
                   java-version: '17'
                   distribution: 'temurin'
 
-            # React 빌드 파일을 Spring Boot static 폴더로 복사
-            - name: Copy React build to Spring Boot
+            # React 빌드를 Spring Boot에 통합
+            - name: Integrate React into Spring Boot
               run: |
                   rm -rf backend/src/main/resources/static/*
                   cp -r WEBAPP/dist/* backend/src/main/resources/static/
 
             # Spring Boot 빌드
-            - name: Grant execute permission for mvnw
-              run: chmod +x backend/mvnw
-
-            - name: Build Spring Boot with React
+            - name: Build Spring Boot Application
               run: |
                   cd backend
+                  chmod +x mvnw
                   ./mvnw clean package -DskipTests
 
-            # EC2 배포 (rsync 사용)
-            - name: Deploy to EC2
+            # EC2로 JAR 파일 배포
+            - name: Deploy JAR to EC2
               uses: burnett01/rsync-deployments@6.0.0
               with:
                   switches: -avzr --delete
                   path: backend/target/
-                  remote_path: /home/ubuntu/app/
+                  remote_path: /home/ubuntu/voyz-app/
                   remote_host: ${{ secrets.EC2_HOST }}
                   remote_user: ${{ secrets.EC2_USERNAME }}
                   remote_key: ${{ secrets.EC2_PRIVATE_KEY }}
 
-            # EC2에서 앱 재시작
-            - name: Restart application on EC2
+            # Spring Boot 서비스 재시작 (systemd 방식)
+            - name: Restart Spring Boot Service
               uses: appleboy/ssh-action@v0.1.5
               with:
                   host: ${{ secrets.EC2_HOST }}
                   username: ${{ secrets.EC2_USERNAME }}
                   key: ${{ secrets.EC2_PRIVATE_KEY }}
-                  timeout: 120s
-                  command_timeout: 10m
-                  debug: true
+                  timeout: 300s
+                  command_timeout: 600s
                   script: |
-                      # 기존 프로세스 종료
-                      sudo pkill -f 'java.*voiz' || true
+                      # systemd 서비스 파일 생성
+                      sudo tee /etc/systemd/system/voyz-app.service > /dev/null <<EOF
+                      [Unit]
+                      Description=VOYZ AI Marketing Agent
+                      After=network.target
 
-                      # 새 앱 실행
-                      cd ~/app
-                      nohup java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Djava.net.preferIPv4Stack=true -Dserver.address=0.0.0.0 -Djwt.secret="${{ secrets.JWT_SECRET }}" *.jar > app.log 2>&1 &
+                      [Service]
+                      Type=simple
+                      User=ubuntu
+                      WorkingDirectory=/home/ubuntu/voyz-app
+                      ExecStart=/usr/bin/java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Dserver.port=8081 -Dspring.jpa.hibernate.ddl-auto=none -Djwt.secret=${{ secrets.JWT_SECRET }} /home/ubuntu/voyz-app/voiz-0.0.1-SNAPSHOT.jar
+                      Restart=always
+                      RestartSec=10
+                      StandardOutput=journal
+                      StandardError=journal
 
-                      # 실행 확인
-                      sleep 10
-                      curl -f http://localhost:8081 || exit 1
+                      [Install]
+                      WantedBy=multi-user.target
+                      EOF
+
+                      # systemd 다시 로드 및 서비스 재시작
+                      sudo systemctl daemon-reload
+                      sudo systemctl stop voyz-app || true
+                      sudo systemctl start voyz-app
+                      sudo systemctl enable voyz-app
+
+                      # 서비스 상태 확인
+                      echo "Waiting for service to start..."
+                      sleep 15
+
+                      # 상태 확인
+                      sudo systemctl status voyz-app --no-pager
+
+                      # HTTP 응답 확인
+                      for i in {1..12}; do
+                          if curl -f http://localhost:8081/actuator/health || curl -f http://localhost:8081; then
+                              echo "✅ Spring Boot application is running!"
+                              break
+                          fi
+                          echo "⏳ Attempt $i/12 - waiting 5 seconds..."
+                          sleep 5
+                      done
 
     deploy-ml:
         runs-on: ubuntu-latest
         needs: build-and-deploy
 
         steps:
-            - uses: actions/checkout@v4
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-            - name: Set up Python
+            - name: Setup Python
               uses: actions/setup-python@v4
               with:
                   python-version: '3.9'
 
-            - name: Install ML dependencies
-              run: |
-                  cd ml
-                  pip install -r requirements.txt
+            # ML 서비스 배포
+            - name: Deploy ML Service to EC2
+              uses: burnett01/rsync-deployments@6.0.0
+              with:
+                  switches: -avzr --delete
+                  path: ml/
+                  remote_path: /home/ubuntu/voyz-ml/
+                  remote_host: ${{ secrets.EC2_HOST }}
+                  remote_user: ${{ secrets.EC2_USERNAME }}
+                  remote_key: ${{ secrets.EC2_PRIVATE_KEY }}
 
-            - name: Test SSH Connection
+            # ML 서비스 재시작 (systemd 방식)
+            - name: Restart ML Service
               uses: appleboy/ssh-action@v0.1.5
               with:
                   host: ${{ secrets.EC2_HOST }}
                   username: ${{ secrets.EC2_USERNAME }}
                   key: ${{ secrets.EC2_PRIVATE_KEY }}
-                  timeout: 60s
-                  debug: true
-                  script: |
-                      echo "SSH connection successful"
-                      whoami
-                      pwd
-                      ls -la
-
-            - name: Deploy ML to EC2
-              uses: appleboy/scp-action@v0.1.4
-              with:
-                  host: ${{ secrets.EC2_HOST }}
-                  username: ${{ secrets.EC2_USERNAME }}
-                  key: ${{ secrets.EC2_PRIVATE_KEY }}
-                  port: 22
                   timeout: 300s
                   command_timeout: 600s
-                  source: 'ml/*'
-                  target: '~/ml-app'
-                  strip_components: 1
-                  debug: true
-                  use_insecure_cipher: false
-                  rm: false
-                  overwrite: true
-
-            - name: Setup and restart ML service
-              uses: appleboy/ssh-action@v0.1.5
-              with:
-                  host: ${{ secrets.EC2_HOST }}
-                  username: ${{ secrets.EC2_USERNAME }}
-                  key: ${{ secrets.EC2_PRIVATE_KEY }}
-                  timeout: 120s
-                  command_timeout: 10m
-                  debug: true
                   script: |
-                      # ML 서비스 설정
-                      cd ~/ml-app
-                      python3 -m venv venv || true
+                      cd /home/ubuntu/voyz-ml
+
+                      # Python venv 패키지 설치 (필요시)
+                      sudo apt update
+                      sudo apt install -y python3.12-venv
+
+                      # Python 가상환경 설정
+                      rm -rf venv
+                      python3 -m venv venv
                       source venv/bin/activate
+                      pip install --upgrade pip
                       pip install -r requirements.txt
 
                       # 환경 변수 설정
@@ -166,6 +177,48 @@ jobs:
                       export GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/ml-app/google-credentials.json
                       python3 -c "from google.cloud import vision; print('Google Cloud Vision API 연결 성공')" || echo "Google Cloud 인증 실패 - OCR 기능 비활성화됨"
 
-                      # ML 서비스 재시작
-                      sudo pkill -f 'uvicorn.*main:app' || true
-                      nohup venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 > ml.log 2>&1 &
+                      # systemd 서비스 파일 생성
+                      sudo tee /etc/systemd/system/voyz-ml.service > /dev/null <<EOF
+                      [Unit]
+                      Description=VOYZ ML Service - FastAPI
+                      After=network.target
+
+                      [Service]
+                      Type=simple
+                      User=ubuntu
+                      WorkingDirectory=/home/ubuntu/voyz-ml
+                      Environment=PATH=/home/ubuntu/voyz-ml/venv/bin
+                      ExecStart=/home/ubuntu/voyz-ml/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+                      Restart=always
+                      RestartSec=10
+                      StandardOutput=journal
+                      StandardError=journal
+
+                      [Install]
+                      WantedBy=multi-user.target
+                      EOF
+
+                      # systemd 다시 로드 및 서비스 재시작
+                      sudo systemctl daemon-reload
+                      sudo systemctl stop voyz-ml || true
+                      sudo systemctl start voyz-ml
+                      sudo systemctl enable voyz-ml
+
+                      # 서비스 상태 확인
+                      echo "Waiting for ML service to start..."
+                      sleep 10
+
+                      # 상태 확인
+                      sudo systemctl status voyz-ml --no-pager
+
+                      # HTTP 응답 확인
+                      for i in {1..10}; do
+                          if curl -f http://localhost:8000/docs || curl -f http://localhost:8000; then
+                              echo "✅ ML Service is running!"
+                              break
+                          fi
+                          echo "⏳ Attempt $i/10 - waiting 3 seconds..."
+                          sleep 3
+                      done
+
+                      echo "🎉 VOYZ AI Marketing Agent deployment completed!"

@@ -269,7 +269,7 @@ async def extract_text(file: UploadFile = File(...)):
 @app.post("/api/translate")
 def translateMenu(req: TranslateRequest):
     # 요청 받은 메뉴명
-    source_text = req.menuName
+    source_text = req.text
     targetLanguage = req.targetLanguage
     # 번역 클라이언트 생성
     translate_client = translate.Client()
