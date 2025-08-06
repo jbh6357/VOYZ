@@ -1,37 +1,25 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
-const SuccessPage = ({ onBackToMenu, orderedItems }) => {
-    const isMountedRef = useRef(true);
-
+const SuccessPage = ({ onBackToMenu, onGoToReview, orderedItems }) => {
     useEffect(() => {
-        isMountedRef.current = true;
-        
         // 주문 완료 후 10초 뒤에 자동으로 리뷰 페이지로 이동
-        if (orderedItems && orderedItems.length > 0) {
+        if (orderedItems && orderedItems.length > 0 && onGoToReview) {
             console.log('📝 주문 완료 페이지: 10초 후 리뷰 페이지로 자동 이동');
             
             const timer = setTimeout(() => {
-                // 컴포넌트가 아직 마운트된 상태에서만 실행
-                if (isMountedRef.current && window.onWriteReview) {
-                    console.log('🔄 리뷰 페이지로 자동 이동');
-                    try {
-                        window.onWriteReview();
-                    } catch (error) {
-                        console.error('리뷰 페이지 이동 중 에러:', error);
-                    }
+                console.log('🔄 리뷰 페이지로 자동 이동');
+                try {
+                    onGoToReview();
+                } catch (error) {
+                    console.error('리뷰 페이지 이동 중 에러:', error);
                 }
             }, 10000); // 10초
 
             return () => {
                 clearTimeout(timer);
-                isMountedRef.current = false;
             };
         }
-
-        return () => {
-            isMountedRef.current = false;
-        };
-    }, [orderedItems]);
+    }, [orderedItems, onGoToReview]);
 
     return (
         <div className='success-page'>
