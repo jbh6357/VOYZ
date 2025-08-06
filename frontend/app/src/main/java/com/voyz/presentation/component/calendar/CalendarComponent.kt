@@ -1,7 +1,7 @@
 package com.voyz.presentation.component.calendar
 
 import android.util.Log
-import androidx.compose.animation.Animatedontent
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
