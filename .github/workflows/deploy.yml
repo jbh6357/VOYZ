@@ -216,6 +216,11 @@ jobs:
                       WantedBy=multi-user.target
                       EOF
 
+                      # 기존 프로세스 강제 종료
+                      echo "Killing existing processes on port 8000..."
+                      sudo fuser -k 8000/tcp || true
+                      sleep 2
+                      
                       # systemd 다시 로드 및 서비스 재시작
                       sudo systemctl daemon-reload
                       sudo systemctl stop voyz-ml || true
@@ -252,5 +257,11 @@ jobs:
                       
                       echo "4. Testing OCR endpoint directly:"
                       curl -X POST http://localhost:8000/api/ocr -v 2>&1 | head -20
+                      
+                      echo "5. Testing connection from Spring Boot perspective:"
+                      curl -X POST http://127.0.0.1:8000/api/ocr -v 2>&1 | head -10
+                      
+                      echo "6. Checking if Spring Boot can reach ML service:"
+                      curl http://localhost:8081/api/menus/ocr -X POST -F "userId=test" -F "language=ko" -F "file=@/dev/null" -v 2>&1 | head -20 || echo "Spring Boot OCR endpoint test failed"
 
                       echo "🎉 VOYZ AI Marketing Agent deployment completed!"
