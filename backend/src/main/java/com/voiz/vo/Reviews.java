@@ -27,10 +27,10 @@ public class Reviews {
     @Column(name = "USER_ID", nullable = false)
     private String userId; // 사용자 ID
 
-    @Column(name = "COMMENT", nullable = false)
+     @Column(name = "REVIEW_COMMENT", nullable = false)
     private String comment; // 리뷰 내용
 
-    @Column(name = "OVERALL_RATING", nullable = false)
+    @Column(name = "RATING", nullable = false)
     private int rating; // 평점
 
     @Column(name = "NATIONALITY", nullable = false)

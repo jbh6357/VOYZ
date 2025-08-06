@@ -39,11 +39,11 @@ public class ReviewService {
         List<MenusReviews> reviewsWithDetails = reviewRepository.findByMenuId(menuId);
 
         return reviewsWithDetails.stream()
-                // 이제 mr.getReviewId()는 Reviews 객체이므로 .getUserId() 호출이 가능합니다.
+                // mr.getReviewId()는 Reviews 객체 -> .getUserId() 호출이 가능.
                 .filter(mr -> userId == null || mr.getReviewId().getUserId().equals(userId))
                 .filter(mr -> nationality == null || mr.getReviewId().getNationality().equals(nationality))
                 .map(mr -> {
-                    // mr.getReviewId()는 Reviews 객체이므로 변환이 가능합니다.
+                    
                     Reviews reviewDetails = mr.getReviewId(); 
                     ReviewResponseDto dto = new ReviewResponseDto();
 
