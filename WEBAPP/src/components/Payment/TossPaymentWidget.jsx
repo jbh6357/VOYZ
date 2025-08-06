@@ -42,14 +42,14 @@ const TossPaymentWidget = ({ isOpen, totalPrice, selectedLang, onPaymentComplete
         }
     }, [isOpen]);
 
-         const handleConfirmPayment = async () => {
-         if (!tossPayments) {
-             // SDK 없으면 바로 시뮬레이션
-             console.log('토스 SDK 없음 - 시뮬레이션 실행');
-             setPaymentStep('processing');
-             setCountdown(3);
-             return;
-         }
+    const handleConfirmPayment = async () => {
+        if (!tossPayments) {
+            // SDK 없으면 바로 시뮬레이션
+            console.log('토스 SDK 없음 - 시뮬레이션 실행');
+            setPaymentStep('processing');
+            setCountdown(3);
+            return;
+        }
 
         setPaymentStep('api-call');
 
