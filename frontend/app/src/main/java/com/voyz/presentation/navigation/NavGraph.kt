@@ -1,6 +1,9 @@
 package com.voyz.presentation.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -10,7 +13,7 @@ import com.voyz.presentation.screen.auth.signup.SignUpScreen
 import com.voyz.presentation.screen.main.MainScreen
 import com.voyz.presentation.screen.auth.IdPwFindScreen
 import com.voyz.presentation.screen.reminder.ReminderScreen
-import com.voyz.presentation.screen.management.OperationManagementScreen
+import com.voyz.presentation.screen.management.operation.OperationManagementScreen
 import com.voyz.presentation.screen.management.CustomerManagementScreen
 import com.voyz.presentation.screen.management.SettingsScreen
 import com.voyz.presentation.screen.management.UserProfileScreen
@@ -21,9 +24,15 @@ import com.voyz.presentation.screen.marketing.MarketingOpportunityDetailScreen
 import com.voyz.presentation.screen.reminder.ReminderDetailScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.voyz.presentation.screen.management.operation.OperationManagementMenuConfirmScreen
+import com.voyz.presentation.screen.management.operation.OperationManagementMenuUploadScreen
+import com.voyz.presentation.screen.management.operation.OperationManagementMenuInputScreen
+import com.voyz.presentation.screen.management.operation.OperationManagementMenuProcessingScreen
 
 @Composable
 fun NavGraph(navController: NavHostController) {
+    val imageUri = remember { mutableStateOf<Uri?>(null) }
+    
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(
@@ -40,51 +49,111 @@ fun NavGraph(navController: NavHostController) {
                 }
             )
         }
+        
         composable("signup") { 
             SignUpScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onSignUpComplete = { navController.navigate("login") }
             ) 
         }
-        composable("find") { IdPwFindScreen() }
-        composable("main") {
-            MainScreen(navController = navController)
+        
+        composable("find") { 
+            IdPwFindScreen() 
         }
+        
+        composable("main") {
+            MainScreen(
+                navController = navController,
+                onSearchClick = {
+                    navController.navigate("search")
+                },
+                onAlarmClick = {
+                    navController.navigate("alarm")
+                }
+            )
+        }
+        
+        // ReminderScreen을 위한 두 가지 route 모두 지원 (하위 호환성)
+        composable("dashboard") {
+            ReminderScreen(
+                navController = navController,
+                onAlarmClick = { navController.navigate("alarm") }
+            )
+        }
+        
         composable("reminder") {
             ReminderScreen(
                 navController = navController,
                 onAlarmClick = { navController.navigate("alarm") }
             )
         }
+        
         composable("alarm") {
             AlarmScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
+        
         composable("search") {
             SearchScreen(
-                onBackClick = { navController.popBackStack() })
+                onBackClick = { navController.popBackStack() }
+            )
         }
+        
         composable("operation_management") {
             OperationManagementScreen(navController = navController)
         }
+        
+        composable("operation_management_menu_upload") {
+            val imageUriState = remember { mutableStateOf<Uri?>(null) }
+
+            OperationManagementMenuUploadScreen(
+                navController = navController,
+                imageUri = imageUriState.value,
+                onImageSelected = { imageUriState.value = it },
+                onDeleteImage = { imageUriState.value = null },
+                onNextStep = {
+                    navController.navigate("operation_management_menu_processing")
+                }
+            )
+        }
+
+        composable("operation_management_menu_processing") {
+            OperationManagementMenuProcessingScreen(navController = navController)
+        }
+
+        composable("operation_management_menu_confirm") {
+            OperationManagementMenuConfirmScreen(
+                navController = navController,
+                imageUri = imageUri.value
+            )
+        }
+
+        composable("operation_management_menu_input") {
+            OperationManagementMenuInputScreen(navController = navController)
+        }
+        
         composable("customer_management") {
             CustomerManagementScreen(navController = navController)
         }
+        
         composable("settings") {
             SettingsScreen(navController = navController)
         }
+        
         composable("user_profile") {
             UserProfileScreen(navController = navController)
         }
+        
         composable("marketing_create") {
             MarketingCreateScreen(navController = navController)
         }
+        
         // 기본 리마인더 생성 (FAB에서 호출)
         composable("reminder_create") {
             ReminderCreateScreen(
                 navController = navController,
-onReminderCreated = {
+                onReminderCreated = {
                     // 리마인더 생성 완료 후 처리는 ReminderCreateScreen에서 직접 처리
                 }
             )
@@ -113,11 +182,12 @@ onReminderCreated = {
                 initialTitle = title,
                 initialContent = content,
                 initialDate = date,
-onReminderCreated = {
+                onReminderCreated = {
                     // 리마인더 생성 완료 후 처리는 ReminderCreateScreen에서 직접 처리
                 }
             )
         }
+        
         // 제안 상세보기 (특일 제안)
         composable(
             "marketing_opportunity/{ssuIdx}",
@@ -141,4 +211,5 @@ onReminderCreated = {
                 marketingIdx = marketingIdx
             )
         }
-    }}
+    }
+}

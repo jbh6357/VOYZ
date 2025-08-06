@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.voiz.dto.DaySuggestionDto;
+import com.voiz.dto.ForecastResponseDto;
+import com.voiz.dto.WeatherDto;
 import com.voiz.service.CalendarService;
 import com.voiz.vo.Marketing;
 import com.voiz.vo.SpecialDaySuggest;
@@ -76,5 +78,16 @@ public class CalendarController {
 		return ResponseEntity.ok(daySuggestionList);
 	}
 	
+
+
+	@GetMapping("/weather")
+    @Operation(summary = "현재 월 기준 날씨 정보 조회", description = "사용자의 가게 위치를 기반으로 현재 월의 날씨 예보를 조회합니다.")
+    public ResponseEntity<List<ForecastResponseDto<WeatherDto>>> getWeatherForCalendar(
+            @RequestParam("user_id") String userId) {
+
+        // 서비스의 메서드를 호출하고 그 결과를 그대로 반환합니다.
+        List<ForecastResponseDto<WeatherDto>> weatherList = calendarService.getWeatherForCalendar(userId);
+        return ResponseEntity.ok(weatherList);
+    }
 	
 }

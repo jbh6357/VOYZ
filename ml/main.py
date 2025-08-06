@@ -24,8 +24,14 @@ app = FastAPI(
     description=API_CONFIG["description"]
 )
 
-# 환경변수로 인증 설정
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.getenv('GOOGLE_CREDENTIALS_PATH')
+# 환경변수로 인증 설정 (선택사항)
+google_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+if google_credentials_path and os.path.exists(google_credentials_path):
+    print(f"Google Cloud credentials loaded from: {google_credentials_path}")
+elif google_credentials_path:
+    print(f"Google Cloud credentials path set but file not found: {google_credentials_path}")
+else:
+    print("Warning: Google Cloud credentials not found - OCR/Translation features may not work")
 
 # 특일 - 고객 매칭
 @app.post("/api/match/specialDay")
@@ -114,6 +120,8 @@ def create_suggest(request: CreateSuggestRequest):
 
 @app.post("/api/ocr")
 async def extract_text(file: UploadFile = File(...)):
+    # 임시로 비활성화 - 나중에 Google Cloud 연결 예정
+    raise HTTPException(status_code=503, detail="OCR 서비스 준비 중입니다")
     try:
         # 파일 타입 검증
         if not file.content_type.startswith('image/'):

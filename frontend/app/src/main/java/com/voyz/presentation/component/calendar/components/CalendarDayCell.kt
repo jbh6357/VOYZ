@@ -32,6 +32,7 @@ fun MarketingCalendarDayCell(
     isCurrentMonth: Boolean,
     isSelected: Boolean,
     dailyOpportunities: DailyMarketingOpportunities?,
+    maxOpportunitiesToShow: Int = 3, // 표시할 기회 개수를 파라미터로 설정 가능
     onClick: () -> Unit
 ) {
     val textColor = when {
@@ -49,7 +50,7 @@ fun MarketingCalendarDayCell(
                     color = MarketingColors.TextTertiary.copy(alpha = 0.2f),
                     start = Offset(0f, 0f),
                     end = Offset(size.width, 0f),
-                    strokeWidth = 0.5.dp.toPx()
+                    strokeWidth = 1.dp.toPx()
                 )
             }
             .clickable { onClick() }
@@ -64,7 +65,7 @@ fun MarketingCalendarDayCell(
         ) {
             Text(
                 text = date.dayOfMonth.toString(),
-                color = textColor,
+                color = if (isSelected) Color.White else textColor,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium,
                 modifier = if (isSelected) {
@@ -98,9 +99,13 @@ fun MarketingCalendarDayCell(
                 .weight(1f),
             verticalArrangement = Arrangement.Top
         ) {
-            dailyOpportunities?.opportunities?.take(2)?.forEach { opportunity ->
+            dailyOpportunities?.opportunities?.take(maxOpportunitiesToShow)?.forEach { opportunity ->
+                val contentModifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp, vertical = 1.dp) // feat/des/reminder의 컴팩트한 패딩
+
                 when {
-                    // 리마인더 (사용자 일정) - ID 기반 구분
+                    // ID 기반 구분 (dev의 개선사항)
                     opportunity.id.startsWith("reminder_") -> {
                         val barColor = when (opportunity.priority) {
                             Priority.HIGH -> Color(0xFFFF4444) // 마케팅 -> 빨간색
@@ -110,15 +115,13 @@ fun MarketingCalendarDayCell(
                         
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 1.dp)
+                            modifier = contentModifier
                                 .alpha(if (!isCurrentMonth) 0.3f else 1f)
                         ) {
                             Box(
                                 modifier = Modifier
                                     .width(3.dp)
-                                    .height(16.dp)
+                                    .height(14.dp) // 조금 더 작게
                                     .background(barColor, RoundedCornerShape(2.dp))
                             )
                             Spacer(Modifier.width(4.dp))
@@ -126,7 +129,7 @@ fun MarketingCalendarDayCell(
                                 text = opportunity.title.removePrefix("[리마인더] "),
                                 color = MarketingColors.TextPrimary,
                                 style = MaterialTheme.typography.labelSmall,
-                                fontSize = 10.sp,
+                                fontSize = 8.sp, // feat/des/reminder의 작은 폰트
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f)
@@ -134,59 +137,55 @@ fun MarketingCalendarDayCell(
                         }
                     }
                     
-                    // AI 제안 (suggestion_) - ID 기반 구분
+                    // AI 제안
                     opportunity.id.startsWith("suggestion_") -> {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 1.dp)
+                            modifier = contentModifier
                                 .background(
                                     Color(0xFFFFC107).copy(alpha = 0.4f), // 제안 -> 노란색
                                     RoundedCornerShape(4.dp)
                                 )
-                                .padding(horizontal = 4.dp, vertical = 3.dp)
+                                .padding(horizontal = 3.dp, vertical = 2.dp) // 더 작은 내부 패딩
                                 .alpha(if (!isCurrentMonth) 0.3f else 1f)
                         ) {
                             Text(
                                 text = opportunity.title,
                                 color = MarketingColors.TextPrimary,
                                 style = MaterialTheme.typography.labelSmall,
-                                fontSize = 10.sp,
+                                fontSize = 8.sp, // feat/des/reminder의 작은 폰트
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
-                                lineHeight = 12.sp,
+                                lineHeight = 10.sp,
                                 textAlign = TextAlign.Start
                             )
                         }
                     }
                     
-                    // 단순 기회 (special_day_) - ID 기반 구분
+                    // 기념일/특별한 날
                     opportunity.id.startsWith("special_day_") -> {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 1.dp)
+                            modifier = contentModifier
                                 .background(
                                     Color(0xFF9E9E9E).copy(alpha = 0.4f), // 기회 -> 회색
                                     RoundedCornerShape(4.dp)
                                 )
-                                .padding(horizontal = 4.dp, vertical = 3.dp)
+                                .padding(horizontal = 3.dp, vertical = 2.dp)
                                 .alpha(if (!isCurrentMonth) 0.3f else 1f)
                         ) {
                             Text(
                                 text = opportunity.title,
                                 color = MarketingColors.TextPrimary,
                                 style = MaterialTheme.typography.labelSmall,
-                                fontSize = 10.sp,
+                                fontSize = 8.sp,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
-                                lineHeight = 12.sp,
+                                lineHeight = 10.sp,
                                 textAlign = TextAlign.Start
                             )
                         }
                     }
                     
-                    // 기타 (기존 로직 - 타이틀 기반)
+                    // 타이틀 기반 리마인더 (하위 호환성)
                     opportunity.title.startsWith("[리마인더]") -> {
                         val barColor = when (opportunity.priority) {
                             Priority.HIGH -> Color(0xFFFF4444)
@@ -195,20 +194,21 @@ fun MarketingCalendarDayCell(
                         }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 1.dp)
+                            modifier = contentModifier
                                 .alpha(if (!isCurrentMonth) 0.3f else 1f)
                         ) {
                             Box(
                                 modifier = Modifier
                                     .width(3.dp)
-                                    .height(16.dp)
+                                    .height(14.dp)
                                     .background(barColor, RoundedCornerShape(2.dp))
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 text = opportunity.title.removePrefix("[리마인더] "),
+                                color = MarketingColors.TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 8.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f)
@@ -218,40 +218,43 @@ fun MarketingCalendarDayCell(
                     
                     // 기본 케이스
                     else -> {
-                        val bg = when (opportunity.priority) {
+                        val backgroundColor = when (opportunity.priority) {
                             Priority.MEDIUM -> Color(0xFFFFC107).copy(alpha = 0.4f)
                             Priority.LOW -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
                             else -> Color(0xFF9E9E9E).copy(alpha = 0.4f)
                         }
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 1.dp)
-                                .background(bg, RoundedCornerShape(4.dp))
-                                .padding(horizontal = 4.dp, vertical = 3.dp)
+                            modifier = contentModifier
+                                .background(backgroundColor, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 3.dp, vertical = 2.dp)
                                 .alpha(if (!isCurrentMonth) 0.3f else 1f)
                         ) {
                             Text(
                                 text = opportunity.title,
+                                color = MarketingColors.TextPrimary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 8.sp,
                                 maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 10.sp,
+                                textAlign = TextAlign.Start
                             )
                         }
                     }
                 }
             }
             
-            // 더 많은 기회가 있을 때 표시
+            // 더 많은 기회가 있을 때 카운터 표시
             dailyOpportunities?.let {
-                val extra = it.totalCount - 2
+                val extra = it.totalCount - maxOpportunitiesToShow
                 if (extra > 0) {
                     Text(
                         text = "+$extra",
                         color = MarketingColors.TextSecondary,
                         style = MaterialTheme.typography.labelSmall,
-                        fontSize = 8.sp,
+                        fontSize = 8.sp, // feat/des/reminder의 작은 폰트
                         modifier = Modifier
-                            .padding(top = 1.dp, start = 4.dp)
+                            .padding(top = 2.dp, start = 2.dp)
                             .alpha(if (!isCurrentMonth) 0.3f else 1.0f)
                     )
                 }

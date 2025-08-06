@@ -152,14 +152,20 @@ class CalendarViewModel(
 
     fun goToNextMonth(userId: String) {
         currentMonth = currentMonth.plusMonths(1)
-        invalidateCache() // 월 변경 시 캐시 무효화
         loadCalendarData(userId)
+        val newDate = currentMonth.atDay(1)
+        if (selectedDate == null || YearMonth.from(selectedDate!!) != currentMonth) {
+            selectDate(newDate)
+        }
     }
     
     fun goToPreviousMonth(userId: String) {
         currentMonth = currentMonth.minusMonths(1)
-        invalidateCache() // 월 변경 시 캐시 무효화
         loadCalendarData(userId)
+        val newDate = currentMonth.atDay(1)
+        if (selectedDate == null || YearMonth.from(selectedDate!!) != currentMonth) {
+            selectDate(newDate)
+        }
     }
     
     fun goToNextMonthWithDirection(userId: String): Pair<YearMonth, Boolean> {

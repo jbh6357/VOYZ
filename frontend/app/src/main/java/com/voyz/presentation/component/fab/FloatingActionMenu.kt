@@ -47,74 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 
 @Composable
-fun FloatingActionMenu(
-    modifier: Modifier = Modifier,
-    isExpanded: Boolean = false,
-    onExpandedChange: (Boolean) -> Unit = {},
-    onMarketingCreateClick: () -> Unit = {},
-    onReminderCreateClick: () -> Unit = {}
-) {
-    val rotationAngle by animateFloatAsState(
-        targetValue = if (isExpanded) 45f else 0f,
-        animationSpec = tween(300),
-        label = "fab_rotation"
-    )
-
-    // 메뉴 아이템들을 하단에서부터 올라가게 배치
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.End
-    ) {
-        // 마케팅 생성 메뉴
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = scaleIn(tween(200, delayMillis = 100)) + fadeIn(tween(200, delayMillis = 100)),
-            exit = scaleOut(tween(150)) + fadeOut(tween(150))
-        ) {
-            FloatingActionMenuItem(
-                icon = Icons.Default.Campaign,
-                label = "마케팅 생성",
-                onClick = {
-                    onMarketingCreateClick()
-                    onExpandedChange(false)
-                }
-            )
-        }
-        
-        // 리마인더 생성 메뉴
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = scaleIn(tween(200, delayMillis = 50)) + fadeIn(tween(200, delayMillis = 50)),
-            exit = scaleOut(tween(150)) + fadeOut(tween(150))
-        ) {
-            FloatingActionMenuItem(
-                icon = Icons.Default.NotificationAdd,
-                label = "리마인더 생성",
-                onClick = {
-                    onReminderCreateClick()
-                    onExpandedChange(false)
-                }
-            )
-        }
-        
-        // 메인 FAB
-        FloatingActionButton(
-            onClick = { onExpandedChange(!isExpanded) },
-            modifier = Modifier.size(56.dp),
-            containerColor = MaterialTheme.colorScheme.primary
-        ) {
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
-                contentDescription = if (isExpanded) "메뉴 닫기" else "게시글 작성",
-                modifier = Modifier.rotate(rotationAngle),
-                tint = MaterialTheme.colorScheme.onPrimary
-            )
-        }
-    }
-}
-
-@Composable
 private fun FloatingActionMenuItem(
     icon: ImageVector,
     label: String,
@@ -141,9 +73,9 @@ private fun FloatingActionMenuItem(
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         // 미니 FAB
         FloatingActionButton(
             onClick = onClick,
@@ -161,8 +93,130 @@ private fun FloatingActionMenuItem(
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun FloatingActionMenuPreview() {
-    FloatingActionMenu()
-}
+fun FloatingActionMenu(
+    modifier: Modifier = Modifier,
+    isExpanded: Boolean = false,
+    onExpandedChange: (Boolean) -> Unit = {},
+    isOperationMode: Boolean = false,
+    onMarketingCreateClick: () -> Unit = {},
+    onReminderCreateClick: () -> Unit = {},
+    onMenuUploadClick: () -> Unit = {},
+    onMenuDirectClick: () -> Unit = {}
+) {
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (isExpanded) 45f else 0f,
+        animationSpec = tween(300),
+        label = "fab_rotation"
+    )
+
+    // 메뉴 아이템들을 하단에서부터 올라가게 배치
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.End
+    ) {
+        if (isOperationMode) {
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = scaleIn(tween(200, delayMillis = 100)) + fadeIn(
+                    tween(
+                        200,
+                        delayMillis = 100
+                    )
+                ),
+                exit = scaleOut(tween(150)) + fadeOut(tween(150))
+            ) {
+                FloatingActionMenuItem(
+                    icon = Icons.Default.Campaign,
+                    label = "메뉴판 업로드",
+                    onClick = {
+                        onMenuUploadClick()
+                        onExpandedChange(false)
+                    }
+                )
+            }
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = scaleIn(tween(200, delayMillis = 50)) + fadeIn(
+                    tween(
+                        200,
+                        delayMillis = 50
+                    )
+                ),
+                exit = scaleOut(tween(150)) + fadeOut(tween(150))
+            ) {
+                FloatingActionMenuItem(
+                    icon = Icons.Default.NotificationAdd,
+                    label = "메뉴 직접 입력",
+                    onClick = {
+                        onMenuDirectClick()
+                        onExpandedChange(false)
+                    }
+                )
+            }
+        } else {
+            // 마케팅 생성 메뉴
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = scaleIn(tween(200, delayMillis = 100)) + fadeIn(
+                    tween(
+                        200,
+                        delayMillis = 100
+                    )
+                ),
+                exit = scaleOut(tween(150)) + fadeOut(tween(150))
+            ) {
+                FloatingActionMenuItem(
+                    icon = Icons.Default.Campaign,
+                    label = "마케팅 생성",
+                    onClick = {
+                        onMarketingCreateClick()
+                        onExpandedChange(false)
+                    }
+                )
+            }
+            // 리마인더 생성 메뉴
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = scaleIn(tween(200, delayMillis = 50)) + fadeIn(
+                    tween(
+                        200,
+                        delayMillis = 50
+                    )
+                ),
+                exit = scaleOut(tween(150)) + fadeOut(tween(150))
+            ) {
+                FloatingActionMenuItem(
+                    icon = Icons.Default.NotificationAdd,
+                    label = "리마인더 생성",
+                    onClick = {
+                        onReminderCreateClick()
+                        onExpandedChange(false)
+                    }
+                )
+            }
+
+        }
+
+            // 메인 FAB
+            FloatingActionButton(
+                onClick = { onExpandedChange(!isExpanded) },
+                modifier = Modifier.size(56.dp),
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
+                    contentDescription = if (isExpanded) "메뉴 닫기" else "메뉴 열기",
+                    modifier = Modifier.rotate(rotationAngle),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+    }
+
+    @Preview(showBackground = true)
+    @Composable
+    fun FloatingActionMenuPreview() {
+        FloatingActionMenu()
+    }
