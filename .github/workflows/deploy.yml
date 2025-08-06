@@ -161,7 +161,7 @@ jobs:
 
                       # 환경 변수 설정
                       echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
-                      echo "GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/ml-app/google-credentials.json" >> .env
+                      echo "GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/voyz-ml/google-credentials.json" >> .env
                       echo "FASTAPI_HOST=0.0.0.0" >> .env
                       echo "FASTAPI_PORT=8000" >> .env
                       echo "FASTAPI_DEBUG=False" >> .env
@@ -174,7 +174,7 @@ jobs:
                       python3 -c "import json; json.load(open('google-credentials.json'))" || (echo "Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS secret" && exit 1)
 
                       # Google Cloud 인증 테스트
-                      export GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/ml-app/google-credentials.json
+                      export GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/voyz-ml/google-credentials.json
                       python3 -c "from google.cloud import vision; print('Google Cloud Vision API 연결 성공')" || echo "Google Cloud 인증 실패 - OCR 기능 비활성화됨"
 
                       # systemd 서비스 파일 생성
