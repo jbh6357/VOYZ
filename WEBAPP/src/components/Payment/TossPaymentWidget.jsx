@@ -42,25 +42,19 @@ const TossPaymentWidget = ({ isOpen, totalPrice, selectedLang, onPaymentComplete
         }
     }, [isOpen]);
 
-    const handleConfirmPayment = async () => {
-        // 테스트 환경 감지 (IP 주소 또는 localhost)
-        const isTestEnvironment =
-            window.location.hostname.includes('125.251.36') ||
-            window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1';
-
-        if (!tossPayments || isTestEnvironment) {
-            // SDK 없거나 테스트 환경이면 바로 시뮬레이션
-            console.log('테스트 환경에서 토스 결제 시뮬레이션 실행');
-            setPaymentStep('processing');
-            setCountdown(3);
-            return;
-        }
+         const handleConfirmPayment = async () => {
+         if (!tossPayments) {
+             // SDK 없으면 바로 시뮬레이션
+             console.log('토스 SDK 없음 - 시뮬레이션 실행');
+             setPaymentStep('processing');
+             setCountdown(3);
+             return;
+         }
 
         setPaymentStep('api-call');
 
         try {
-            // 진짜 토스페이먼츠 API 호출 (프로덕션 환경에서만)
+            // 토스페이먼츠 API 호출
             await tossPayments.requestPayment('카드', {
                 amount: totalPrice,
                 orderId: 'order_' + Date.now(),
