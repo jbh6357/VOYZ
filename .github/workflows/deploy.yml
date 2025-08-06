@@ -2,9 +2,9 @@ name: Deploy VOYZ - AI Marketing Agent
 
 on:
     push:
-        branches: [main]
+        branches: [main, dev]
     pull_request:
-        branches: [main]
+        branches: [main, dev]
 
 jobs:
     build-and-deploy:
@@ -147,11 +147,11 @@ jobs:
                   command_timeout: 600s
                   script: |
                       cd /home/ubuntu/voyz-ml
-                      
+
                       # Python venv 패키지 설치 (필요시)
                       sudo apt update
                       sudo apt install -y python3.12-venv
-                      
+
                       # Python 가상환경 설정
                       rm -rf venv
                       python3 -m venv venv
