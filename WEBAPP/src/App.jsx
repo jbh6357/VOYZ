@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 // Components
 import LanguageSelector from './components/UI/LanguageSelector.jsx'
@@ -195,9 +195,10 @@ function App() {
     setOrderedItems([])
   }
 
-  const handleGoToReview = () => {
-    setCurrentPage('writeReview')
-  }
+  const handleGoToReview = useCallback(() => {
+    console.log('📱 리뷰 페이지로 이동');
+    setCurrentPage('writeReview');
+  }, [])
 
   const handleSubmitReview = (review) => {
     console.log('리뷰 작성:', review)
@@ -246,11 +247,18 @@ function App() {
 
   // 리뷰 작성 함수를 전역으로 설정 (SuccessPage에서 사용)
   useEffect(() => {
-    window.onWriteReview = handleGoToReview
+    window.onWriteReview = () => {
+      console.log('🔄 App.jsx: 리뷰 페이지로 이동 시도');
+      try {
+        handleGoToReview();
+      } catch (error) {
+        console.error('리뷰 페이지 이동 에러:', error);
+      }
+    }
     return () => {
       delete window.onWriteReview
     }
-  }, [])
+  }, [handleGoToReview])
 
   if (currentPage === 'success') {
     return (
