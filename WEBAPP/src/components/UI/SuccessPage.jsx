@@ -4,8 +4,6 @@ const SuccessPage = ({ onBackToMenu, onGoToReview, orderedItems }) => {
     useEffect(() => {
         // 주문 완료 후 10초 뒤에 자동으로 리뷰 페이지로 이동
         if (orderedItems && orderedItems.length > 0 && onGoToReview) {
-            console.log('📝 주문 완료 페이지: 10초 후 리뷰 페이지로 자동 이동');
-            
             const timer = setTimeout(() => {
                 console.log('🔄 리뷰 페이지로 자동 이동');
                 try {
@@ -13,7 +11,7 @@ const SuccessPage = ({ onBackToMenu, onGoToReview, orderedItems }) => {
                 } catch (error) {
                     console.error('리뷰 페이지 이동 중 에러:', error);
                 }
-            }, 10000); // 10초
+            }, 5000); // 5초
 
             return () => {
                 clearTimeout(timer);
