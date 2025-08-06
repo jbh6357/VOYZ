@@ -148,20 +148,22 @@ jobs:
                   script: |
                       cd /home/ubuntu/voyz-ml
 
-                      # Python venv 패키지 설치 (필요시)
-                      sudo apt update
-                      sudo apt install -y python3.12-venv
+                      # Python 패키지 설치
+                      sudo apt-get update
+                      sudo apt-get install -y python3-pip python3-venv python3-dev
 
-                      # Python 가상환경 설정
-                      rm -rf venv
-                      python3 -m venv venv
-                      source venv/bin/activate
-                      pip install --upgrade pip
-                      pip install -r requirements.txt
+                      # 기존 venv가 있으면 사용, 없으면 생성
+                      if [ ! -d "venv" ]; then
+                          python3 -m venv venv
+                      fi
+                      
+                      # pip 업그레이드 및 패키지 설치
+                      ./venv/bin/pip install --upgrade pip setuptools wheel
+                      ./venv/bin/pip install -r requirements.txt
 
                       # 환경 변수 설정
                       echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
-                      echo "GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/ml-app/google-credentials.json" >> .env
+                      echo "GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/voyz-ml/google-credentials.json" >> .env
                       echo "FASTAPI_HOST=0.0.0.0" >> .env
                       echo "FASTAPI_PORT=8000" >> .env
                       echo "FASTAPI_DEBUG=False" >> .env
@@ -174,8 +176,8 @@ jobs:
                       python3 -c "import json; json.load(open('google-credentials.json'))" || (echo "Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS secret" && exit 1)
 
                       # Google Cloud 인증 테스트
-                      export GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/ml-app/google-credentials.json
-                      python3 -c "from google.cloud import vision; print('Google Cloud Vision API 연결 성공')" || echo "Google Cloud 인증 실패 - OCR 기능 비활성화됨"
+                      export GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/voyz-ml/google-credentials.json
+                      ./venv/bin/python -c "from google.cloud import vision; print('Google Cloud Vision API 연결 성공')" || echo "Google Cloud 인증 실패 - OCR 기능 비활성화됨"
 
                       # systemd 서비스 파일 생성
                       sudo tee /etc/systemd/system/voyz-ml.service > /dev/null <<EOF
@@ -187,8 +189,10 @@ jobs:
                       Type=simple
                       User=ubuntu
                       WorkingDirectory=/home/ubuntu/voyz-ml
-                      Environment=PATH=/home/ubuntu/voyz-ml/venv/bin
-                      ExecStart=/home/ubuntu/voyz-ml/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+                      Environment="PATH=/home/ubuntu/voyz-ml/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                      Environment="GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/voyz-ml/google-credentials.json"
+                      EnvironmentFile=/home/ubuntu/voyz-ml/.env
+                      ExecStart=/home/ubuntu/voyz-ml/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000
                       Restart=always
                       RestartSec=10
                       StandardOutput=journal
