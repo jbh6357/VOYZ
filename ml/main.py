@@ -121,7 +121,7 @@ def create_suggest(request: CreateSuggestRequest):
 @app.post("/api/ocr")
 async def extract_text(file: UploadFile = File(...)):
     # 임시로 비활성화 - 나중에 Google Cloud 연결 예정
-    raise HTTPException(status_code=503, detail="OCR 서비스 준비 중입니다")
+    # raise HTTPException(status_code=503, detail="OCR 서비스 준비 중입니다")
     try:
         # 파일 타입 검증
         if not file.content_type.startswith('image/'):
