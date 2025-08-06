@@ -67,8 +67,8 @@ const TossPaymentWidget = ({ isOpen, totalPrice, selectedLang, onPaymentComplete
                 orderName: '한옥마을 전통 맛집',
                 customerName: '고객',
                 customerEmail: 'customer@example.com',
-                successUrl: window.location.origin + '/payment/success',
-                failUrl: window.location.origin + '/payment/fail',
+                successUrl: window.location.origin + '/?payment=success',
+                failUrl: window.location.origin + '/?payment=fail',
             });
 
             // 성공하면 여기 안 옴 (페이지 이동됨)
