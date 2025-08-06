@@ -13,9 +13,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import com.voyz.datas.datastore.UserPreferencesManager
 import com.voyz.datas.repository.UserRepository
 import com.voyz.presentation.screen.auth.signup.components.*
+import com.voyz.presentation.component.GlobalToastManager
 import com.voyz.ui.theme.Primary
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,9 +39,13 @@ fun SignUpScreen(
     
     LaunchedEffect(uiState.isRegistrationComplete) {
         if (uiState.isRegistrationComplete) {
+            // 회원가입 완료 Toast 표시
+            GlobalToastManager.showRegistrationCompleteToast()
+            // 즉시 로그인 화면으로 이동
             onSignUpComplete()
         }
     }
+    
     
     Scaffold(
         topBar = {
@@ -117,6 +124,7 @@ fun SignUpScreen(
             }
             
             Column {
+                // 에러 메시지 표시
                 uiState.errorMessage?.let { error ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -134,6 +142,7 @@ fun SignUpScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+                
                 
                 Button(
                     onClick = {

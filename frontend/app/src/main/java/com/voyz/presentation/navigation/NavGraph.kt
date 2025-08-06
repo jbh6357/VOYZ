@@ -37,7 +37,7 @@ fun NavGraph(navController: NavHostController) {
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate("dashboard") {
+                    navController.navigate("main") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
@@ -49,40 +49,61 @@ fun NavGraph(navController: NavHostController) {
                 }
             )
         }
+        
         composable("signup") { 
             SignUpScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onSignUpComplete = { navController.navigate("login") }
             ) 
         }
-        composable("find") { IdPwFindScreen() }
+        
+        composable("find") { 
+            IdPwFindScreen() 
+        }
+        
         composable("main") {
-            MainScreen(navController = navController,
+            MainScreen(
+                navController = navController,
                 onSearchClick = {
-                    navController.navigate("search")  // ✅ 검색 페이지로 이동
+                    navController.navigate("search")
                 },
                 onAlarmClick = {
-                    navController.navigate("alarm")  // ✅ 알림 → 알림제안 화면으로 이동
-                })
+                    navController.navigate("alarm")
+                }
+            )
         }
+        
+        // ReminderScreen을 위한 두 가지 route 모두 지원 (하위 호환성)
         composable("dashboard") {
             ReminderScreen(
                 navController = navController,
                 onAlarmClick = { navController.navigate("alarm") }
             )
         }
+        
+        composable("reminder") {
+            ReminderScreen(
+                navController = navController,
+                onAlarmClick = { navController.navigate("alarm") }
+            )
+        }
+        
         composable("alarm") {
             AlarmScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
+        
         composable("search") {
             SearchScreen(
-                onBackClick = { navController.popBackStack() })
+                onBackClick = { navController.popBackStack() }
+            )
         }
+        
         composable("operation_management") {
             OperationManagementScreen(navController = navController)
         }
+        
         composable("operation_management_menu_upload") {
             val imageUriState = remember { mutableStateOf<Uri?>(null) }
 
@@ -115,20 +136,24 @@ fun NavGraph(navController: NavHostController) {
         composable("customer_management") {
             CustomerManagementScreen(navController = navController)
         }
+        
         composable("settings") {
             SettingsScreen(navController = navController)
         }
+        
         composable("user_profile") {
             UserProfileScreen(navController = navController)
         }
+        
         composable("marketing_create") {
             MarketingCreateScreen(navController = navController)
         }
+        
         // 기본 리마인더 생성 (FAB에서 호출)
         composable("reminder_create") {
             ReminderCreateScreen(
                 navController = navController,
-onReminderCreated = {
+                onReminderCreated = {
                     // 리마인더 생성 완료 후 처리는 ReminderCreateScreen에서 직접 처리
                 }
             )
@@ -157,11 +182,12 @@ onReminderCreated = {
                 initialTitle = title,
                 initialContent = content,
                 initialDate = date,
-onReminderCreated = {
+                onReminderCreated = {
                     // 리마인더 생성 완료 후 처리는 ReminderCreateScreen에서 직접 처리
                 }
             )
         }
+        
         // 제안 상세보기 (특일 제안)
         composable(
             "marketing_opportunity/{ssuIdx}",

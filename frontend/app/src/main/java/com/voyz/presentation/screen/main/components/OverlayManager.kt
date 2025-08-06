@@ -36,7 +36,7 @@ fun OverlayManager(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 200.dp, end = 200.dp) // FAB 영역 제외
+                .padding(bottom = 100.dp, end = 80.dp) // FAB 영역 제외
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null

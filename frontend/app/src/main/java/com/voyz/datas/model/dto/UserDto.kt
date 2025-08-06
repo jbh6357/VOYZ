@@ -53,5 +53,14 @@ data class LoginResponse(
     val storeName: String,
     
     @SerializedName("storeCategory")
-    val storeCategory: String
+    val storeCategory: String,
+    
+    @SerializedName("accessToken")
+    val accessToken: String,
+    
+    @SerializedName("refreshToken")
+    val refreshToken: String,
+    
+    @SerializedName("tokenType")
+    val tokenType: String
 )

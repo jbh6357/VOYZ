@@ -1,6 +1,9 @@
 package com.voiz.vo;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,6 +15,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SpecialDaySuggest {
 	
     @Id
@@ -33,8 +37,35 @@ public class SpecialDaySuggest {
     private LocalDate endDate;
 
     @Column(name = "SM_IDX", nullable = false)
-    private int sm_idx;
+    private int smIdx;
 
     @Column(name = "CALENDAR_IDX", nullable = false)
     private int calendarIdx;	
+    
+    @Column(name = "DESCRIPTION", nullable = false)
+    private String description;
+
+    @Column(name = "TARGET_CUSTOMER", nullable = false)
+    private String targetCustomer;
+
+    @Column(name = "SUGGESTED_ACTION", nullable = false)
+    private String suggestedAction;
+
+    @Column(name = "EXPECTED_EFFECT", nullable = false)
+    private String expectedEffect;
+
+    @Column(name = "CONFIDENCE", nullable = false)
+    private Float confidence;
+
+    @Column(name = "PRIORITY", nullable = false)
+    private String priority;
+
+    @Column(name = "DATA_SOURCE", nullable = false)
+    private String dataSource;
+    
+    @PrePersist
+    protected void onCreate() {
+    	dataSource = "한국천문연구원 특일 정보제공 서비스 API";
+    }
+    
 }
