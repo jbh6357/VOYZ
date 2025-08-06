@@ -49,10 +49,10 @@ function App() {
 
     // URL에서 결제 성공/실패 및 페이지 파라미터 확인
     const urlParams = new URLSearchParams(window.location.search)
-    const currentPath = window.location.pathname
+    const paymentParam = urlParams.get('payment')
     const pageParam = urlParams.get('page')
     
-    if (currentPath === '/payment/success') {
+    if (paymentParam === 'success') {
       console.log('토스 결제 성공 페이지로 이동됨')
       
       // 저장된 장바구니 복원
@@ -80,7 +80,7 @@ function App() {
       
       // URL 정리
       window.history.replaceState({}, document.title, '/')
-    } else if (currentPath === '/payment/fail') {
+    } else if (paymentParam === 'fail') {
       console.log('토스 결제 실패 페이지로 이동됨')
       const message = urlParams.get('message') || '결제가 실패했습니다.'
       handlePaymentError(message)

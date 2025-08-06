@@ -61,15 +61,15 @@ const TossPaymentWidget = ({ isOpen, totalPrice, selectedLang, onPaymentComplete
 
         try {
             // 진짜 토스페이먼츠 API 호출 (프로덕션 환경에서만)
-            await tossPayments.requestPayment('카드', {
-                amount: totalPrice,
-                orderId: 'order_' + Date.now(),
-                orderName: '한옥마을 전통 맛집',
-                customerName: '고객',
-                customerEmail: 'customer@example.com',
-                successUrl: window.location.origin + '/payment/success',
-                failUrl: window.location.origin + '/payment/fail',
-            });
+                         await tossPayments.requestPayment('카드', {
+                 amount: totalPrice,
+                 orderId: 'order_' + Date.now(),
+                 orderName: '한옥마을 전통 맛집',
+                 customerName: '고객',
+                 customerEmail: 'customer@example.com',
+                 successUrl: window.location.origin + '/?payment=success',
+                 failUrl: window.location.origin + '/?payment=fail',
+             });
 
             // 성공하면 여기 안 옴 (페이지 이동됨)
         } catch (error) {
