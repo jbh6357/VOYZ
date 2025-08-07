@@ -38,12 +38,19 @@ public class MenuService {
 		return response;
 	}
 
-	public void createMenu(String userId, String menuName, int menuPrice, String menuDescription) {
+	public void createMenu(String userId, String menuName, int menuPrice, String menuDescription, String category) {
+		// 중복 메뉴 체크 (같은 사용자, 같은 메뉴명)
+		List<Menus> existingMenus = menusRepository.findByUserIdAndMenuName(userId, menuName);
+		if (!existingMenus.isEmpty()) {
+			throw new IllegalArgumentException("이미 등록된 메뉴입니다: " + menuName);
+		}
+		
 		Menus menu = new Menus();
 	    menu.setUserId(userId);
 	    menu.setMenuName(menuName);
 	    menu.setMenuPrice(menuPrice);
 	    menu.setMenuDescription(menuDescription);
+	    menu.setCategory(category);
 	    menusRepository.save(menu);
 	}
 
@@ -105,7 +112,7 @@ public class MenuService {
 		return menusRepository.findAllByUserId(userId);	
 	}
 
-	public void updateMenu(int menuIdx, String menuName, int menuPrice, String menuDescription) {
+	public void updateMenu(int menuIdx, String menuName, int menuPrice, String menuDescription, String category) {
 		Optional<Menus> optionalMenu = menusRepository.findById(menuIdx);
 	    if (optionalMenu.isEmpty()) {
 	        throw new IllegalArgumentException("해당 메뉴가 존재하지 않습니다. menuIdx = " + menuIdx);
@@ -115,6 +122,7 @@ public class MenuService {
 	    menu.setMenuName(menuName);
 	    menu.setMenuPrice(menuPrice);
 	    menu.setMenuDescription(menuDescription);
+	    menu.setCategory(category);
 	    menu.setUpdatedAt(LocalDateTime.now());
 
 	    menusRepository.save(menu);

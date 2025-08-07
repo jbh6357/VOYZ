@@ -42,12 +42,13 @@ public class OrderService {
 	                String translatedDesc = fastApiClient.requestTranslate(menu.getMenuDescription(), language);
 
 	                return new MenusDto(
-	                		menu.getMenuIdx(),
-	                        translatedName,
-	                        menu.getMenuPrice(),
-	                        translatedDesc,
-	                        menu.getImageUrl()
-	                );
+		                	menu.getMenuIdx(),
+		                    translatedName,
+		                    menu.getMenuPrice(),
+		                    translatedDesc,
+		                    menu.getImageUrl(),
+		                    menu.getCategory()
+		                );
 	            })
 	            .toList();
 	}

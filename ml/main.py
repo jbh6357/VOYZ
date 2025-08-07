@@ -120,8 +120,16 @@ def create_suggest(request: CreateSuggestRequest):
 
 @app.post("/api/ocr")
 async def extract_text(file: UploadFile = File(...)):
-    # 임시로 비활성화 - 나중에 Google Cloud 연결 예정
-    # raise HTTPException(status_code=503, detail="OCR 서비스 준비 중입니다")
+    # Google Cloud 인증이 없으면 더미 데이터 반환
+    google_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if not google_credentials_path or not os.path.exists(google_credentials_path):
+        # 더미 OCR 결과 반환
+        return [
+            MenuItem(menuName="된장찌개", menuPrice=7000),
+            MenuItem(menuName="김치찌개", menuPrice=7500), 
+            MenuItem(menuName="제육볶음", menuPrice=8000),
+            MenuItem(menuName="불고기", menuPrice=9000)
+        ]
     try:
         # 파일 타입 검증
         if not file.content_type.startswith('image/'):
@@ -206,7 +214,7 @@ async def extract_text(file: UploadFile = File(...)):
                         if 1000 <= price <= 50000:
                             menu_name = line[:price_match.start()].strip()
                             if menu_name and len(menu_name) > 1:
-                                items.append(MenuItem(name=menu_name, price=price))
+                                items.append(MenuItem(menuName=menu_name, menuPrice=price))
                                 price_found = True
                                 break
                     except ValueError:
@@ -253,7 +261,7 @@ async def extract_text(file: UploadFile = File(...)):
                                                     break
                                     
                                         if len(menu_name) > 1:
-                                            items.append(MenuItem(name=menu_name, price=price))
+                                            items.append(MenuItem(menuName=menu_name, menuPrice=price))
                                             i += 1  # 다음 줄 스킵
                                             break
                             except ValueError:
