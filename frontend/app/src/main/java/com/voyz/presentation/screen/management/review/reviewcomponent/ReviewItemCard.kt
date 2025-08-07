@@ -25,7 +25,7 @@ fun ReviewItemCard(review: Review) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // 상단: 국기 + 국가명 + 평점
+            // ⬆️ 상단: 국기 + 국가명 + 평점
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -50,9 +50,20 @@ fun ReviewItemCard(review: Review) {
                 )
             }
 
+            // ✅ 여기에 추천 메뉴 출력 (국가 줄 아래)
+            if (review.recommendedMenu.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "주문한 메뉴: ${review.recommendedMenu}",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 13.sp,
+                    color = Color.DarkGray
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 리뷰 본문 (한글)
+            // ⬇️ 리뷰 본문
             Text(
                 text = review.content,
                 style = MaterialTheme.typography.bodyLarge,
@@ -61,7 +72,7 @@ fun ReviewItemCard(review: Review) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 작성일
+            // ⬇️ 작성일
             val formattedDateTime = try {
                 val parsed = LocalDateTime.parse(review.timestamp, DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm"))
                 parsed.format(DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm"))

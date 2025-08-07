@@ -6,5 +6,6 @@ data class Review(
     val rating: Float,
     val nationality: String,
     val timestamp: String,
-    val isPositive: Boolean
+    val isPositive: Boolean,
+    val recommendedMenu: String
 )
