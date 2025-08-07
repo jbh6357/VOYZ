@@ -24,7 +24,7 @@ import java.util.HashMap;
 @Service
 public class FastApiClient {
     
-    @Value("${fastapi.base-url:http://localhost:8000}")
+    @Value("${fastapi.base-url:http://127.0.0.1:8000}")
     private String fastApiBaseUrl;
     
     private final RestTemplate restTemplate = new RestTemplate();
@@ -145,19 +145,25 @@ public class FastApiClient {
 	 * @throws IOException 
 	 */
 	public ResponseEntity<String> requestOcr(MultipartFile file) throws IOException{
-		 String endpoint = "/api/ocr";
-		 String url = fastApiBaseUrl + endpoint;
+		try {
+			String endpoint = "/api/ocr";
+			String url = fastApiBaseUrl + endpoint;
 
-		// MultiValueMap으로 multipart 데이터 구성
-		MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-		body.add("file", new MultipartFileResource(file));
-		    
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-		    
-		HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-		    
-		return restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+			// MultiValueMap으로 multipart 데이터 구성
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			body.add("file", new MultipartFileResource(file));
+			    
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+			    
+			HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+			    
+			return restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+		} catch (Exception e) {
+			// ML 서비스 연결 실패 시 더 명확한 에러 메시지
+			System.err.println("Failed to connect to ML service at " + fastApiBaseUrl + ": " + e.getMessage());
+			throw new RuntimeException("ML 서비스 연결 실패 (503): " + e.getMessage(), e);
+		}
 	}
 
 	public String requestTranslate(String text, String targetLanguage) {

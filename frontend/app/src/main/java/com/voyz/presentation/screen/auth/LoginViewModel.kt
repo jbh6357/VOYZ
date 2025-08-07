@@ -3,12 +3,15 @@ package com.voyz.presentation.screen.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyz.datas.datastore.UserPreferencesManager
+import com.voyz.datas.repository.FcmRepository
 import com.voyz.datas.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.tasks.await
 
 data class LoginUiState(
     val userId: String = "",
@@ -94,6 +97,15 @@ class LoginViewModel(
                 
                 if (response.isSuccessful && response.body() != null) {
                     val loginResponse = response.body()!!
+
+                    val fcmToken = FirebaseMessaging.getInstance().token.await()
+                    val fcmRepository = FcmRepository()
+                    val uuid = fcmRepository.extractUuidFromJwt(loginResponse.refreshToken) ?: ""
+                    fcmRepository.registerFcmToken(
+                        userId = loginResponse.userId,
+                        token = fcmToken,
+                        uuid = uuid
+                    )
                     
                     // DataStore에 사용자 정보 저장 (실제 JWT 토큰 사용)
                     userPreferencesManager.saveLoginInfo(
