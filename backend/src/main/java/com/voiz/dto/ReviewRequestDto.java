@@ -13,9 +13,11 @@ public class ReviewRequestDto {
 
     private String orderId;
     private String userId;
+    private Long menuIdx;
     private int rating;
     private String comment;
     private String nationality;
     private String language;
+    
     
 }
