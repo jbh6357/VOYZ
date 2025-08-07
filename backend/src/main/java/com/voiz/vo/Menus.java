@@ -1,7 +1,5 @@
 package com.voiz.vo;
-
 import java.time.LocalDateTime;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -30,34 +28,34 @@ public class Menus {
 	
 	@Column(name = "USER_ID", nullable = false)
     private String userId;
-
+    
     @Column(name = "MENU_NAME", nullable = false)
     private String menuName;
-
+    
     @Column(name = "MENU_PRICE", nullable = false)
     private int menuPrice;
-
+    
     @Column(name = "MENU_DESCRIPTION", nullable = false)
     private String menuDescription;
+    
+    @Column(name = "CATEGORY") 
+    private String category;
     
     @Column(name = "IMAGE_URL")
     private String imageUrl;
     
-    @Column(name = "CATEGORY")
-    private String category;
-
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
-
+    
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
-
+    
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
