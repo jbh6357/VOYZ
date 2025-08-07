@@ -39,11 +39,11 @@ public class Tables {
     @Column(name = "QR_CODE")
     private String qrCode;
 
-    @Column(name = "CREATE_AT")
-    private LocalDateTime createAt;
+    @Column(name = "CREATED_AT")
+    private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        this.createAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
     }
 }

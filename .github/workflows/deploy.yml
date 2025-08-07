@@ -1,62 +1,267 @@
-name: Deploy Application
+name: Deploy VOYZ - AI Marketing Agent
+
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    push:
+        branches: [main, dev]
+    pull_request:
+        branches: [main, dev]
+
 jobs:
-  deploy-ml:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    
-    - name: Install dependencies
-      run: |
-        cd ml
-        pip install -r requirements.txt
-    
-    - name: Set OpenAI API Key
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
-        echo "OPENAI_API_KEY is set"
-        # API 키가 설정되었는지 확인
-    
-    - name: Run ML API Tests
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
-        cd ml
-        python -m pytest tests/ || echo "No tests found"
-    
-    - name: Deploy ML API
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
-        echo "ML API deployment completed"
-        
-  deploy-backend:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    
-    - name: Grant execute permission for mvnw
-      run: chmod +x backend/mvnw
-    
-    - name: Build with Maven (skip tests)
-      run: |
-        cd backend
-        ./mvnw clean package -DskipTests
+    build-and-deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            # 코드 체크아웃
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            # Node.js 설정 (React 빌드)
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '18'
+
+            # React 웹앱 빌드
+            - name: Build React Web App
+              run: |
+                  cd WEBAPP
+                  npm ci
+                  npm run build
+
+            # Java 17 설정
+            - name: Setup JDK 17
+              uses: actions/setup-java@v4
+              with:
+                  java-version: '17'
+                  distribution: 'temurin'
+
+            # React 빌드를 Spring Boot에 통합
+            - name: Integrate React into Spring Boot
+              run: |
+                  rm -rf backend/src/main/resources/static/*
+                  cp -r WEBAPP/dist/* backend/src/main/resources/static/
+
+            # Spring Boot 빌드
+            - name: Build Spring Boot Application
+              run: |
+                  cd backend
+                  chmod +x mvnw
+                  ./mvnw clean package -DskipTests
+
+            # EC2로 JAR 파일 배포
+            - name: Deploy JAR to EC2
+              uses: burnett01/rsync-deployments@6.0.0
+              with:
+                  switches: -avzr --delete
+                  path: backend/target/
+                  remote_path: /home/ubuntu/voyz-app/
+                  remote_host: ${{ secrets.EC2_HOST }}
+                  remote_user: ${{ secrets.EC2_USERNAME }}
+                  remote_key: ${{ secrets.EC2_PRIVATE_KEY }}
+
+            # Spring Boot 서비스 재시작 (systemd 방식)
+            - name: Restart Spring Boot Service
+              uses: appleboy/ssh-action@v0.1.5
+              with:
+                  host: ${{ secrets.EC2_HOST }}
+                  username: ${{ secrets.EC2_USERNAME }}
+                  key: ${{ secrets.EC2_PRIVATE_KEY }}
+                  timeout: 300s
+                  command_timeout: 600s
+                  script: |
+                      # systemd 서비스 파일 생성
+                      sudo tee /etc/systemd/system/voyz-app.service > /dev/null <<EOF
+                      [Unit]
+                      Description=VOYZ AI Marketing Agent
+                      After=network.target
+
+                      [Service]
+                      Type=simple
+                      User=ubuntu
+                      WorkingDirectory=/home/ubuntu/voyz-app
+                      ExecStart=/usr/bin/java -jar -Dspring.profiles.active=prod -Duser.timezone=Asia/Seoul -Dserver.port=8081 -Dspring.jpa.hibernate.ddl-auto=none -Djwt.secret=${{ secrets.JWT_SECRET }} /home/ubuntu/voyz-app/voiz-0.0.1-SNAPSHOT.jar
+                      Restart=always
+                      RestartSec=10
+                      StandardOutput=journal
+                      StandardError=journal
+
+                      [Install]
+                      WantedBy=multi-user.target
+                      EOF
+
+                      # systemd 다시 로드 및 서비스 재시작
+                      sudo systemctl daemon-reload
+                      sudo systemctl stop voyz-app || true
+                      sudo systemctl start voyz-app
+                      sudo systemctl enable voyz-app
+
+                      # 서비스 상태 확인
+                      echo "Waiting for service to start..."
+                      sleep 15
+
+                      # 상태 확인
+                      sudo systemctl status voyz-app --no-pager
+
+                      # HTTP 응답 확인
+                      for i in {1..12}; do
+                          if curl -f http://localhost:8081/actuator/health || curl -f http://localhost:8081; then
+                              echo "✅ Spring Boot application is running!"
+                              break
+                          fi
+                          echo "⏳ Attempt $i/12 - waiting 5 seconds..."
+                          sleep 5
+                      done
+
+    deploy-ml:
+        runs-on: ubuntu-latest
+        needs: build-and-deploy
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: '3.9'
+
+            # ML 서비스 배포
+            - name: Deploy ML Service to EC2
+              uses: burnett01/rsync-deployments@6.0.0
+              with:
+                  switches: -avzr --delete
+                  path: ml/
+                  remote_path: /home/ubuntu/voyz-ml/
+                  remote_host: ${{ secrets.EC2_HOST }}
+                  remote_user: ${{ secrets.EC2_USERNAME }}
+                  remote_key: ${{ secrets.EC2_PRIVATE_KEY }}
+
+            # ML 서비스 재시작 (systemd 방식)
+            - name: Restart ML Service
+              uses: appleboy/ssh-action@v0.1.5
+              with:
+                  host: ${{ secrets.EC2_HOST }}
+                  username: ${{ secrets.EC2_USERNAME }}
+                  key: ${{ secrets.EC2_PRIVATE_KEY }}
+                  timeout: 300s
+                  command_timeout: 600s
+                  script: |
+                      cd /home/ubuntu/voyz-ml
+
+                      # Python 패키지 설치
+                      sudo apt-get update
+                      sudo apt-get install -y python3-pip python3-venv python3-dev python3-full
+
+                      # 기존 venv 삭제 후 새로 생성
+                      echo "Creating new virtual environment..."
+                      rm -rf venv
+                      python3 -m venv venv --clear
+                      
+                      # venv 활성화 확인
+                      if [ -f "venv/bin/activate" ]; then
+                          echo "Virtual environment created successfully"
+                          source venv/bin/activate
+                          
+                          # pip 업그레이드
+                          python -m pip install --upgrade pip setuptools wheel
+                          
+                          # requirements 설치
+                          python -m pip install -r requirements.txt
+                          
+                          # 설치 확인
+                          python -m pip list | grep google-cloud || echo "WARNING: Google Cloud packages not installed"
+                      else
+                          echo "ERROR: Failed to create virtual environment"
+                          exit 1
+                      fi
+
+                      # 환경 변수 설정
+                      echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
+                      echo "GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/voyz-ml/google-credentials.json" >> .env
+                      echo "FASTAPI_HOST=0.0.0.0" >> .env
+                      echo "FASTAPI_PORT=8000" >> .env
+                      echo "FASTAPI_DEBUG=False" >> .env
+
+                      # Google Cloud 서비스 계정 키 파일 생성
+                      echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}' > google-credentials.json
+                      chmod 600 google-credentials.json  # 보안을 위한 권한 설정
+
+                      # JSON 파일 유효성 검증
+                      python3 -c "import json; json.load(open('google-credentials.json'))" || (echo "Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS secret" && exit 1)
+
+                      # Google Cloud 인증 테스트
+                      export GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/voyz-ml/google-credentials.json
+                      source venv/bin/activate && python -c "from google.cloud import vision; print('Google Cloud Vision API 연결 성공')" || echo "Google Cloud 인증 실패 - OCR 기능 비활성화됨"
+
+                      # systemd 서비스 파일 생성
+                      sudo tee /etc/systemd/system/voyz-ml.service > /dev/null <<EOF
+                      [Unit]
+                      Description=VOYZ ML Service - FastAPI
+                      After=network.target
+
+                      [Service]
+                      Type=simple
+                      User=ubuntu
+                      WorkingDirectory=/home/ubuntu/voyz-ml
+                      Environment="PATH=/home/ubuntu/voyz-ml/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                      Environment="GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/voyz-ml/google-credentials.json"
+                      EnvironmentFile=/home/ubuntu/voyz-ml/.env
+                      ExecStart=/home/ubuntu/voyz-ml/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000
+                      Restart=always
+                      RestartSec=10
+                      StandardOutput=journal
+                      StandardError=journal
+
+                      [Install]
+                      WantedBy=multi-user.target
+                      EOF
+
+                      # 기존 프로세스 강제 종료
+                      echo "Killing existing processes on port 8000..."
+                      sudo fuser -k 8000/tcp || true
+                      sleep 2
+                      
+                      # systemd 다시 로드 및 서비스 재시작
+                      sudo systemctl daemon-reload
+                      sudo systemctl stop voyz-ml || true
+                      sudo systemctl start voyz-ml
+                      sudo systemctl enable voyz-ml
+
+                      # 서비스 상태 확인
+                      echo "Waiting for ML service to start..."
+                      sleep 10
+
+                      # 상태 확인
+                      sudo systemctl status voyz-ml --no-pager
+
+                      # HTTP 응답 확인
+                      for i in {1..10}; do
+                          if curl -f http://localhost:8000/docs || curl -f http://localhost:8000; then
+                              echo "✅ ML Service is running!"
+                              break
+                          fi
+                          echo "⏳ Attempt $i/10 - waiting 3 seconds..."
+                          sleep 3
+                      done
+                      
+                      # 디버깅 정보
+                      echo "🔍 Debugging information:"
+                      echo "1. Checking ML service process:"
+                      ps aux | grep uvicorn | grep -v grep || echo "No uvicorn process found"
+                      
+                      echo "2. Checking port 8000:"
+                      sudo netstat -tlnp | grep :8000 || echo "Port 8000 not listening"
+                      
+                      echo "3. Recent service logs:"
+                      sudo journalctl -u voyz-ml -n 20 --no-pager
+                      
+                      echo "4. Testing OCR endpoint directly:"
+                      curl -X POST http://localhost:8000/api/ocr -v 2>&1 | head -20
+                      
+                      echo "5. Testing connection from Spring Boot perspective:"
+                      curl -X POST http://127.0.0.1:8000/api/ocr -v 2>&1 | head -10
+                      
+                      echo "6. Checking if Spring Boot can reach ML service:"
+                      curl http://localhost:8081/api/menus/ocr -X POST -F "userId=test" -F "language=ko" -F "file=@/dev/null" -v 2>&1 | head -20 || echo "Spring Boot OCR endpoint test failed"
+
+                      echo "🎉 VOYZ AI Marketing Agent deployment completed!"

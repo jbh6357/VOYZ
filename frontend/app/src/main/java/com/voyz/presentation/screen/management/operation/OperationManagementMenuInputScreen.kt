@@ -12,9 +12,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,14 +64,24 @@ class WonNumberVisualTransformation : VisualTransformation {
 @Composable
 fun OperationManagementMenuInputScreen(
     navController: NavController,
-    onSubmit: (String, String, String) -> Unit = { _, _, _ -> }
+    onSubmit: (String, String, String, String, String) -> Unit = { _, _, _, _, _ -> }
 ) {
     val context = LocalContext.current
 
     var imageUri by remember { mutableStateOf<String?>(null) }
     var foodName by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("음식") }
+    var description by remember { mutableStateOf("") }
+    
+    // 카테고리 관련 상태
+    val predefinedCategories = listOf("음식", "주류", "디저트", "음료", "사이드", "세트메뉴", "시그니처", "직접입력")
+    var selectedCategory by remember { mutableStateOf("음식") }
+    var customCategory by remember { mutableStateOf("") }
+    var isDropdownExpanded by remember { mutableStateOf(false) }
+    var showCustomInput by remember { mutableStateOf(false) }
+    
+    // 최종 카테고리 값 (선택된 카테고리 또는 커스텀 카테고리)
+    val finalCategory = if (showCustomInput) customCategory else selectedCategory
 
     // 이미지 선택 런처
     val launcher = rememberLauncherForActivityResult(
@@ -89,7 +103,7 @@ fun OperationManagementMenuInputScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "뒤로가기"
                         )
                     }
@@ -146,43 +160,113 @@ fun OperationManagementMenuInputScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // 카테고리 선택 UI
+                Column(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "카테고리 : ",
+                        text = "카테고리",
                         fontSize = 16.sp,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { category = "음식" }
+                    
+                    ExposedDropdownMenuBox(
+                        expanded = isDropdownExpanded,
+                        onExpandedChange = { isDropdownExpanded = it },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        RadioButton(
-                            selected = category == "음식",
-                            onClick = { category = "음식" }
+                        OutlinedTextField(
+                            value = if (showCustomInput) "직접입력: $customCategory" else selectedCategory,
+                            onValueChange = { },
+                            readOnly = true,
+                            label = { Text("카테고리 선택") },
+                            trailingIcon = { 
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDropdownExpanded) 
+                            },
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                            modifier = Modifier
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                .fillMaxWidth()
                         )
-                        Text("음식")
+                        
+                        ExposedDropdownMenu(
+                            expanded = isDropdownExpanded,
+                            onDismissRequest = { isDropdownExpanded = false }
+                        ) {
+                            predefinedCategories.forEach { category ->
+                                DropdownMenuItem(
+                                    text = { 
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            if (category == "직접입력") {
+                                                Icon(
+                                                    imageVector = Icons.Default.Edit,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                            }
+                                            Text(category)
+                                        }
+                                    },
+                                    onClick = {
+                                        if (category == "직접입력") {
+                                            showCustomInput = true
+                                            customCategory = ""
+                                        } else {
+                                            selectedCategory = category
+                                            showCustomInput = false
+                                        }
+                                        isDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { category = "주류" }
-                    ) {
-                        RadioButton(
-                            selected = category == "주류",
-                            onClick = { category = "주류" }
+                    
+                    // 직접입력 모드일 때 텍스트 필드 표시
+                    if (showCustomInput) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = customCategory,
+                            onValueChange = { customCategory = it },
+                            label = { Text("카테고리 직접입력") },
+                            placeholder = { Text("예: 시그니처, 스페셜 등") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            trailingIcon = {
+                                if (customCategory.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = { customCategory = "" }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "지우기",
+                                            tint = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
+                                }
+                            }
                         )
-                        Text("주류")
+                        
+                        // 미리 정의된 카테고리로 돌아가기 버튼
+                        TextButton(
+                            onClick = { 
+                                showCustomInput = false
+                                selectedCategory = "음식"
+                            },
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("기본 카테고리로 돌아가기", fontSize = 12.sp)
+                        }
                     }
                 }
 
@@ -204,6 +288,16 @@ fun OperationManagementMenuInputScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("설명") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
             }
 
             Row(
@@ -221,10 +315,11 @@ fun OperationManagementMenuInputScreen(
 
                 Button(
                     onClick = {
-                        onSubmit(imageUri ?: "", foodName, price)
+                        onSubmit(imageUri ?: "", foodName, price, description, finalCategory)
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = foodName.isNotBlank() && price.isNotBlank()
+                    enabled = foodName.isNotBlank() && price.isNotBlank() && 
+                        (!showCustomInput || customCategory.isNotBlank())
                 ) {
                     Text("등록")
                 }

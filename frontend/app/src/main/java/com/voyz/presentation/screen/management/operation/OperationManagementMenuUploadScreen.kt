@@ -49,6 +49,8 @@ fun OperationManagementMenuUploadScreen(
     onDeleteImage: () -> Unit,
     onNextStep: () -> Unit
 ) {
+    // 디버깅용 로그
+    android.util.Log.d("UploadScreen", "imageUri: $imageUri")
     val shape = RoundedCornerShape(16.dp)
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -173,7 +175,10 @@ fun OperationManagementMenuUploadScreen(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Button(
-                    onClick = onNextStep,
+                    onClick = {
+                        android.util.Log.d("UploadScreen", "Next button clicked, imageUri: $imageUri")
+                        onNextStep()
+                    },
                     modifier = Modifier.weight(1f),
                     enabled = imageUri != null
                 ) {
