@@ -17,6 +17,9 @@ fun FilterDialog(
     onNationalityToggle: (String) -> Unit,
     selectedRatingRanges: Set<String>,
     onRatingToggle: (String) -> Unit,
+    allMenus: List<String>,
+    selectedMenus: Set<String>,
+    onMenuToggle: (String) -> Unit,
     onDismiss: () -> Unit,
     onApply: () -> Unit
 ) {
@@ -26,10 +29,12 @@ fun FilterDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = onApply) { Text("적용") }
+            TextButton(onClick = onApply) { Text("적용")
+            }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("취소") }
+            TextButton(onClick = onDismiss) { Text("취소")
+            }
         },
         title = { Text("리뷰 필터") },
         text = {
@@ -61,6 +66,25 @@ fun FilterDialog(
                             text = nation,
                             selected = selectedNationalities.contains(nation),
                             onClick = { onNationalityToggle(nation) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ✅ 주문한 메뉴 필터 (추가된 부분)
+                Text("주문한 메뉴", style = MaterialTheme.typography.titleMedium)
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    allMenus.forEach { menu ->
+                        FilterToggleButton(
+                            text = menu,
+                            selected = selectedMenus.contains(menu),
+                            onClick = { onMenuToggle(menu) }
                         )
                     }
                 }
