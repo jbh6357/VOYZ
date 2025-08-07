@@ -3,18 +3,18 @@ import { useState, useEffect, useCallback } from 'react';
 // Components
 import LanguageSelector from './components/UI/LanguageSelector.jsx';
 import MenuSection from './components/Menu/MenuSection.jsx';
-import OrderPage from './components/Menu/OrderPage.jsx';
+import OrderPage from './pages/OrderPage/index.jsx';
 import ReviewModal from './components/Review/ReviewModal.jsx';
-import WriteReviewPage from './components/Review/WriteReviewPage.jsx';
+import WriteReviewPage from './pages/ReviewPage/index.jsx';
 import NotificationPermissionModal from './components/UI/NotificationPermissionModal.jsx';
 import PaymentModal from './components/Payment/PaymentModal.jsx';
 import TossPaymentWidget from './components/Payment/TossPaymentWidget.jsx';
 import PayPalPaymentWidget from './components/Payment/PayPalPaymentWidget.jsx';
-import SuccessPage from './components/UI/SuccessPage.jsx';
+import SuccessPage from './pages/SuccessPage/index.jsx';
 
 // Data & Utils
-import { sampleMenuData } from './datas/sampleData.js';
-import { getMenusByUserId, getUrlParams } from './datas/apiService.js';
+import { sampleMenuData } from './constants/sampleData.js';
+import { getMenusByUserId, getUrlParams } from './api/menu.js';
 import { useMenu } from './hooks/useMenu.js';
 import { formatPrice } from './utils/helpers.js';
 import {
