@@ -14,7 +14,7 @@ import com.voyz.presentation.screen.main.MainScreen
 import com.voyz.presentation.screen.auth.IdPwFindScreen
 import com.voyz.presentation.screen.reminder.ReminderScreen
 import com.voyz.presentation.screen.management.operation.OperationManagementScreen
-import com.voyz.presentation.screen.management.CustomerManagementScreen
+import com.voyz.presentation.screen.management.review.CustomerManagementScreen
 import com.voyz.presentation.screen.management.SettingsScreen
 import com.voyz.presentation.screen.management.UserProfileScreen
 import com.voyz.presentation.screen.marketing.MarketingCreateScreen
