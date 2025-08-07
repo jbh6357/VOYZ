@@ -36,8 +36,6 @@ public class MenuController {
 	@PostMapping(value = "/ocr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@Operation(summary = "메뉴판 OCR 인식", description = "메뉴판 사진을 입력받아 google vision API를 통해 메뉴 정보를 인식합니다.")
 	public ResponseEntity<String> processOcrImage(
-	        @RequestParam String userId,
-	        @RequestParam String language,
 	        @Parameter(description = "업로드할 이미지 파일", required = true)
     		@RequestPart("file") MultipartFile file) throws IOException {
 		
@@ -58,21 +56,41 @@ public class MenuController {
 	
 	@PostMapping("/")
 	@Operation(summary = "메뉴 등록", description = "메뉴를 등록합니다.")
-	public ResponseEntity<String> createMenu(
+	public ResponseEntity<?> createMenu(
 			@RequestParam String userId,
 			@RequestParam String menuName,
 			@RequestParam int menuPrice,
-			@RequestParam String menuDescription){
+			@RequestParam String menuDescription,
+			@RequestParam(required = false, defaultValue = "기타") String category){
 		
-		menuService.createMenu(userId, menuName, menuPrice, menuDescription);
-		return ResponseEntity.ok().build(); 
+		try {
+			menuService.createMenu(userId, menuName, menuPrice, menuDescription, category);
+			return ResponseEntity.ok().build();
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("메뉴 등록 중 오류가 발생했습니다.");
+		}
 	}
 	
 	@GetMapping("/{userId}")
 	@Operation(summary = "사용자 메뉴 조회", description = "userId에 해당하는 모든 메뉴를 조회합니다.")
-	public ResponseEntity<List<Menus>> getMenusByUserId(@PathVariable String userId) {
-	    List<Menus> menus = menuService.getMenusByUserId(userId);
-	    return ResponseEntity.ok(menus);
+	public ResponseEntity<List<com.voiz.dto.MenusDto>> getMenusByUserId(@PathVariable String userId) {
+	    List<com.voiz.vo.Menus> menus = menuService.getMenusByUserId(userId);
+	    
+	    // VO를 DTO로 변환
+	    List<com.voiz.dto.MenusDto> menuDtos = menus.stream()
+	        .map(menu -> new com.voiz.dto.MenusDto(
+	            menu.getMenuIdx(),
+	            menu.getMenuName(),
+	            menu.getMenuPrice(),
+	            menu.getMenuDescription(),
+	            menu.getImageUrl(),
+	            menu.getCategory()
+	        ))
+	        .collect(java.util.stream.Collectors.toList());
+	        
+	    return ResponseEntity.ok(menuDtos);
 	}
 	
 	@PutMapping("/{menuIdx}")
@@ -81,9 +99,10 @@ public class MenuController {
 	        @PathVariable int menuIdx,
 	        @RequestParam String menuName,
 	        @RequestParam int menuPrice,
-	        @RequestParam String menuDescription) {
+	        @RequestParam String menuDescription,
+	        @RequestParam(required = false) String category) {
 
-	    menuService.updateMenu(menuIdx, menuName, menuPrice, menuDescription);
+	    menuService.updateMenu(menuIdx, menuName, menuPrice, menuDescription, category);
 	    return ResponseEntity.ok().build();
 	}
 	

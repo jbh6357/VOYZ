@@ -13,4 +13,5 @@ public class MenusDto {
 	private int menuPrice;
 	private String menuDescription;
 	private String imageUrl;
+	private String category;
 }

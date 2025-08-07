@@ -38,6 +38,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.voyz.presentation.fake.MenuItem
 import com.voyz.presentation.fake.sampleMenuItems
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
+import com.voyz.datas.model.dto.MenuItemDto
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.voyz.datas.datastore.UserPreferencesManager
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 
 
 
@@ -65,11 +75,62 @@ fun OperationManagementScreen(
     var showContent by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabTitles = listOf("매출", "메뉴")
-    var menuItems by remember { mutableStateOf(sampleMenuItems) }
-    var itemToDelete by remember { mutableStateOf<MenuItem?>(null) }
+    var menuItems by remember { mutableStateOf<List<MenuItemDto>>(emptyList()) }
+    var itemToDelete by remember { mutableStateOf<MenuItemDto?>(null) }
+    var itemToEdit by remember { mutableStateOf<MenuItemDto?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    
+    val context = LocalContext.current
+    val userPreferencesManager = remember { UserPreferencesManager(context) }
+    val menuRepository = remember { MenuRepository() }
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(500) // 원하는 시간으로 조절 (ms)
         showContent = true
+        
+        // 메뉴 로드
+        isLoading = true
+        try {
+            val userId = userPreferencesManager.userId.first()
+            android.util.Log.d("MenuLoad", "로그인된 userId: $userId")
+            
+            if (userId != null) {
+                val result = menuRepository.getMenusByUserId(userId)
+                android.util.Log.d("MenuLoad", "API 결과: ${if (result.isSuccess) "성공" else "실패"}")
+                
+                if (result.isSuccess) {
+                    val allMenus = result.getOrNull() ?: emptyList()
+                    android.util.Log.d("MenuLoad", "전체 메뉴 개수: ${allMenus.size}")
+                    
+                    // 로그로 각 메뉴 확인
+                    allMenus.forEachIndexed { index, menu ->
+                        android.util.Log.d("MenuLoad", "메뉴 $index: name=${menu.menuName}, category=${menu.category}")
+                    }
+                    
+                    // 중복 제거 전 필터링 로그
+                    val validMenus = allMenus.filter { it.menuName != null && it.menuName.isNotBlank() }
+                    android.util.Log.d("MenuLoad", "유효한 메뉴 개수: ${validMenus.size}")
+                    
+                    // 중복 메뉴 제거 (menuName 기준으로 최신것만 유지)
+                    menuItems = validMenus
+                        .groupBy { it.menuName }
+                        .mapValues { it.value.maxByOrNull { menu -> menu.menuIdx ?: 0 } }
+                        .values
+                        .filterNotNull()
+                        .sortedBy { it.menuName }
+                        
+                    android.util.Log.d("MenuLoad", "최종 메뉴 개수: ${menuItems.size}")
+                } else {
+                    android.util.Log.e("MenuLoad", "API 실패: ${result.exceptionOrNull()?.message}")
+                }
+            } else {
+                android.util.Log.e("MenuLoad", "userId가 null입니다")
+            }
+        } catch (e: Exception) {
+            // 에러 처리
+            android.util.Log.e("MenuLoad", "메뉴 로드 실패", e)
+        } finally {
+            isLoading = false
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -126,15 +187,37 @@ fun OperationManagementScreen(
                     }
                 }
 
-                // ✅ 탭 콘텐츠는 TabRow 아래로!
+                // ✅ 운영관리 메인 대시보드 + 탭 콘텐츠
                 when (selectedTabIndex) {
                     0 -> {
                         OperationManagementRevenueScreen()
                     }
 
                     1 -> {
-                        var selectedCategory by remember { mutableStateOf("음식") }
-                        val filteredMenuItems = menuItems.filter { it.category == selectedCategory }
+                        // 동적 카테고리 생성
+                        val uniqueCategories = remember(menuItems) {
+                            val categories = menuItems
+                                .mapNotNull { it.category }
+                                .filter { it.isNotBlank() }
+                                .distinct()
+                            if (categories.isEmpty()) {
+                                listOf("전체")
+                            } else {
+                                listOf("전체") + categories
+                            }
+                        }
+                        
+                        var selectedCategory by remember(uniqueCategories) { 
+                            mutableStateOf(uniqueCategories.firstOrNull() ?: "전체") 
+                        }
+                        
+                        val filteredMenuItems = remember(menuItems, selectedCategory) {
+                            if (selectedCategory == "전체") {
+                                menuItems
+                            } else {
+                                menuItems.filter { it.category == selectedCategory }
+                            }
+                        }
 
                         Column(
                             modifier = Modifier
@@ -143,45 +226,44 @@ fun OperationManagementScreen(
                         ) {
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // ✅ 음식/주류 버튼 항상 출력
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                Row(modifier = Modifier.width(160.dp)) {
-                                    Button(
-                                        onClick = { selectedCategory = "음식" },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (selectedCategory == "음식") MaterialTheme.colorScheme.primary else Color.LightGray
-                                        ),
-                                        shape = RoundedCornerShape(
-                                            topStart = 8.dp,
-                                            bottomStart = 8.dp
-                                        ),
-                                        contentPadding = PaddingValues(horizontal = 0.dp),
-                                        modifier = Modifier.weight(1f).height(40.dp)
-                                    ) {
-                                        Text("음식")
-                                    }
-
-                                    Button(
-                                        onClick = { selectedCategory = "주류" },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (selectedCategory == "주류") MaterialTheme.colorScheme.primary else Color.LightGray
-                                        ),
-                                        shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp),
-                                        contentPadding = PaddingValues(horizontal = 0.dp),
-                                        modifier = Modifier.weight(1f).height(40.dp)
-                                    ) {
-                                        Text("주류")
+                            // 수평 스크롤 카테고리 selector  
+                            if (uniqueCategories.size > 1) {
+                                LazyRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 16.dp)
+                                ) {
+                                    items(uniqueCategories) { category ->
+                                        val isSelected = category == selectedCategory
+                                        val safeCategory = category ?: "전체"
+                                        FilterChip(
+                                            onClick = { selectedCategory = safeCategory },
+                                            label = { Text(safeCategory) },
+                                            selected = isSelected,
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                                selectedLabelColor = Color.White
+                                            ),
+                                            modifier = Modifier.padding(horizontal = 4.dp)
+                                        )
                                     }
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // ✅ 메뉴가 없으면 EmptyState
-                            if (filteredMenuItems.isEmpty()) {
+                            // ✅ 로딩 상태 표시
+                            if (isLoading) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            } else if (filteredMenuItems.isEmpty()) {
+                                // ✅ 메뉴가 없으면 EmptyState
                                 OperationMenuEmptyState(
                                     navController = navController,
                                     onUploadClick = {},
@@ -192,24 +274,14 @@ fun OperationManagementScreen(
                                 // ✅ 메뉴 리스트
                                 LazyColumn(modifier = Modifier.weight(1f)) {
                                     items(filteredMenuItems) { item ->
-                                        MenuListItem(
+                                        MenuDtoListItem(
                                             item = item,
-                                            onEditToggle = { toggleItem ->
-                                                menuItems = menuItems.map {
-                                                    if (it.id == toggleItem.id) it.copy(isEditing = !it.isEditing) else it
-                                                }
+                                            onEditRequest = { editItem ->
+                                                itemToEdit = editItem
                                             },
-                                            onDeleteRequest = { itemToDelete = it },
-                                            onEditConfirm = { updatedItem ->
-                                                menuItems = menuItems.map {
-                                                    if (it.id == updatedItem.id) updatedItem.copy(
-                                                        isEditing = false,
-                                                        name = updatedItem.name,
-                                                        price = updatedItem.price
-                                                    ) else it
-                                                }
-                                            }
+                                            onDeleteRequest = { itemToDelete = it }
                                         )
+                                        Spacer(modifier = Modifier.height(8.dp))
                                     }
                                 }
                             }
@@ -243,6 +315,7 @@ fun OperationManagementScreen(
             }
         }
 
+        // 삭제 다이얼로그
         itemToDelete?.let { item ->
             AlertDialog(
                 onDismissRequest = { itemToDelete = null },
@@ -250,9 +323,28 @@ fun OperationManagementScreen(
                 text = { Text("이 메뉴를 삭제하시겠습니까?") },
                 confirmButton = {
                     TextButton(onClick = {
-                        // 삭제 수행
-                        menuItems = menuItems.filterNot { it.id == item.id }
-                        itemToDelete = null
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            item.menuIdx?.let { menuIdx ->
+                                android.util.Log.d("MenuDelete", "삭제 시도: menuIdx=$menuIdx")
+                                val result = menuRepository.deleteMenu(menuIdx)
+                                
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    if (result.isSuccess) {
+                                        android.util.Log.d("MenuDelete", "삭제 성공")
+                                        // DB 삭제 성공 후 로컬 목록에서도 제거
+                                        menuItems = menuItems.filterNot { it.menuIdx == item.menuIdx }
+                                        android.widget.Toast.makeText(context, "메뉴가 삭제되었습니다.", android.widget.Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        android.util.Log.e("MenuDelete", "삭제 실패: ${result.exceptionOrNull()?.message}")
+                                        android.widget.Toast.makeText(context, "메뉴 삭제에 실패했습니다.", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                    itemToDelete = null
+                                }
+                            } ?: run {
+                                android.widget.Toast.makeText(context, "메뉴 ID가 없습니다.", android.widget.Toast.LENGTH_SHORT).show()
+                                itemToDelete = null
+                            }
+                        }
                     }) {
                         Text("삭제")
                     }
@@ -261,6 +353,22 @@ fun OperationManagementScreen(
                     TextButton(onClick = { itemToDelete = null }) {
                         Text("취소")
                     }
+                }
+            )
+        }
+        
+        // 수정 다이얼로그
+        itemToEdit?.let { item ->
+            MenuEditDialog(
+                item = item,
+                onDismiss = { itemToEdit = null },
+                onSave = { updatedItem ->
+                    // TODO: 백엔드 UPDATE API 호출
+                    // 임시로 로컬에서만 수정
+                    menuItems = menuItems.map {
+                        if (it.menuIdx == updatedItem.menuIdx) updatedItem else it
+                    }
+                    itemToEdit = null
                 }
             )
         }
@@ -377,6 +485,169 @@ private fun MenuHeaderTyping(
         )
     }
 }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MenuEditDialog(
+    item: MenuItemDto,
+    onDismiss: () -> Unit,
+    onSave: (MenuItemDto) -> Unit
+) {
+    var editedName by remember { mutableStateOf(item.menuName) }
+    var editedPrice by remember { mutableStateOf(item.menuPrice.toString()) }
+    var editedCategory by remember { mutableStateOf(item.category ?: "음식") }
+    var editedDescription by remember { mutableStateOf(item.menuDescription ?: "") }
+    
+    val categories = listOf("음식", "주류", "디저트", "음료", "사이드", "세트메뉴", "시그니처")
+    var expanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("메뉴 수정") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = editedName,
+                    onValueChange = { editedName = it },
+                    label = { Text("메뉴명") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                OutlinedTextField(
+                    value = editedPrice,
+                    onValueChange = { editedPrice = it.filter { ch -> ch.isDigit() } },
+                    label = { Text("가격") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                // 카테고리 드롭다운
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        readOnly = true,
+                        value = editedCategory,
+                        onValueChange = {},
+                        label = { Text("카테고리") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        modifier = Modifier
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth()
+                    )
+                    
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        categories.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(category) },
+                                onClick = {
+                                    editedCategory = category
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                
+                OutlinedTextField(
+                    value = editedDescription,
+                    onValueChange = { editedDescription = it },
+                    label = { Text("설명 (선택사항)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 2
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val priceInt = editedPrice.toIntOrNull() ?: 0
+                    val updatedItem = item.copy(
+                        menuName = editedName,
+                        menuPrice = priceInt,
+                        category = editedCategory,
+                        menuDescription = editedDescription.takeIf { it.isNotBlank() }
+                    )
+                    onSave(updatedItem)
+                },
+                enabled = editedName.isNotBlank() && editedPrice.isNotBlank()
+            ) {
+                Text("저장")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("취소")
+            }
+        }
+    )
+}
+
+@Composable
+fun MenuDtoListItem(
+    item: MenuItemDto,
+    onEditRequest: (MenuItemDto) -> Unit,
+    onDeleteRequest: (MenuItemDto) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.menuName ?: "메뉴명 없음",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${String.format("%,d", item.menuPrice)}원",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                val categoryText = item.category ?: "분류 없음"
+                if (categoryText.isNotBlank()) {
+                    Text(
+                        text = categoryText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            IconButton(onClick = { onEditRequest(item) }) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "수정",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            IconButton(onClick = { onDeleteRequest(item) }) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "삭제",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun MenuListItem(
     item: MenuItem,

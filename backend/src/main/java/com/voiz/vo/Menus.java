@@ -42,6 +42,9 @@ public class Menus {
     
     @Column(name = "IMAGE_URL")
     private String imageUrl;
+    
+    @Column(name = "CATEGORY")
+    private String category;
 
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;

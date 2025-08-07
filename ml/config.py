@@ -89,8 +89,8 @@ class CreateSuggestResponse(BaseModel):
 
 # 메뉴 OCR 모델 설정
 class MenuItem(BaseModel):
-    name: str
-    price: int
+    menuName: str
+    menuPrice: int
 
 # 번역 요청 모델
 class TranslateRequest(BaseModel):
