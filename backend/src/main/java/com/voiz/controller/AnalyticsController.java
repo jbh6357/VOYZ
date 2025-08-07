@@ -37,9 +37,11 @@ public class AnalyticsController {
     public ResponseEntity<List<MenuSalesDto>> getTopMenuSales(
             @PathVariable String userId,
             @RequestParam LocalDate startDate,
-            @RequestParam LocalDate endDate) {
+            @RequestParam LocalDate endDate,
+            @RequestParam(required = false) String category, // 카테고리 필터링 (선택적)
+            @RequestParam(defaultValue = "5") int topCount) { // 기본값은 5개
         
-        List<MenuSalesDto> topMenus = analyticsService.getTopMenuSales(userId, startDate, endDate);
+        List<MenuSalesDto> topMenus = analyticsService.getTopMenuSales(userId, startDate, endDate, category, topCount);
         return ResponseEntity.ok(topMenus);
     }
 }

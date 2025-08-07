@@ -37,6 +37,9 @@ public class Menus {
     @Column(name = "MENU_PRICE", nullable = false)
     private int menuPrice;
 
+    @Column(name = "CATEGORY") 
+    private String category;
+
     @Column(name = "IMAGE_URL")
     private String imageUrl;
 

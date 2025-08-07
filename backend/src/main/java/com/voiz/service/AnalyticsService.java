@@ -73,12 +73,14 @@ public class AnalyticsService {
 
 
     // TOP 5 메뉴 관련 메서드
-    public List<MenuSalesDto> getTopMenuSales(String userId, LocalDate startDate, LocalDate endDate) {
+     public List<MenuSalesDto> getTopMenuSales(String userId, LocalDate startDate, LocalDate endDate, String category, int topCount) {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
 
-        List<Object[]> topSalesData = salesOrderRepository.findTopSellingMenus(userId, startDateTime, endDateTime);
+        
+        List<Object[]> topSalesData = salesOrderRepository.findTopSellingMenus(userId, startDateTime, endDateTime, category, topCount);
 
+        
         if (topSalesData == null || topSalesData.isEmpty()) {
             return new ArrayList<>();
         }
@@ -98,5 +100,4 @@ public class AnalyticsService {
             })
             .collect(Collectors.toList());
     }
-
 }

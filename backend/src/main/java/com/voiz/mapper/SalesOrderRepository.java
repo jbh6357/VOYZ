@@ -50,18 +50,22 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
 
         // 메뉴별 매출 상위 5개 조회
         @Query(value = "SELECT MENU_NAME, TOTAL_SALES FROM ( " +
-                        "  SELECT m.MENU_NAME, SUM(oi.TOTAL_PRICE) as TOTAL_SALES " +
-                        "  FROM VOYZ_ORDERS o " +
-                        "  JOIN VOYZ_ORDERS_ITEMS oi ON o.ORDER_IDX = oi.ORDER_IDX " +
-                        "  JOIN VOYZ_MENUS m ON oi.MENU_IDX = m.MENU_IDX " +
-                        "  WHERE o.USER_ID = :userId " +
-                        "    AND o.STATUS = 'Completed' " +
-                        "    AND o.CREATED_AT BETWEEN :startDate AND :endDate " +
-                        "  GROUP BY m.MENU_NAME " +
-                        "  ORDER BY TOTAL_SALES DESC " +
-                        ") WHERE ROWNUM <= 5", // ROWNUM 사용**
-                        nativeQuery = true)
-        List<Object[]> findTopSellingMenus(@Param("userId") String userId,
-                        @Param("startDate") LocalDateTime startDate,
-                        @Param("endDate") LocalDateTime endDate);
+                   "  SELECT m.MENU_NAME, SUM(oi.TOTAL_PRICE) as TOTAL_SALES " +
+                   "  FROM VOYZ_ORDERS o " +
+                   "  JOIN VOYZ_ORDERS_ITEMS oi ON o.ORDER_IDX = oi.ORDER_IDX " +
+                   "  JOIN VOYZ_MENUS m ON oi.MENU_IDX = m.MENU_IDX " +
+                   "  WHERE o.USER_ID = :userId " +
+                   "    AND o.STATUS = 'Completed' " +
+                   "    AND o.CREATED_AT BETWEEN :startDate AND :endDate " +
+                   "    AND (:category IS NULL OR m.CATEGORY = :category) " + 
+                   "  GROUP BY m.MENU_NAME " +
+                   "  ORDER BY TOTAL_SALES DESC " +
+                   ") WHERE ROWNUM <= :topCount", 
+           nativeQuery = true)
+    List<Object[]> findTopSellingMenus(@Param("userId") String userId,
+                                       @Param("startDate") LocalDateTime startDate,
+                                       @Param("endDate") LocalDateTime endDate,
+                                       @Param("category") String category, 
+                                       @Param("topCount") int topCount);  
+
 }
