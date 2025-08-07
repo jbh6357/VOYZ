@@ -1,7 +1,4 @@
-// API Base URL 설정
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? 'http://13.125.251.36:8081/api' 
-    : 'http://localhost:8081/api';
+import { API_CONFIG } from '../config/api.js';
 
 /**
  * 사용자의 메뉴 목록을 가져오는 API
@@ -10,9 +7,8 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
  */
 export const getMenusByUserId = async (userId) => {
     try {
-        console.log('메뉴 데이터 요청:', userId);
         
-        const response = await fetch(`${API_BASE_URL}/menus/${encodeURIComponent(userId)}`, {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/menus/${encodeURIComponent(userId)}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -24,7 +20,6 @@ export const getMenusByUserId = async (userId) => {
         }
 
         const data = await response.json();
-        console.log('📋 메뉴 데이터 수신:', data);
         
         return data;
     } catch (error) {
