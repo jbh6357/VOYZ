@@ -37,7 +37,7 @@ fun NavGraph(navController: NavHostController) {
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate("main") {
+                    navController.navigate("reminder") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
