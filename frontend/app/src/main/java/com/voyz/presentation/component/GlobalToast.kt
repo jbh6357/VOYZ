@@ -95,8 +95,8 @@ fun GlobalToastHost() {
                         .background(
                             brush = Brush.horizontalGradient(
                                 colors = listOf(
-                                    Color(0xFF66BB6A), // 연한 초록
-                                    Color(0xFF4CAF50)  // 조금 더 진한 초록
+                                    com.voyz.ui.theme.AccentGreenLight,
+                                    com.voyz.ui.theme.AccentGreen
                                 )
                             ),
                             shape = RoundedCornerShape(16.dp)

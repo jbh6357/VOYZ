@@ -6,31 +6,30 @@ import androidx.compose.ui.graphics.Color
  * 마케팅 기회 서비스 전용 색상 시스템
  */
 object MarketingColors {
-    
-    // 기본 브랜드 색상
-    val Primary = Color(0xFF2196F3)      // 메인 파란색
-    val PrimaryLight = Color(0xFFE3F2FD) // 연한 파란색
-    val Secondary = Color(0xFF90A4AE)    // 회색 파란색
-    
+    // 기본 브랜드 색상 (웹 팔레트와 정합)
+    val Primary = Color(0xFFE53E3E)        // korean-red
+    val PrimaryLight = Color(0xFFFDECEC)   // red light
+    val Secondary = Color(0xFFD69E2E)      // korean-gold
+
     // 배경 색상
-    val Surface = Color(0xFFFAFAFA)      // 거의 흰색
-    val SurfaceVariant = Color(0xFFF5F5F5) // 연한 회색
-    
-    // 마케팅 카테고리별 색상 (전문적이고 차분한 회색-파랑 계열)
-    val CategoryPrimary = Color(0xFF546E7A)      // 진한 청회색
-    val CategorySecondary = Color(0xFFECEFF1)    // 연한 청회색
-    
-    val CategoryHighlight = Color(0xFF1976D2)    // 강조용 파란색
-    val CategoryLight = Color(0xFFE3F2FD)        // 연한 파란색
-    
-    // 모든 카테고리를 같은 색상으로 통일 (차별화는 아이콘으로)
+    val Surface = Color(0xFFFFFFFF)        // white
+    val SurfaceVariant = Color(0xFFF7FAFC) // light gray
+
+    // 마케팅 카테고리 색상 (웹 팔레트 정합)
+    val CategoryPrimary = Color(0xFF1A202C)      // korean-black (텍스트/강조)
+    val CategorySecondary = Color(0xFFF7FAFC)    // light gray
+
+    val CategoryHighlight = Color(0xFFD69E2E)    // 강조용 gold
+    val CategoryLight = Color(0xFFFFF7D6)        // 연한 gold 배경
+
+    // 모든 카테고리를 같은 색상으로 통일 (차별화는 아이콘으로 유지)
     val WeatherPrimary = CategoryPrimary
     val WeatherSecondary = CategorySecondary
     
     val UniversityPrimary = CategoryPrimary
     val UniversitySecondary = CategorySecondary
     
-    val SpecialDayPrimary = CategoryHighlight    // 특별한 날만 강조
+    val SpecialDayPrimary = CategoryHighlight     // 특별한 날 강조
     val SpecialDaySecondary = CategoryLight
     
     val EventPrimary = CategoryPrimary
@@ -39,25 +38,25 @@ object MarketingColors {
     val SeasonPrimary = CategoryPrimary
     val SeasonSecondary = CategorySecondary
     
-    val HolidayPrimary = CategoryHighlight       // 공휴일도 강조
+    val HolidayPrimary = CategoryHighlight        // 공휴일 강조
     val HolidaySecondary = CategoryLight
     
-    // 우선순위 색상 (더 차분하게)
-    val HighPriority = Color(0xFFE57373)        // 차분한 빨간색
-    val MediumPriority = Color(0xFFFFB74D)      // 차분한 주황색
-    val LowPriority = Color(0xFF81C784)         // 차분한 초록색
+    // 우선순위 색상 (웹 팔레트 정합)
+    val HighPriority = Color(0xFFE53E3E)        // red
+    val MediumPriority = Color(0xFFD69E2E)      // gold
+    val LowPriority = Color(0xFF38A169)         // green
     
     // 텍스트 색상
-    val TextPrimary = Color(0xFF212121)         // 진한 회색
-    val TextSecondary = Color(0xFF757575)       // 중간 회색
+    val TextPrimary = Color(0xFF1A202C)         // korean-black
+    val TextSecondary = Color(0xFF718096)       // korean-gray
     val TextTertiary = Color(0xFFBDBDBD)        // 연한 회색
     
     // 선택/활성 상태
-    val Selected = Color(0xFF2196F3)            // 파란색
-    val SelectedBackground = Color(0xFFE3F2FD)  // 연한 파란색
+    val Selected = Primary                      // red
+    val SelectedBackground = PrimaryLight       // 연한 red 배경
     
     // 오버레이 배경
-    val OverlayBackground = Color.Gray.copy(alpha = 0.7f)  // 사이드바/모달 배경용
+    val OverlayBackground = Color.Black.copy(alpha = 0.7f)  // 사이드바/모달 배경용
 }
 
 /**
