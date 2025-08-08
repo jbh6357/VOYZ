@@ -10,29 +10,41 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.Shapes
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 
+// VOYZ WEB palette (A안) mapping to Material3
 private val DarkColorScheme = darkColorScheme(
-    primary = Blue300,
-    secondary = Teal200,
-    tertiary = Teal500,
+    primary = KoreanRed,
+    secondary = KoreanGold,
+    tertiary = KoreanGold,
     background = Gray900,
     surface = Gray800,
-    onPrimary = Gray900,
-    onSecondary = Gray900,
-    onBackground = White,
-    onSurface = White
+    onPrimary = KoreanWhite,
+    onSecondary = KoreanWhite,
+    onBackground = KoreanWhite,
+    onSurface = KoreanWhite
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Blue500,
-    secondary = Teal500,
-    tertiary = Blue700,
-    background = White, // 순수 화이트 배경
-    surface = White, // Surface도 화이트로 통일
-    onPrimary = White,
-    onSecondary = White,
-    onBackground = Gray900,
-    onSurface = Gray900
+    primary = KoreanRed,
+    secondary = KoreanGold,
+    tertiary = KoreanGold,
+    background = KoreanLightGray,
+    surface = KoreanWhite,
+    onPrimary = KoreanWhite,
+    onSecondary = KoreanWhite,
+    onBackground = KoreanBlack,
+    onSurface = KoreanBlack
+)
+
+private val VOYZShapes = Shapes(
+    extraSmall = RoundedCornerShape(12.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(12.dp),
+    extraLarge = RoundedCornerShape(12.dp)
 )
 
 @Composable
@@ -55,6 +67,7 @@ fun VOYZTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = VOYZShapes,
         content = content
     )
 }
