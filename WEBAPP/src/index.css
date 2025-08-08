@@ -1,1411 +1,1422 @@
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 :root {
-  --korean-red: #E53E3E;
-  --korean-gold: #D69E2E;
-  --korean-black: #1A202C;
-  --korean-gray: #718096;
-  --korean-light-gray: #F7FAFC;
-  --korean-white: #FFFFFF;
-  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.12);
-  --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.07);
-  --border-radius: 12px;
+    --korean-red: #e53e3e;
+    --korean-gold: #d69e2e;
+    --korean-black: #1a202c;
+    --korean-gray: #718096;
+    --korean-light-gray: #f7fafc;
+    --korean-white: #ffffff;
+    --korean-yellow: #ecc94b;
+    --korean-green: #38a169;
+    --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --border-radius: 12px;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background-color: var(--korean-light-gray);
-  color: var(--korean-black);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    background-color: var(--korean-light-gray);
+    color: var(--korean-black);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
-  min-height: 100vh;
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
-  background-color: var(--korean-white);
-  box-shadow: var(--shadow-medium);
+    min-height: 100vh;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    background-color: var(--korean-white);
+    box-shadow: var(--shadow-medium);
 }
 
 .mobile-container {
-  width: 100%;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--korean-white);
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--korean-white);
 }
 
 .header {
-  padding: 1rem;
-  background-color: var(--korean-white);
-  border-bottom: 1px solid #E2E8F0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
+    padding: 1rem;
+    background-color: var(--korean-white);
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .restaurant-name {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--korean-black);
-  margin-bottom: 0.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--korean-black);
+    margin-bottom: 0.25rem;
 }
 
 .restaurant-subtitle {
-  font-size: 0.9rem;
-  color: var(--korean-gray);
+    font-size: 0.9rem;
+    color: var(--korean-gray);
 }
 
 .language-selector {
-  margin-top: 1rem;
+    margin-top: 1rem;
 }
 
 .current-lang-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid #E2E8F0;
-  background: var(--korean-white);
-  border-radius: var(--border-radius);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #e2e8f0;
+    background: var(--korean-white);
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .current-lang-btn:hover {
-  border-color: var(--korean-red);
+    border-color: var(--korean-red);
 }
 
 .lang-modal {
-  max-width: 320px;
+    max-width: 320px;
 }
 
 .lang-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
-  padding: 1rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    padding: 1rem;
 }
 
 .lang-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid #E2E8F0;
-  background: var(--korean-white);
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    background: var(--korean-white);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .lang-option:hover {
-  border-color: var(--korean-red);
+    border-color: var(--korean-red);
 }
 
 .lang-option.active {
-  background: var(--korean-red);
-  color: var(--korean-white);
-  border-color: var(--korean-red);
+    background: var(--korean-red);
+    color: var(--korean-white);
+    border-color: var(--korean-red);
 }
 
 .lang-flag {
-  font-size: 1.2rem;
+    font-size: 1.2rem;
 }
 
 .lang-name {
-  font-size: 0.8rem;
+    font-size: 0.8rem;
 }
 
 .menu-section {
-  padding: 1rem;
+    padding: 1rem;
 }
 
 .section-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--korean-black);
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--korean-red);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--korean-black);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--korean-red);
 }
 
 .menu-item {
-  background: var(--korean-white);
-  border-radius: var(--border-radius);
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: var(--shadow-light);
-  border: 1px solid #E2E8F0;
-  cursor: pointer;
-  transition: all 0.2s;
+    background: var(--korean-white);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-light);
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .menu-item:hover {
-  box-shadow: var(--shadow-medium);
-  transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-1px);
 }
 
 .item-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--korean-black);
-  margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--korean-black);
+    margin-bottom: 0.5rem;
 }
 
 .item-description {
-  font-size: 0.9rem;
-  color: var(--korean-gray);
-  margin-bottom: 0.75rem;
-  line-height: 1.4;
+    font-size: 0.9rem;
+    color: var(--korean-gray);
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
 }
 
 .item-price {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--korean-red);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--korean-red);
 }
 
 .reviews-preview {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #E2E8F0;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
 }
 
 .rating {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
 }
 
 .stars {
-  color: var(--korean-gold);
-  font-size: 0.9rem;
+    color: var(--korean-gold);
+    font-size: 0.9rem;
 }
 
 .rating-text {
-  font-size: 0.85rem;
-  color: var(--korean-gray);
+    font-size: 0.85rem;
+    color: var(--korean-gray);
 }
 
 .review-snippet {
-  font-size: 0.8rem;
-  color: var(--korean-gray);
-  font-style: italic;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--korean-gray);
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
 .review-flag {
-  font-size: 0.9rem;
+    font-size: 0.9rem;
 }
 
 .order-summary {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  background: var(--korean-white);
-  padding: 1rem;
-  border-top: 1px solid #E2E8F0;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: var(--korean-white);
+    padding: 1rem;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .order-btn {
-  width: 100%;
-  padding: 1rem;
-  background: var(--korean-red);
-  color: var(--korean-white);
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+    width: 100%;
+    padding: 1rem;
+    background: var(--korean-red);
+    color: var(--korean-white);
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .order-btn:hover {
-  background: #C53030;
+    background: #c53030;
 }
 
 .order-btn:disabled {
-  background: var(--korean-gray);
-  cursor: not-allowed;
+    background: var(--korean-gray);
+    cursor: not-allowed;
 }
 
 .view-reviews-btn {
-  background: none;
-  border: none;
-  color: var(--korean-red);
-  font-size: 0.8rem;
-  cursor: pointer;
-  text-decoration: underline;
-  margin-left: 0.5rem;
+    background: none;
+    border: none;
+    color: var(--korean-red);
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-left: 0.5rem;
 }
 
 .cart-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
 }
 
 .cart-controls button {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--korean-red);
-  background: var(--korean-white);
-  color: var(--korean-red);
-  font-weight: bold;
-  cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--korean-red);
+    background: var(--korean-white);
+    color: var(--korean-red);
+    font-weight: bold;
+    cursor: pointer;
 }
 
 .cart-controls button:hover {
-  background: var(--korean-red);
-  color: var(--korean-white);
+    background: var(--korean-red);
+    color: var(--korean-white);
 }
 
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
 
 .modal-content {
-  background: var(--korean-white);
-  border-radius: var(--border-radius);
-  width: 90%;
-  max-width: 400px;
-  max-height: 85vh;
-  overflow-y: auto;
-  position: relative;
+    background: var(--korean-white);
+    border-radius: var(--border-radius);
+    width: 90%;
+    max-width: 400px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--korean-gray);
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--korean-gray);
 }
 
 .reviews-list {
-  padding: 1rem;
+    padding: 1rem;
 }
 
 .review-item {
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #E2E8F0;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .review-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
 }
 
 .review-user {
-  font-weight: 600;
+    font-weight: 600;
 }
 
 .review-country {
-  color: var(--korean-gray);
-  font-size: 0.8rem;
+    color: var(--korean-gray);
+    font-size: 0.8rem;
 }
 
 .review-text {
-  font-style: italic;
-  color: var(--korean-gray);
+    font-style: italic;
+    color: var(--korean-gray);
 }
 
 .order-page {
-  padding: 1rem;
+    padding: 1rem;
 }
 
 .back-btn {
-  background: none;
-  border: none;
-  color: var(--korean-red);
-  font-size: 1rem;
-  cursor: pointer;
-  margin-bottom: 1rem;
+    background: none;
+    border: none;
+    color: var(--korean-red);
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
 }
 
 .order-items {
-  margin-bottom: 2rem;
+    margin-bottom: 2rem;
 }
 
 .order-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border: 1px solid #E2E8F0;
-  border-radius: var(--border-radius);
-  margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    margin-bottom: 0.5rem;
 }
 
 .quantity-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .quantity-controls button {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--korean-red);
-  background: var(--korean-white);
-  color: var(--korean-red);
-  font-weight: bold;
-  cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--korean-red);
+    background: var(--korean-white);
+    color: var(--korean-red);
+    font-weight: bold;
+    cursor: pointer;
 }
 
 .quantity-controls button:hover {
-  background: var(--korean-red);
-  color: var(--korean-white);
+    background: var(--korean-red);
+    color: var(--korean-white);
 }
 
 .payment-section {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  background: var(--korean-white);
-  padding: 1rem;
-  border-top: 1px solid #E2E8F0;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: var(--korean-white);
+    padding: 1rem;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .total {
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-align: center;
 }
 
 .payment-btn {
-  width: 100%;
-  padding: 1rem;
-  background: var(--korean-gold);
-  color: var(--korean-white);
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
+    width: 100%;
+    padding: 1rem;
+    background: var(--korean-gold);
+    color: var(--korean-white);
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .payment-btn:hover {
-  background: #B7791F;
+    background: #b7791f;
 }
 
 .payment-modal {
-  max-width: 400px;
+    max-width: 400px;
 }
 
 .payment-summary {
-  padding: 1rem;
-  text-align: center;
-  border-bottom: 1px solid #E2E8F0;
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .total-amount {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--korean-black);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--korean-black);
 }
 
 .payment-methods {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .payment-method {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border: 2px solid #E2E8F0;
-  border-radius: var(--border-radius);
-  background: var(--korean-white);
-  cursor: pointer;
-  transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    background: var(--korean-white);
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .payment-method:hover {
-  border-color: var(--korean-red);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-medium);
+    border-color: var(--korean-red);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
 }
 
 /* 토스페이 공식 디자인 */
 .payment-method.toss-official {
-  background: #000000;
-  border: 2px solid #000000;
-  color: white;
+    background: #000000;
+    border: 2px solid #000000;
+    color: white;
 }
 
 .payment-method.toss-official:hover {
-  background: #333333;
-  border-color: #333333;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-medium);
+    background: #333333;
+    border-color: #333333;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
 }
 
 .payment-method.toss-official .payment-info {
-  color: white;
+    color: white;
 }
 
 .payment-method.toss-official .payment-name {
-  color: white;
+    color: white;
 }
 
 .payment-method.toss-official .payment-desc {
-  color: #cccccc;
+    color: #cccccc;
 }
 
 .toss-official-logo {
-  width: 60px;
-  height: 60px;
-  background: white;
-  color: #000000;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    width: 60px;
+    height: 60px;
+    background: white;
+    color: #000000;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* PayPal 공식 디자인 */
 .payment-method.paypal-official {
-  background: #0070BA;
-  border: 2px solid #0070BA;
-  color: white;
+    background: #0070ba;
+    border: 2px solid #0070ba;
+    color: white;
 }
 
 .payment-method.paypal-official:hover {
-  background: #005EA6;
-  border-color: #005EA6;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-medium);
+    background: #005ea6;
+    border-color: #005ea6;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
 }
 
 .payment-method.paypal-official .payment-info {
-  color: white;
+    color: white;
 }
 
 .payment-method.paypal-official .payment-name {
-  color: white;
+    color: white;
 }
 
 .payment-method.paypal-official .payment-desc {
-  color: #E6F3FF;
+    color: #e6f3ff;
 }
 
 .paypal-official-logo {
-  width: 60px;
-  height: 60px;
-  background: white;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: row;
-  font-size: 1rem;
-  font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    width: 60px;
+    height: 60px;
+    background: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .paypal-blue {
-  color: #0070BA;
+    color: #0070ba;
 }
 
 .paypal-blue-light {
-  color: #009CDE;
+    color: #009cde;
 }
 
 .payment-logo {
-  font-size: 2rem;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--korean-light-gray);
+    font-size: 2rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--korean-light-gray);
 }
 
 .payment-info {
-  flex: 1;
+    flex: 1;
 }
 
 .payment-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--korean-black);
-  margin-bottom: 0.25rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--korean-black);
+    margin-bottom: 0.25rem;
 }
 
 .payment-desc {
-  font-size: 0.85rem;
-  color: var(--korean-gray);
+    font-size: 0.85rem;
+    color: var(--korean-gray);
 }
 
 .reviews-modal {
-  max-width: 450px;
-  max-height: 85vh;
+    max-width: 450px;
+    max-height: 85vh;
 }
 
 .review-controls {
-  padding: 1rem;
-  border-bottom: 1px solid #E2E8F0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
 }
 
 .view-mode-controls {
-  display: flex;
-  gap: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
 }
 
 .mode-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid #E2E8F0;
-  background: var(--korean-white);
-  border-radius: var(--border-radius);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
+    padding: 0.5rem 1rem;
+    border: 1px solid #e2e8f0;
+    background: var(--korean-white);
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .mode-btn.active {
-  background: var(--korean-red);
-  color: var(--korean-white);
-  border-color: var(--korean-red);
+    background: var(--korean-red);
+    color: var(--korean-white);
+    border-color: var(--korean-red);
 }
 
 .country-filter {
-  flex: 1;
-  max-width: 150px;
+    flex: 1;
+    max-width: 150px;
 }
 
 .country-select {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #E2E8F0;
-  border-radius: var(--border-radius);
-  font-size: 0.85rem;
-  background: var(--korean-white);
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    background: var(--korean-white);
 }
 
 .original-text {
-  font-size: 0.75rem;
-  color: var(--korean-gray);
-  margin-top: 0.5rem;
-  font-style: normal;
+    font-size: 0.75rem;
+    color: var(--korean-gray);
+    margin-top: 0.5rem;
+    font-style: normal;
 }
 
 .paypal-container {
-  width: 100%;
+    width: 100%;
 }
 
 .toss-widget {
-  max-width: 400px;
-  padding: 0;
+    max-width: 400px;
+    padding: 0;
 }
 
 .toss-payment-container {
-  padding: 2rem;
+    padding: 2rem;
 }
 
 .toss-header {
-  text-align: center;
-  margin-bottom: 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
 }
 
 .toss-logo {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0066FF;
-  margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0066ff;
+    margin-bottom: 1rem;
 }
 
 .payment-amount {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--korean-black);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--korean-black);
 }
 
 .payment-progress {
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .loading-spinner {
-  font-size: 2rem;
-  color: #0066FF;
-  margin-bottom: 1rem;
-  text-align: center;
+    font-size: 2rem;
+    color: #0066ff;
+    margin-bottom: 1rem;
+    text-align: center;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .processing-text {
-  font-size: 1.1rem;
-  color: var(--korean-gray);
+    font-size: 1.1rem;
+    color: var(--korean-gray);
 }
 
 .toss-auth-container {
-  width: 100%;
-  text-align: center;
-  padding: 1rem 0;
+    width: 100%;
+    text-align: center;
+    padding: 1rem 0;
 }
 
 .auth-icon {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #0066FF;
-  margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #0066ff;
+    margin-bottom: 1rem;
 }
 
 .auth-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: var(--korean-black);
-  margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--korean-black);
+    margin-bottom: 0.5rem;
 }
 
 .auth-subtitle {
-  font-size: 0.9rem;
-  color: var(--korean-gray);
-  margin-bottom: 2rem;
+    font-size: 0.9rem;
+    color: var(--korean-gray);
+    margin-bottom: 2rem;
 }
 
 .auth-steps {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 2rem;
-  padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
 }
 
 .step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
 }
 
 .step-number {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #0066FF;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.9rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #0066ff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
 .step-text {
-  font-size: 0.8rem;
-  color: var(--korean-gray);
-  text-align: center;
+    font-size: 0.8rem;
+    color: var(--korean-gray);
+    text-align: center;
 }
 
 .toss-auth-btn {
-  width: 100%;
-  padding: 1.2rem;
-  background: #0066FF;
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+    width: 100%;
+    padding: 1.2rem;
+    background: #0066ff;
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .toss-auth-btn:hover:not(:disabled) {
-  background: #0052CC;
+    background: #0052cc;
 }
 
 .toss-auth-btn:disabled {
-  background: var(--korean-gray);
-  cursor: not-allowed;
+    background: var(--korean-gray);
+    cursor: not-allowed;
 }
 
 .success-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--korean-light-gray);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--korean-light-gray);
 }
 
 .success-content {
-  text-align: center;
-  padding: 3rem;
-  background: var(--korean-white);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-medium);
-  max-width: 400px;
-  width: 90%;
+    text-align: center;
+    padding: 3rem;
+    background: var(--korean-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    max-width: 400px;
+    width: 90%;
 }
 
 .success-icon {
-  font-size: 2rem;
-  font-weight: bold;
-  color: var(--korean-red);
-  margin-bottom: 1.5rem;
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--korean-red);
+    margin-bottom: 1.5rem;
 }
 
 .success-content h1 {
-  font-size: 1.5rem;
-  color: var(--korean-black);
-  margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: var(--korean-black);
+    margin-bottom: 1rem;
 }
 
 .success-content p {
-  color: var(--korean-gray);
-  margin-bottom: 2rem;
+    color: var(--korean-gray);
+    margin-bottom: 2rem;
 }
 
 .back-to-menu-btn {
-  padding: 1rem 2rem;
-  background: var(--korean-red);
-  color: var(--korean-white);
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+    padding: 1rem 2rem;
+    background: var(--korean-red);
+    color: var(--korean-white);
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .back-to-menu-btn:hover {
-  background: #C53030;
+    background: #c53030;
 }
 
 /* 토스페이먼츠 간단 플로우 스타일 */
 .toss-confirm-step {
-      padding: 1rem 0.5rem;
-  text-align: center;
+    padding: 1rem 0.5rem;
+    text-align: center;
 }
 
 .payment-info {
-      margin-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
     margin-top: 0.5rem;
 }
 
 .merchant-name {
-  font-size: 1.1rem;
-  color: var(--korean-gray);
-  margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: var(--korean-gray);
+    margin-bottom: 0.5rem;
 }
 
 .payment-amount-large {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--korean-black);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--korean-black);
 }
 
 .payment-method-selected {
-  display: flex;
-  align-items: center;
-  background: var(--korean-light-gray);
-  padding: 1rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 1rem;
-  gap: 1rem;
+    display: flex;
+    align-items: center;
+    background: var(--korean-light-gray);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    gap: 1rem;
 }
 
 .method-icon {
-  width: 50px;
-  height: 40px;
-  background: #000000;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-size: 0.7rem;
-  font-weight: 600;
+    width: 50px;
+    height: 40px;
+    background: #000000;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
 }
 
 .method-info {
-  flex: 1;
-  text-align: left;
+    flex: 1;
+    text-align: left;
 }
 
 .method-name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--korean-black);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--korean-black);
 }
 
 .method-detail {
-  font-size: 0.85rem;
-  color: var(--korean-gray);
+    font-size: 0.85rem;
+    color: var(--korean-gray);
 }
 
 .toss-confirm-btn {
-  width: 100%;
-  padding: 1.2rem;
-  background: #000000;
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 1.2rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+    width: 100%;
+    padding: 1.2rem;
+    background: #000000;
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .toss-confirm-btn:hover {
-  background: #333333;
+    background: #333333;
 }
 
 .toss-processing-step {
-  padding: 3rem 2rem;
-  text-align: center;
+    padding: 3rem 2rem;
+    text-align: center;
 }
 
 .processing-icon {
-  font-size: 2rem;
-  color: #000000;
-  margin-bottom: 1rem;
-  animation: pulse 1.5s infinite;
+    font-size: 2rem;
+    color: #000000;
+    margin-bottom: 1rem;
+    animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .processing-text {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: var(--korean-black);
-  margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--korean-black);
+    margin-bottom: 0.5rem;
 }
 
 .processing-detail {
-  font-size: 1rem;
-  color: var(--korean-gray);
+    font-size: 1rem;
+    color: var(--korean-gray);
 }
 
 /* PayPal 위젯 스타일 */
 .paypal-widget {
-  max-width: 450px;
-  max-height: 90vh;
-  overflow-y: auto;
+    max-width: 450px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .paypal-payment-container {
-  padding: 1.5rem;
+    padding: 1.5rem;
 }
 
 .paypal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #E2E8F0;
-  padding-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 1rem;
 }
 
 .amount-note {
-  font-size: 0.8rem;
-  color: var(--korean-gray);
-  margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--korean-gray);
+    margin-top: 0.5rem;
 }
 
 .paypal-processing {
-  text-align: center;
-  padding: 2rem;
+    text-align: center;
+    padding: 2rem;
 }
 
 .paypal-content {
-  padding: 1rem 0;
+    padding: 1rem 0;
 }
 
 .paypal-info {
-  background: var(--korean-light-gray);
-  padding: 1rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 1rem;
+    background: var(--korean-light-gray);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
 }
 
 .paypal-info h4 {
-  margin: 0 0 0.5rem 0;
-  color: var(--korean-black);
+    margin: 0 0 0.5rem 0;
+    color: var(--korean-black);
 }
 
 .paypal-info p {
-  margin: 0.5rem 0;
-  font-size: 0.85rem;
-  color: var(--korean-gray);
+    margin: 0.5rem 0;
+    font-size: 0.85rem;
+    color: var(--korean-gray);
 }
 
 .paypal-demo-notice {
-  background: #FFF3CD;
-  color: #856404;
-  padding: 0.75rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 1rem;
-  text-align: center;
+    background: #fff3cd;
+    color: #856404;
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    text-align: center;
 }
 
 .paypal-demo-notice p {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 500;
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 500;
 }
 
 .paypal-payment-btn {
-  width: 100%;
-  padding: 1rem;
-  background: #0070BA;
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+    width: 100%;
+    padding: 1rem;
+    background: #0070ba;
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .paypal-payment-btn:hover:not(:disabled) {
-  background: #005EA6;
+    background: #005ea6;
 }
 
 .paypal-payment-btn:disabled {
-  background: var(--korean-gray);
-  cursor: not-allowed;
+    background: var(--korean-gray);
+    cursor: not-allowed;
 }
 
 /* 토스페이먼츠 추가 스타일 */
 .toss-info {
-  background: var(--korean-light-gray);
-  padding: 1rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 1rem;
+    background: var(--korean-light-gray);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
 }
 
 .payment-method-info h4 {
-  margin: 0 0 0.5rem 0;
-  color: var(--korean-black);
+    margin: 0 0 0.5rem 0;
+    color: var(--korean-black);
 }
 
 .payment-method-info p {
-  margin: 0.25rem 0;
-  font-size: 0.85rem;
-  color: var(--korean-gray);
+    margin: 0.25rem 0;
+    font-size: 0.85rem;
+    color: var(--korean-gray);
 }
 
 .payment-details {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #E2E8F0;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
 }
 
 .detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
 }
 
 .detail-row .amount {
-  font-weight: 600;
-  color: var(--korean-red);
+    font-weight: 600;
+    color: var(--korean-red);
 }
 
 /* 결제 에러 토스트 */
 .payment-error-toast {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #FED7D7;
-  color: #C53030;
-  padding: 1rem 1.5rem;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-medium);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  max-width: 400px;
-  width: 90%;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fed7d7;
+    color: #c53030;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: 400px;
+    width: 90%;
 }
 
 .payment-error-toast button {
-  background: none;
-  border: none;
-  color: #C53030;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    background: none;
+    border: none;
+    color: #c53030;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* PayPal 버튼 컨테이너 스타일 */
 .paypal-buttons-container {
-  min-height: 150px;
-  padding: 1rem 0;
-  overflow: visible;
+    min-height: 150px;
+    padding: 1rem 0;
+    overflow: visible;
 }
 
 .paypal-loading {
-  text-align: center;
-  padding: 2rem;
+    text-align: center;
+    padding: 2rem;
 }
 
 @media (max-width: 480px) {
-  .header {
-    padding: 0.75rem;
-  }
-  
-  .menu-section {
-    padding: 0.75rem;
-  }
-  
-  .menu-item {
-    padding: 0.875rem;
-  }
-  
-  .lang-btn {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.6rem;
-  }
-  
-  /* PayPal 모바일 최적화 */
-  .paypal-widget {
-    width: 95%;
-    max-width: none;
-    margin: 0 auto;
-  }
-  
-  .paypal-payment-container {
-    padding: 1rem;
-  }
-  
-  .paypal-buttons-container {
-    min-height: 120px;
-    padding: 0.5rem 0;
-  }
-  
-  .paypal-content {
-    padding: 0.5rem 0;
-  }
+    .header {
+        padding: 0.75rem;
+    }
+
+    .menu-section {
+        padding: 0.75rem;
+    }
+
+    .menu-item {
+        padding: 0.875rem;
+    }
+
+    .lang-btn {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.6rem;
+    }
+
+    /* PayPal 모바일 최적화 */
+    .paypal-widget {
+        width: 95%;
+        max-width: none;
+        margin: 0 auto;
+    }
+
+    .paypal-payment-container {
+        padding: 1rem;
+    }
+
+    .paypal-buttons-container {
+        min-height: 120px;
+        padding: 0.5rem 0;
+    }
+
+    .paypal-content {
+        padding: 0.5rem 0;
+    }
 }
 
 /* 리뷰 작성 페이지 스타일 */
 .write-review-page {
-  padding: 2rem 1rem;
-  max-width: 600px;
-  margin: 0 auto;
+    padding: 2rem 1rem;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .page-header {
-  text-align: center;
-  margin-bottom: 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
 }
 
 .page-header h2 {
-  color: var(--korean-red);
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
+    color: var(--korean-red);
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
 }
 
 .page-header .subtitle {
-  color: var(--korean-gray);
-  font-size: 0.95rem;
+    color: var(--korean-gray);
+    font-size: 0.95rem;
 }
 
 .review-form {
-  background: var(--korean-white);
-  padding: 2rem;
-  border-radius: var(--border-radius);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: var(--korean-white);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: var(--korean-black);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--korean-black);
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #E2E8F0;
-  border-radius: var(--border-radius);
-  font-size: 1rem;
-  transition: border-color 0.2s;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: border-color 0.2s;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  outline: none;
-  border-color: var(--korean-red);
+    outline: none;
+    border-color: var(--korean-red);
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
 }
 
 .item-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23333' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  padding-right: 2.5rem;
-  appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23333' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+    appearance: none;
 }
 
 .rating-selector {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .star-btn {
-  background: none;
-  border: none;
-  font-size: 2rem;
-  color: #E2E8F0;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #e2e8f0;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
 }
 
 .star-btn:hover {
-  color: var(--korean-yellow);
+    color: var(--korean-yellow);
 }
 
 .star-btn.active {
-  color: var(--korean-yellow);
+    color: var(--korean-yellow);
 }
 
 .rating-text {
-  margin-left: 1rem;
-  font-weight: 600;
-  color: var(--korean-black);
+    margin-left: 1rem;
+    font-weight: 600;
+    color: var(--korean-black);
 }
 
 .form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
 }
 
 .submit-btn {
-  flex: 1;
-  padding: 1rem;
-  background: var(--korean-red);
-  color: var(--korean-white);
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
+    flex: 1;
+    padding: 1rem;
+    background: var(--korean-red);
+    color: var(--korean-white);
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
 .submit-btn:hover {
-  background: #C53030;
+    background: #c53030;
 }
 
 .skip-btn {
-  padding: 1rem 2rem;
-  background: none;
-  color: var(--korean-gray);
-  border: 1px solid var(--korean-gray);
-  border-radius: var(--border-radius);
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
+    padding: 1rem 2rem;
+    background: none;
+    color: var(--korean-gray);
+    border: 1px solid var(--korean-gray);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .skip-btn:hover {
-  background: var(--korean-gray);
-  color: var(--korean-white);
+    background: var(--korean-gray);
+    color: var(--korean-white);
 }
 
 /* 알림 권한 요청 모달 스타일 */
 .notification-permission-modal .modal-content {
-  max-width: 420px;
-  padding: 0;
-  border-radius: 16px;
-  overflow: hidden;
+    max-width: 420px;
+    padding: 0;
+    border-radius: 16px;
+    overflow: hidden;
 }
 
 .permission-content {
-  padding: 2rem;
-  text-align: center;
+    padding: 2rem;
+    text-align: center;
 }
 
 .permission-header h3 {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-  color: var(--korean-black);
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--korean-black);
 }
 
 .permission-subtitle {
-  color: var(--korean-gray);
-  margin-bottom: 1.5rem;
-  font-size: 1rem;
+    color: var(--korean-gray);
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
 }
 
 .permission-benefits {
-  text-align: left;
-  margin-bottom: 2rem;
+    text-align: left;
+    margin-bottom: 2rem;
 }
 
 .permission-benefits ul {
-  list-style: none;
-  padding: 0;
+    list-style: none;
+    padding: 0;
 }
 
 .permission-benefits li {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  font-size: 0.95rem;
-  color: var(--korean-black);
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    color: var(--korean-black);
 }
 
 .benefit-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  background: var(--korean-green);
-  color: white;
-  border-radius: 50%;
-  font-size: 0.75rem;
-  font-weight: bold;
-  margin-right: 0.75rem;
-  flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: var(--korean-green);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
 }
 
 .permission-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
 }
 
 .allow-btn {
-  width: 100%;
-  padding: 1rem;
-  background: var(--korean-red);
-  color: var(--korean-white);
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
+    width: 100%;
+    padding: 1rem;
+    background: var(--korean-red);
+    color: var(--korean-white);
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
 .allow-btn:hover:not(:disabled) {
-  background: #C53030;
+    background: #c53030;
 }
 
 .allow-btn:disabled {
-  background: var(--korean-gray);
-  cursor: not-allowed;
+    background: var(--korean-gray);
+    cursor: not-allowed;
 }
 
 .deny-btn {
-  width: 100%;
-  padding: 0.75rem;
-  background: none;
-  color: var(--korean-gray);
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s;
+    width: 100%;
+    padding: 0.75rem;
+    background: none;
+    color: var(--korean-gray);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .deny-btn:hover {
-  background: #F7FAFC;
-  border-color: var(--korean-gray);
+    background: #f7fafc;
+    border-color: var(--korean-gray);
 }
 
 .permission-note {
-  font-size: 0.85rem;
-  color: var(--korean-gray);
-  margin: 0;
+    font-size: 0.85rem;
+    color: var(--korean-gray);
+    margin: 0;
 }
