@@ -8,8 +8,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.voiz.service.CollectorService;
-import com.voiz.service.ConcertEventService;
-//import com.voiz.service.CultureEventService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,9 +19,6 @@ public class DataCollectorController {
 	
 	@Autowired
 	private CollectorService collectorService;
-
-	@Autowired
-	private ConcertEventService concertEventService;
 	
 	@PostMapping("/special-day")
 	@Operation(summary = "특일데이터수집", description = "한국천문연구원 특일 정보제공 서비스 API를 이용하여 특정년도의 특일 데이터를 수집하고 DB에 저장합니다.")
