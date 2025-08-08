@@ -11,7 +11,7 @@ public class ReviewResponseDto {
 
     private int reviewId;
     // private String restaurantId; // 레스토랑 ID
-    private String menuId; // 메뉴 ID
+    private String menuId; 
     private String orderId;
     private String userId;
     private String comment;
@@ -19,4 +19,5 @@ public class ReviewResponseDto {
     private String nationality;
     private String language;
     private String createdAt; // 리뷰 작성 시간
+    
 }

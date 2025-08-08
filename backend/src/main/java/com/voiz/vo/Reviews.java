@@ -24,6 +24,9 @@ public class Reviews {
     @Column(name = "ORDER_IDX", nullable = false)
     private String orderId; // 주문 ID
 
+    @Column(name = "MENU_IDX", nullable = false)
+    private Long menuIdx; // 메뉴 ID
+
     @Column(name = "USER_ID", nullable = false)
     private String userId; // 사용자 ID
 
@@ -44,6 +47,7 @@ public class Reviews {
     private String createdAt; // 리뷰 작성 시간
 
    
+    
 
 
     

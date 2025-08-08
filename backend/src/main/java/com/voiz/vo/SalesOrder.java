@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "VOYZ_ORDERS") // 실제 주문 테이블명으로 설정해주세요.
+@Table(name = "VOYZ_ORDERS")
 @Data
 public class SalesOrder {
 

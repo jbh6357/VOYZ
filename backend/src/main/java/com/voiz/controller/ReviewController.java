@@ -28,7 +28,6 @@ public class ReviewController {
     @Autowired
     private ReviewService reviewService;
 
-    
     @PostMapping("/")
     @Operation(summary = "리뷰 생성")
     public String createReview(@RequestBody ReviewRequestDto reviewRequestDto) {
@@ -42,7 +41,7 @@ public class ReviewController {
     @GetMapping("/menu/{menuId}")
     @Operation(summary = "메뉴별 리뷰 목록 조회")
     public ResponseEntity<List<ReviewResponseDto>> getReviewsByMenuId(
-            @PathVariable String menuId,
+            @PathVariable long menuId,
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String nationality) {
         
