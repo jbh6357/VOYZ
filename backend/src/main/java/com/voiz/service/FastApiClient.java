@@ -9,6 +9,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.voiz.util.MultipartFileResource;
 
 import org.springframework.http.HttpHeaders;
@@ -22,7 +24,7 @@ import java.util.HashMap;
 @Service
 public class FastApiClient {
     
-    @Value("${fastapi.base-url:http://localhost:8000}")
+    @Value("${fastapi.base-url:http://127.0.0.1:8000}")
     private String fastApiBaseUrl;
     
     private final RestTemplate restTemplate = new RestTemplate();
@@ -143,29 +145,48 @@ public class FastApiClient {
 	 * @throws IOException 
 	 */
 	public ResponseEntity<String> requestOcr(MultipartFile file) throws IOException{
-		 String endpoint = "/api/ocr";
-		 String url = fastApiBaseUrl + endpoint;
+		try {
+			String endpoint = "/api/ocr";
+			String url = fastApiBaseUrl + endpoint;
 
-		// MultiValueMap으로 multipart 데이터 구성
-		MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-		body.add("file", new MultipartFileResource(file));
-		    
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-		    
-		HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-		    
-		return restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+			// MultiValueMap으로 multipart 데이터 구성
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			body.add("file", new MultipartFileResource(file));
+			    
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+			    
+			HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+			    
+			return restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+		} catch (Exception e) {
+			// ML 서비스 연결 실패 시 더 명확한 에러 메시지
+			System.err.println("Failed to connect to ML service at " + fastApiBaseUrl + ": " + e.getMessage());
+			throw new RuntimeException("ML 서비스 연결 실패 (503): " + e.getMessage(), e);
+		}
 	}
 
-	public ResponseEntity<String> requestTranslate(String menuName, String targetLanguage) {
+	public String requestTranslate(String text, String targetLanguage) {
+		if (targetLanguage.equals("ko")) return text; // 원문 그대로 반환
+		
 		String endpoint = "/api/translate";
 		
 		Map<String, Object> data = new HashMap<>();
-        data.put("menuName", menuName);
+        data.put("text", text);
         data.put("targetLanguage", targetLanguage);
-        
-        return postDataToFastApi(endpoint, data);
+        	
+        ResponseEntity<String> response = postDataToFastApi(endpoint, data);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode jsonNode = objectMapper.readTree(response.getBody());
+                return jsonNode.get("translated").asText();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return text; // 번역 실패 시 원문 그대로 반환
 	}
 
 } 

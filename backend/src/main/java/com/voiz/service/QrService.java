@@ -29,7 +29,7 @@ public class QrService {
 	
 	private static final int DEFAULT_WIDTH = 300;
     private static final int DEFAULT_HEIGHT = 300;
-    private static final String BASE_URL = "https://voyz.com/qr";
+    private static final String BASE_URL = "http://13.125.251.36:8081";
     
     @Autowired
     private TablesRepository tablesRepository;
@@ -57,7 +57,7 @@ public class QrService {
             Tables table = new Tables();
             table.setUserId(userId);
             table.setTableNumber(newTableNumber);
-            table.setQrCode(BASE_URL + "/" + userId + "/" + newTableNumber);
+            table.setQrCode(BASE_URL + "/?userId=" + userId + "&table=" + newTableNumber);
 
             tablesRepository.save(table);
     	}

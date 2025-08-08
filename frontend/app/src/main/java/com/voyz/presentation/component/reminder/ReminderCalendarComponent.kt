@@ -155,12 +155,15 @@ private fun CalendarHeader(currentMonth: YearMonth) {
 }
 
 @Composable
-private fun DaysOfWeekHeader() {
+private fun DaysOfWeekHeader(
+    modifier: Modifier = Modifier
+
+) {
     val daysOfWeek = listOf("일", "월", "화", "수", "목", "금", "토")
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth(),
         userScrollEnabled = false
     ) {
@@ -196,15 +199,28 @@ private fun SimpleCalendarGrid(
     isWeekly: Boolean,
     calendarHeight: Dp
 ) {
-    val rawRowHeight = calendarHeight / numberOfWeeks
-    val rowHeight = rawRowHeight * 0.76f
+    val headerHeightDp = 32.dp
+    val gridHeightDp = calendarHeight - headerHeightDp
+    // 1/3 정도 더 줄이기 위한 축소 비율
+    val shrinkFactor = 0.76f
+    val rowHeightDp = (gridHeightDp / numberOfWeeks) * shrinkFactor
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        DaysOfWeekHeader()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(calendarHeight)
+    ) {
+        DaysOfWeekHeader(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(headerHeightDp)
+        )
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .height(gridHeightDp),
             userScrollEnabled = false
         ) {
             items(dates) { calendarDate ->
@@ -213,18 +229,15 @@ private fun SimpleCalendarGrid(
                     isCurrentMonth = calendarDate.isCurrentMonth,
                     isSelected = selectedDate == calendarDate.date,
                     events = events[calendarDate.date] ?: emptyList(),
-                    onClick = {
-                        onDateClick(calendarDate.date)
-                    },
+                    onClick = { onDateClick(calendarDate.date) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(rowHeight)
+                        .height(rowHeightDp)
                 )
             }
         }
     }
 }
-
 @Composable
 private fun CalendarDayCell(
     date: LocalDate,
@@ -235,17 +248,16 @@ private fun CalendarDayCell(
     modifier: Modifier = Modifier
 ) {
     val textColor = if (!isCurrentMonth) Color(0xFFBDBDBD) else Color(0xFF333333)
-    val isCheckedExist = events.any { it.isChecked }
     Column(
         modifier = modifier
             .clickable { onClick() }
-            .padding(4.dp),
+            .padding(2.dp),  // 패딩 축소
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = date.dayOfMonth.toString(),
-            fontSize = 16.sp,
+            fontSize = 14.sp,      // 폰트 크기 축소
             color = textColor,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,
@@ -254,32 +266,29 @@ private fun CalendarDayCell(
                 .then(
                     if (isSelected) Modifier
                         .background(Color(0xFF64B5F6), CircleShape)
-                        .padding(4.dp)
-                    else Modifier.padding(4.dp)
+                        .padding(2.dp)
+                    else Modifier
                 )
         )
 
-        val maxDots = 3
-        val dotsToShow = events.take(maxDots)
-        val extraCount = events.size - dotsToShow.size
-
         Row(
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(1.dp), // spacing 축소
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 2.dp)
+            modifier = Modifier.padding(top = 1.dp)            // 상단 여백 축소
         ) {
+            val maxDots = 3
+            val dotsToShow = events.take(maxDots)
             dotsToShow.forEach { event ->
                 if (event.isChecked) {
                     Icon(
                         imageVector = Icons.Default.Check,
-                        contentDescription = "Checked",
-                        tint = Color(0xFF4CAF50), // 체크 색상
-                        modifier = Modifier.size(10.dp)
+                        contentDescription = null,
+                        modifier = Modifier.size(8.dp) // 크기 축소
                     )
                 } else {
                     Box(
                         modifier = Modifier
-                            .size(6.dp)
+                            .size(4.dp)           // 크기 축소
                             .background(
                                 color = when (event.id) {
                                     "1" -> Color(0xFFFFE0B2)
@@ -293,11 +302,12 @@ private fun CalendarDayCell(
                     )
                 }
             }
+            val extraCount = events.size - dotsToShow.size
             if (extraCount > 0) {
                 Text(
                     text = "+$extraCount",
-                    fontSize = 8.sp,
-                    color = androidx.compose.ui.graphics.Color(0xFF666666)
+                    fontSize = 6.sp, // 폰트 크기 축소
+                    color = Color(0xFF666666)
                 )
             }
         }

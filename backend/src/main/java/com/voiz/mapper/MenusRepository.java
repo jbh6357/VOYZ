@@ -11,5 +11,7 @@ import com.voiz.vo.Menus;
 public interface MenusRepository extends JpaRepository<Menus, Integer> {
 
 	List<Menus> findAllByUserId(String userId);
+	
+	List<Menus> findByUserIdAndMenuName(String userId, String menuName);
 
 }

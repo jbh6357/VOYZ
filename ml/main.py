@@ -24,8 +24,14 @@ app = FastAPI(
     description=API_CONFIG["description"]
 )
 
-# 환경변수로 인증 설정
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.getenv('GOOGLE_CREDENTIALS_PATH')
+# 환경변수로 인증 설정 (선택사항)
+google_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+if google_credentials_path and os.path.exists(google_credentials_path):
+    print(f"Google Cloud credentials loaded from: {google_credentials_path}")
+elif google_credentials_path:
+    print(f"Google Cloud credentials path set but file not found: {google_credentials_path}")
+else:
+    print("Warning: Google Cloud credentials not found - OCR/Translation features may not work")
 
 # 특일 - 고객 매칭
 @app.post("/api/match/specialDay")
@@ -114,6 +120,16 @@ def create_suggest(request: CreateSuggestRequest):
 
 @app.post("/api/ocr")
 async def extract_text(file: UploadFile = File(...)):
+    # Google Cloud 인증이 없으면 더미 데이터 반환
+    google_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if not google_credentials_path or not os.path.exists(google_credentials_path):
+        # 더미 OCR 결과 반환
+        return [
+            MenuItem(menuName="된장찌개", menuPrice=7000),
+            MenuItem(menuName="김치찌개", menuPrice=7500), 
+            MenuItem(menuName="제육볶음", menuPrice=8000),
+            MenuItem(menuName="불고기", menuPrice=9000)
+        ]
     try:
         # 파일 타입 검증
         if not file.content_type.startswith('image/'):
@@ -198,7 +214,7 @@ async def extract_text(file: UploadFile = File(...)):
                         if 1000 <= price <= 50000:
                             menu_name = line[:price_match.start()].strip()
                             if menu_name and len(menu_name) > 1:
-                                items.append(MenuItem(name=menu_name, price=price))
+                                items.append(MenuItem(menuName=menu_name, menuPrice=price))
                                 price_found = True
                                 break
                     except ValueError:
@@ -245,7 +261,7 @@ async def extract_text(file: UploadFile = File(...)):
                                                     break
                                     
                                         if len(menu_name) > 1:
-                                            items.append(MenuItem(name=menu_name, price=price))
+                                            items.append(MenuItem(menuName=menu_name, menuPrice=price))
                                             i += 1  # 다음 줄 스킵
                                             break
                             except ValueError:
@@ -261,7 +277,7 @@ async def extract_text(file: UploadFile = File(...)):
 @app.post("/api/translate")
 def translateMenu(req: TranslateRequest):
     # 요청 받은 메뉴명
-    source_text = req.menuName
+    source_text = req.text
     targetLanguage = req.targetLanguage
     # 번역 클라이언트 생성
     translate_client = translate.Client()

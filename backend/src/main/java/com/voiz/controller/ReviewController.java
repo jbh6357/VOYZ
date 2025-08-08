@@ -28,7 +28,6 @@ public class ReviewController {
     @Autowired
     private ReviewService reviewService;
 
-
     @PostMapping("/")
     @Operation(summary = "리뷰 생성")
     public String createReview(@RequestBody ReviewRequestDto reviewRequestDto) {
@@ -36,6 +35,7 @@ public class ReviewController {
 
         return "리뷰 생성 완료";
     }
+
 
 
     @GetMapping("/menu/{menuId}")

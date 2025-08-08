@@ -28,5 +28,4 @@ public class SalesOrder {
 
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
-    
 }

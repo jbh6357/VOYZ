@@ -73,6 +73,6 @@ public class GeoConverter {
     }
 
     // 사용할 데이터 전달 record 
-    public record GeoData(double lat, double lon, String sido, String gugun,  String dongName ) {}
+    public record GeoData(double lat, double lon, String sido, String gugun, String dongName) {}
     public record GridData(int nx, int ny) {}
 }
