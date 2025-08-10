@@ -15,9 +15,12 @@ import SuccessPage from "./pages/SuccessPage/index.jsx";
 // Data & Utils
 import { sampleMenuData } from "./constants/sampleData.js";
 import { getMenusByUserId, getUrlParams } from "./api/menu.js";
-import { getReviewsByMenuId } from "./api/review.js";
+import { getReviewsByMenuId, postReview } from "./api/review.js";
+import { postOrder } from "./api/order.js";
+import { translateTexts } from "./api/translate.js";
 import { useMenu } from "./hooks/useMenu.js";
 import { formatPrice } from "./utils/helpers.js";
+
 import {
   isPushNotificationSupported,
   requestNotificationPermission,
@@ -28,48 +31,39 @@ import Cookies from "js-cookie";
 import { formatOrderText } from "./utils/helpers.js";
 
 function App() {
-  console.log("🔄 App 렌더링");
-
   // 상태 관리
   const [menuData, setMenuData] = useState(sampleMenuData); // 기본값으로 샘플 데이터 사용
-  // const [userId, setUserId] = useState(null);
-  // const [tableNumber, setTableNumber] = useState(null);
   const userIdRef = useRef(null);
   const tableNumberRef = useRef(null);
   const [isLoadingMenu, setIsLoadingMenu] = useState(false);
   const [menuError, setMenuError] = useState(null);
   const { userId: urlUserId, table: urlTable } = getUrlParams();
-  //   const [selectedLang, setSelectedLang] = useState("ko");
   const [isTranslating, setIsTranslating] = useState(false);
   // 쿠키에서 읽어서 초기값 설정 (없으면 'ko' 기본)
   const [selectedLang, setSelectedLang] = useState(() => {
     return Cookies.get("selectedLang") || "ko";
   });
   const [reviewViewMode, setReviewViewMode] = useState("translated");
-  ////////////////
+
   // userId
-  const cookieUserId = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("userId="))
-    ?.split("=")[1];
+  const cookieUserId = Cookies.get("userId");
 
   if (cookieUserId) {
-    userIdRef.current = decodeURIComponent(cookieUserId);
+    userIdRef.current = cookieUserId;
   } else if (urlUserId != null) {
     userIdRef.current = urlUserId;
-    const expires = new Date(
-      Date.now() + 7 * 24 * 60 * 60 * 1000
-    ).toUTCString();
-    document.cookie = `userId=${encodeURIComponent(
-      urlUserId
-    )}; expires=${expires}; path=/`;
+    Cookies.set("userId", urlUserId, { expires: 7 });
   }
 
   // tableNumber
-  const cookieTable = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("tableNumber="))
-    ?.split("=")[1];
+  const cookieTable = Cookies.get("tableNumber");
+
+  if (cookieTable) {
+    tableNumberRef.current = cookieTable;
+  } else if (urlTable != null) {
+    tableNumberRef.current = urlTable;
+    Cookies.set("tableNumber", urlTable, { expires: 7 });
+  }
 
   if (cookieTable) {
     tableNumberRef.current = decodeURIComponent(cookieTable);
@@ -82,12 +76,9 @@ function App() {
       urlTable
     )}; expires=${expires}; path=/`;
   }
-  //////////////////
 
   // 번역
   useEffect(() => {
-    console.log(selectedLang);
-
     async function translateAllVisibleText() {
       setIsTranslating(true);
 
@@ -109,7 +100,9 @@ function App() {
                 parent.classList.contains("restaurant-name")) ||
               (parent && parent.closest(".lang-grid")) ||
               (parent && parent.closest(".country-select")) ||
-              (parent && parent.closest(".reviews-list.original-mode"));
+              (parent && parent.closest(".reviews-list.original-mode")) ||
+              (parent && parent.closest(".no-translate-flag")) ||
+              (parent && parent.closest(".review-flag"));
 
             if (isExcluded) {
               return NodeFilter.FILTER_REJECT; // 제외 조건에 해당하면 걸러냅니다.
@@ -139,22 +132,14 @@ function App() {
 
       try {
         // 백엔드 API에 번역 요청
-        const res = await fetch("http://localhost:8000/api/translate2", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            texts: textsToTranslate,
-            targetLanguage: selectedLang,
-          }),
-        });
-
-        if (!res.ok) throw new Error("API translation failed.");
-
-        const { translated_texts } = await res.json();
+        const translatedTexts = await translateTexts(
+          textsToTranslate,
+          selectedLang
+        );
 
         // 번역된 텍스트를 DOM에 적용
         textNodes.forEach((node, index) => {
-          node.nodeValue = translated_texts[index];
+          node.nodeValue = translatedTexts[index];
         });
       } catch (error) {
         console.error("Translation error:", error);
@@ -192,7 +177,7 @@ function App() {
     return () => observer.disconnect();
   }, [selectedLang]);
 
-  // 2. selectedLang 변경 시 쿠키 저장
+  // selectedLang 변경 시 쿠키 저장
   useEffect(() => {
     const expires = new Date(
       Date.now() + 365 * 24 * 60 * 60 * 1000
@@ -203,7 +188,7 @@ function App() {
   }, [selectedLang]);
 
   const newUrl =
-    "/?userId=" + userIdRef.current + "&table=" + tableNumberRef.current; // + '&lang=' + selectedLang;
+    "/?userId=" + userIdRef.current + "&table=" + tableNumberRef.current;
 
   // 앱 로드 시 알림 권한 확인 및 요청 + URL 파라미터 체크
   useEffect(() => {
@@ -232,12 +217,11 @@ function App() {
     const loadMenuFromUrl = async () => {
       const { userId: urlUserId, table: urlTable } = getUrlParams();
 
-      if (urlUserId) {
-        console.log("🔗 URL에서 파라미터 감지:", {
-          userId: urlUserId,
-          table: urlTable,
-        });
+      // URL에서 값이 없으면 기존 ref 값을 사용
+      const userId = urlUserId || userIdRef.current;
+      const table = urlTable || tableNumberRef.current;
 
+      if (userId) {
         userIdRef.current = urlUserId;
         tableNumberRef.current = urlTable;
 
@@ -246,7 +230,7 @@ function App() {
           setIsLoadingMenu(true);
           setMenuError(null);
 
-          const menuItems = await getMenusByUserId(urlUserId, selectedLang);
+          const menuItems = await getMenusByUserId(userId, selectedLang);
 
           if (menuItems && menuItems.length > 0) {
             // API에서 받은 데이터를 기존 sampleMenuData 형식으로 변환
@@ -294,17 +278,33 @@ function App() {
         localStorage.removeItem("pendingOrderCart");
       }
 
-      // 결제 성공 처리
-      const orderId = urlParams.get("orderId");
-      const paymentKey = urlParams.get("paymentKey");
-      const amount = urlParams.get("amount");
+      const orderItems =
+        JSON.parse(localStorage.getItem("lastOrderedItems")) || [];
+      const reducedItems = orderItems.map(({ id, quantity }) => ({
+        id,
+        quantity,
+      }));
+      // postOrder는 async 함수이므로 Promise 반환
+      postOrder(userIdRef.current, tableNumberRef.current, reducedItems)
+        .then((orderIdx) => {
+          localStorage.setItem("orderIdx", orderIdx.toString());
 
-      setShowTossWidget(false);
-      setShowPayPalWidget(false);
-      setCurrentPage("success");
+          // 결제 성공 처리
+          const orderId = urlParams.get("orderId");
+          const paymentKey = urlParams.get("paymentKey");
+          const amount = urlParams.get("amount");
 
-      // URL 정리
-      window.history.replaceState({}, document.title, newUrl);
+          setShowTossWidget(false);
+          setShowPayPalWidget(false);
+          setCurrentPage("success");
+
+          // URL 정리
+          window.history.replaceState({}, document.title, newUrl);
+        })
+        .catch((error) => {
+          console.error("주문 저장 실패:", error);
+          // 실패 처리 (필요시 알림 등)
+        });
     } else if (paymentParam === "fail") {
       console.log("토스 결제 실패 페이지로 이동됨");
       const message = urlParams.get("message") || "결제가 실패했습니다.";
@@ -363,9 +363,9 @@ function App() {
 
     apiMenuItems.forEach(async (item, index) => {
       const category = item.category || "메인메뉴";
-      const reviews = await getReviewsByMenuId(item.menuIdx);
+      const reviewResponse = await getReviewsByMenuId(item.menuIdx);
       // 배열이므로 map으로 변환
-      const transformedReviews = reviews.map((r) => ({
+      const transformedReviews = reviewResponse.reviews.map((r) => ({
         user: r.userId,
         countryCode: r.nationality,
         text: r.comment,
@@ -386,12 +386,13 @@ function App() {
         image: (item.imageUrl && item.imageUrl.trim()) || null,
         category: item.category || "메뉴",
         rating:
-          typeof item.rating === "number" && item.rating > 0
-            ? item.rating
+          typeof reviewResponse.rating === "number" && reviewResponse.rating > 0
+            ? reviewResponse.rating
             : null,
         reviewCount:
-          typeof item.reviewCount === "number" && item.reviewCount >= 0
-            ? item.reviewCount
+          typeof reviewResponse.reviewCount === "number" &&
+          reviewResponse.reviewCount >= 0
+            ? reviewResponse.reviewCount
             : 0,
         reviews: transformedReviews.length > 0 ? transformedReviews : [],
       };
@@ -484,7 +485,9 @@ function App() {
 
   const handleSubmitReview = (review) => {
     console.log("리뷰 작성:", review);
-    // 여기서 실제로는 서버에 리뷰를 저장해야 합니다
+    const orderIdxStr = localStorage.getItem("orderIdx");
+    const orderIdx = orderIdxStr ? parseInt(orderIdxStr, 10) : null;
+    postReview(orderIdx, selectedLang, review);
     setCurrentPage("success");
   };
 

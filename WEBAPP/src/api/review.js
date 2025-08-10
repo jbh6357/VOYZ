@@ -30,3 +30,32 @@ export const getReviewsByMenuId = async (menuId) => {
     throw error;
   }
 };
+
+export const postReview = async (orderIdx, selectedLang, review) => {
+  try {
+    const reviewData = {
+      orderIdx: orderIdx,
+      userId: review.user,
+      menuIdx: review.itemIdx,
+      rating: review.rating,
+      comment: review.text,
+      nationality: review.countryCode,
+      language: selectedLang,
+    };
+
+    const response = await fetch(`${API_CONFIG.BASE_URL}/review/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(reviewData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("리뷰 업로드 실패:", error);
+    throw error;
+  }
+};

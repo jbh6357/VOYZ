@@ -9,10 +9,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ReviewResponseDto {
 
-    private int reviewId;
+    private int reviewIdx;
     // private String restaurantId; // 레스토랑 ID
-    private String menuId; 
-    private String orderId;
+    private String menuIdx; 
+    private int orderIdx;
     private String userId;
     private String comment;
     private int rating;

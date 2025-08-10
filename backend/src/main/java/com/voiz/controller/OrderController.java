@@ -26,9 +26,9 @@ public class OrderController {
 	
 	@PostMapping("/")
     @Operation(summary = "주문 생성", description = "주문과 주문 상세를 생성합니다.")
-    public ResponseEntity<String> createOrder(@RequestBody OrderRequestDto requestDto) {
-        orderService.createOrder(requestDto);
-        return ResponseEntity.ok("주문이 성공적으로 생성되었습니다.");
+    public ResponseEntity<Integer> createOrder(@RequestBody OrderRequestDto requestDto) {
+        int orderIdx = orderService.createOrder(requestDto);
+        return ResponseEntity.ok(orderIdx);
     }
 	
 	@GetMapping("/{orderIdx}")

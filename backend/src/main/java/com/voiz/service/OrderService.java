@@ -14,8 +14,10 @@ import com.voiz.dto.OrderRequestDto;
 import com.voiz.mapper.MenusRepository;
 import com.voiz.mapper.OrdersItemsRepository;
 import com.voiz.mapper.OrdersRepository;
+import com.voiz.mapper.TablesRepository;
 import com.voiz.vo.Menus;
 import com.voiz.vo.OrdersItems;
+import com.voiz.vo.Tables;
 import com.voiz.vo.Orders;
 
 @Service
@@ -29,6 +31,9 @@ public class OrderService {
 	
 	@Autowired
 	private OrdersItemsRepository ordersItemsRepository;
+	
+	@Autowired
+	private TablesRepository tablesRepository;
 	
 	@Autowired
 	private FastApiClient fastApiClient;
@@ -75,7 +80,7 @@ public class OrderService {
 	}
 
 	@Transactional
-	public void createOrder(OrderRequestDto dto) {
+	public int createOrder(OrderRequestDto dto) {
 		
 		// 1. 오늘 주문 중 가장 큰 주문번호 가져오기
         Integer maxOrderNumber = ordersRepository.findTodayMaxOrderNumberByUserId(dto.getUserId());
@@ -83,10 +88,14 @@ public class OrderService {
         	maxOrderNumber = 0;
         }
         
+        Optional<Tables> optionalTable = tablesRepository.findByUserIdAndTableNumber(dto.getUserId(), dto.getTableNumber());
+        
+        Tables table = optionalTable.get();
+        
         // 2. 주문 정보 생성
         Orders order = new Orders();
         order.setUserId(dto.getUserId());
-        order.setTableIdx(dto.getTableIdx());
+        order.setTableIdx(table.getTableIdx());
         order.setOrderNumber(String.valueOf(maxOrderNumber + 1));
         order.setTotalAmount(0); // 총액 계산 전임
         order.setSpecialRequests(dto.getSpecialRequests());
@@ -125,6 +134,8 @@ public class OrderService {
         // 3. 총액 업데이트
         order.setTotalAmount(totalAmount);
         ordersRepository.save(order);
+        
+        return order.getOrderIdx();
 	}
 
 	public List<OrdersItems> getOrderItems(int orderIdx) {

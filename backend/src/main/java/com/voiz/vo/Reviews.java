@@ -4,7 +4,10 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,14 +21,16 @@ import lombok.NoArgsConstructor;
 public class Reviews {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "reviews_seq")
+    @SequenceGenerator(name = "reviews_seq", sequenceName = "VOYZ_REVIEWS_SEQ", allocationSize = 1)
     @Column(name = "REVIEW_IDX", nullable = false)
-    private Long reviewId; // 리뷰 ID
+    private Long reviewIdx; // 리뷰 ID
 
     @Column(name = "ORDER_IDX", nullable = false)
-    private String orderId; // 주문 ID
+    private int orderIdx; // 주문 ID
 
     @Column(name = "MENU_IDX", nullable = false)
-    private Long menuIdx; // 메뉴 ID
+    private int menuIdx; // 메뉴 ID
 
     @Column(name = "USER_ID", nullable = false)
     private String userId; // 사용자 ID

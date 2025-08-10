@@ -17,6 +17,8 @@ from google.cloud import vision
 import re
 from google.cloud import translate_v2 as translate
 from config import MenuItem, TranslateRequest, TranslateRequest2
+from typing import List
+import math
 # FastAPI 앱 생성
 app = FastAPI(
     title=API_CONFIG["title"],
@@ -309,16 +311,15 @@ def translateMenu(req: TranslateRequest):
         "targetLanguage": targetLanguage,
         "translated": result["translatedText"]
     }
-# API 허용 최대 텍스트 수
-MAX_TEXT_SEGMENTS = 128
-from typing import List
-import math
-@app.post("/api/translate2")
+
+@app.post("/api/translateWeb")
 def translate_text(req: TranslateRequest2):
     try:
         translate_client = translate.Client()
         all_translated_texts = []
         
+        # API 허용 최대 텍스트 수
+        MAX_TEXT_SEGMENTS = 128
         # 텍스트 배열을 최대 허용 수만큼 묶음으로 나눕니다.
         num_chunks = math.ceil(len(req.texts) / MAX_TEXT_SEGMENTS)
         

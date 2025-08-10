@@ -85,12 +85,14 @@ const ReviewModal = ({
           <div key={index} className="review-item">
             <div className="review-header">
               <span className="review-user">
-                <span className="review-flag">
+                <span className="review-flag no-translate-flag">
                   [{getCountryFlag(review.countryCode)}]
                 </span>
-                {review.user}
+                <span className="no-translate-flag">{review.user}</span>
               </span>
-              <span className="review-country">({review.countryCode})</span>
+              <span className="review-country no-translate-flag">
+                ({review.countryCode})
+              </span>
             </div>
             <div className="review-text">{review.text}</div>
           </div>

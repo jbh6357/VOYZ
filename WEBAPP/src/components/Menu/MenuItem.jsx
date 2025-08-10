@@ -57,7 +57,12 @@ const MenuItem = ({
             <span className="review-flag">
               [{getCountryFlag(item.reviews[0]?.countryCode)}]
             </span>
-            {item.reviews[0].text} - {item.reviews[0]?.user || "익명"}
+            <span>
+              {item.reviews[0].text} -{" "}
+              <span className="review-country no-translate-flag">
+                {item.reviews[0]?.user || "익명"}
+              </span>
+            </span>
           </div>
         ) : (
           <div className="review-snippet placeholder">
