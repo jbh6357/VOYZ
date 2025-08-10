@@ -1,6 +1,7 @@
 package com.voiz.controller;
 
 import com.voiz.dto.MenuSalesDto;
+import com.voiz.dto.NationalityAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
 import com.voiz.service.AnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,4 +45,21 @@ public class AnalyticsController {
         List<MenuSalesDto> topMenus = analyticsService.getTopMenuSales(userId, startDate, endDate, category, topCount);
         return ResponseEntity.ok(topMenus);
     }
+
+
+
+
+    @GetMapping("/customers/{userId}/nationality")
+    @Operation(summary = "국적별 리뷰 통계 조회", description = "특정 사용자의 리뷰를 국적별로 집계하여 반환합니다. 기간(year, month, week) 필터링이 가능합니다.")
+    public ResponseEntity<List<NationalityAnalyticsDto>> getNationalityStats(
+            @PathVariable String userId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer week) {
+        
+        List<NationalityAnalyticsDto> stats = analyticsService.getNationalityAnalytics(userId, year, month, week);
+        return ResponseEntity.ok(stats);
+    }
+
+
 }

@@ -1,10 +1,16 @@
 package com.voiz.vo;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,6 +24,8 @@ import lombok.NoArgsConstructor;
 public class Reviews {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "review_seq_generator")
+    @SequenceGenerator(name = "review_seq_generator", sequenceName = "VOYZ_REVIEWS_SEQ", allocationSize = 1)
     @Column(name = "REVIEW_IDX", nullable = false)
     private Long reviewId; // 리뷰 ID
 
@@ -42,9 +50,12 @@ public class Reviews {
     @Column(name = "LANGUAGE")
     private String language; // 언어
 
-     @CreationTimestamp
+    @Column(name = "MENU_IDX", nullable = false)
+    private int  menuId; // 메뉴 ID 목록
+
+   @CreationTimestamp
     @Column(name = "CREATED_AT", updatable = false)
-    private String createdAt; // 리뷰 작성 시간
+    private LocalDateTime createdAt;
 
    
     

@@ -1,16 +1,22 @@
 package com.voiz.service;
 
 import com.voiz.dto.MenuSalesDto;
+import com.voiz.dto.NationalityAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
+import com.voiz.mapper.ReviewRepository;
 import com.voiz.mapper.SalesOrderRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit; // 날짜 계산을 위해 임포트
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +27,9 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
 
     private final SalesOrderRepository salesOrderRepository;
+    
+    private final ReviewRepository reviewRepository;
+
 
     // Controller가 호출하는 메서드.
     public List<SalesAnalyticsDto> getSalesAnalytics(String userId, LocalDate startDate, LocalDate endDate) {
@@ -100,4 +109,34 @@ public class AnalyticsService {
             })
             .collect(Collectors.toList());
     }
+
+
+    public List<NationalityAnalyticsDto> getNationalityAnalytics(String userId, Integer year, Integer month, Integer week) {
+        
+        LocalDateTime startDateTime;
+        LocalDateTime endDateTime;
+
+        if (year != null) {
+            startDateTime = LocalDateTime.of(year, 1, 1, 0, 0);
+            endDateTime = LocalDateTime.of(year + 1, 1, 1, 0, 0);
+        } else if (month != null) {
+            startDateTime = LocalDateTime.of(LocalDate.now().getYear(), month, 1, 0, 0);
+            endDateTime = startDateTime.with(TemporalAdjusters.lastDayOfMonth()).with(LocalTime.MAX);
+        } else if (week != null) {
+            LocalDate startOfWeek = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).plusWeeks(week - 1);
+            startDateTime = startOfWeek.atStartOfDay();
+            endDateTime = startOfWeek.plusDays(6).atTime(LocalTime.MAX);
+        } else {
+            // 디폴트 갓은 최근 한 달로 설정
+            LocalDate today = LocalDate.now();
+            startDateTime = today.minusMonths(1).atStartOfDay();
+            endDateTime = today.atTime(LocalTime.MAX);
+        }
+
+        return reviewRepository.countReviewsByNationalityAndDateRange(userId, startDateTime, endDateTime);
+
+        
+    }
+
+
 }
