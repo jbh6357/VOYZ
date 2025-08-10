@@ -9,6 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -22,6 +25,7 @@ fun PersonalInfoStep(
     onUserNameChange: (String) -> Unit,
     onUserPhoneChange: (String) -> Unit
 ) {
+    var phoneFieldValue by remember { mutableStateOf(TextFieldValue(userPhone)) }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -51,7 +55,11 @@ fun PersonalInfoStep(
                 placeholder = { Text("실명을 입력해주세요") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = if (userName.isNotEmpty() && isUserNameValid) Color.Green else MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = if (userName.isNotEmpty() && !isUserNameValid) Color.Red else Color.Gray.copy(alpha = 0.5f)
@@ -72,17 +80,21 @@ fun PersonalInfoStep(
         // 전화번호
         Column {
             OutlinedTextField(
-                value = userPhone,
-                onValueChange = { input ->
-                    // 자동으로 하이픈 추가
-                    val formatted = formatPhoneNumber(input)
-                    onUserPhoneChange(formatted)
+                value = phoneFieldValue,
+                onValueChange = { newValue ->
+                    val formattedResult = formatPhoneNumberWithCursor(newValue)
+                    phoneFieldValue = formattedResult
+                    onUserPhoneChange(formattedResult.text)
                 },
                 label = { Text("전화번호") },
                 placeholder = { Text("010-0000-0000") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Phone,
+                    imeAction = ImeAction.Done
+                ),
+                singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = if (userPhone.isNotEmpty() && isUserPhoneValid) Color.Green else MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = if (userPhone.isNotEmpty() && !isUserPhoneValid) Color.Red else Color.Gray.copy(alpha = 0.5f)
@@ -130,15 +142,48 @@ fun PersonalInfoStep(
 }
 
 /**
- * 전화번호 자동 포맷팅
+ * 전화번호 자동 포맷팅 (커서 위치 보정 포함)
  */
-private fun formatPhoneNumber(input: String): String {
-    val digitsOnly = input.filter { it.isDigit() }
+private fun formatPhoneNumberWithCursor(input: TextFieldValue): TextFieldValue {
+    val digitsOnly = input.text.filter { it.isDigit() }
     
-    return when {
-        digitsOnly.length <= 3 -> digitsOnly
-        digitsOnly.length <= 7 -> "${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3)}"
-        digitsOnly.length <= 11 -> "${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7)}"
-        else -> "${digitsOnly.substring(0, 3)}-${digitsOnly.substring(3, 7)}-${digitsOnly.substring(7, 11)}"
+    // 최대 11자리로 제한
+    val limitedDigits = if (digitsOnly.length > 11) digitsOnly.substring(0, 11) else digitsOnly
+    
+    val formatted = when {
+        limitedDigits.length <= 3 -> limitedDigits
+        limitedDigits.length <= 7 -> "${limitedDigits.substring(0, 3)}-${limitedDigits.substring(3)}"
+        limitedDigits.length <= 11 -> "${limitedDigits.substring(0, 3)}-${limitedDigits.substring(3, 7)}-${limitedDigits.substring(7)}"
+        else -> "${limitedDigits.substring(0, 3)}-${limitedDigits.substring(3, 7)}-${limitedDigits.substring(7, 11)}"
     }
+    
+    // 커서 위치 계산
+    val originalCursor = input.selection.start
+    val digitsBeforeCursor = input.text.substring(0, minOf(originalCursor, input.text.length)).filter { it.isDigit() }.length
+    
+    var newCursorPos = 0
+    var digitCount = 0
+    
+    for (i in formatted.indices) {
+        if (digitCount >= digitsBeforeCursor) {
+            newCursorPos = i
+            break
+        }
+        if (formatted[i].isDigit()) {
+            digitCount++
+        }
+        if (i == formatted.lastIndex) {
+            newCursorPos = formatted.length
+        }
+    }
+    
+    // 마지막 문자까지 도달했을 경우
+    if (digitCount < digitsBeforeCursor) {
+        newCursorPos = formatted.length
+    }
+    
+    return TextFieldValue(
+        text = formatted,
+        selection = TextRange(newCursorPos)
+    )
 }

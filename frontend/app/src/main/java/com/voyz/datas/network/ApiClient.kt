@@ -45,4 +45,5 @@ object ApiClient {
     val calendarApiService: CalendarApiService = retrofit.create(CalendarApiService::class.java)
     val menuApiService: MenuApiService = retrofit.create(MenuApiService::class.java)
     val fcmApiService: FcmApiService = retrofit.create(FcmApiService::class.java)
+    val qrApiService: QrApiService = retrofit.create(QrApiService::class.java)
 }

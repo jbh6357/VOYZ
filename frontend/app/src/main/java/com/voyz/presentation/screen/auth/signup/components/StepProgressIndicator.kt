@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.voyz.ui.theme.Primary
+import com.voyz.ui.theme.KoreanRed
 
 @Composable
 fun StepProgressIndicator(
@@ -56,7 +56,7 @@ fun StepProgressIndicator(
                 
                 // 진행 프로그레스 바
                 drawLine(
-                    color = Primary,
+                    color = KoreanRed,
                     start = Offset(0f, size.height / 2),
                     end = Offset(size.width * progress, size.height / 2),
                     strokeWidth = strokeWidth,
@@ -79,8 +79,8 @@ fun StepProgressIndicator(
                 
                 val textColor by animateColorAsState(
                     targetValue = when {
-                        step == currentStep -> Primary
-                        isCompleted -> Primary
+                        step == currentStep -> KoreanRed
+                        isCompleted -> KoreanRed
                         else -> Color.Gray
                     },
                     animationSpec = tween(300),
@@ -98,7 +98,7 @@ fun StepProgressIndicator(
                     ) {
                         Canvas(modifier = Modifier.size(24.dp)) {
                             drawCircle(
-                                color = if (isActive) Primary else Color.Gray.copy(alpha = 0.3f),
+                                color = if (isActive) KoreanRed else Color.Gray.copy(alpha = 0.3f),
                                 radius = size.minDimension / 2
                             )
                             
