@@ -116,15 +116,6 @@ fun StoreInfoStep(
                     )
                 }
             }
-            
-            if (storeCategory.isEmpty()) {
-                Text(
-                    text = "매장 카테고리를 선택해주세요",
-                    color = Color.Gray,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
-                )
-            }
         }
         
         // 매장 주소
