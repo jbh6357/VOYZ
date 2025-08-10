@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.voyz.ui.theme.Primary
@@ -25,13 +26,16 @@ fun StoreInfoStep(
     storeName: String,
     storeCategory: String,
     storeAddress: String,
+    tableCount: String,
     categories: List<String>,
     isStoreNameValid: Boolean,
     isStoreCategoryValid: Boolean,
     isStoreAddressValid: Boolean,
+    isTableCountValid: Boolean,
     onStoreNameChange: (String) -> Unit,
     onStoreCategoryChange: (String) -> Unit,
-    onStoreAddressChange: (String) -> Unit
+    onStoreAddressChange: (String) -> Unit,
+    onTableCountChange: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     
@@ -64,7 +68,11 @@ fun StoreInfoStep(
                 placeholder = { Text("매장 이름을 입력해주세요") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = if (storeName.isNotEmpty() && isStoreNameValid) Color.Green else MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = if (storeName.isNotEmpty() && !isStoreNameValid) Color.Red else Color.Gray.copy(alpha = 0.5f)
@@ -128,7 +136,10 @@ fun StoreInfoStep(
                 placeholder = { Text("매장의 상세 주소를 입력해주세요") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = if (storeAddress.isNotEmpty() && isStoreAddressValid) Color.Green else MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = if (storeAddress.isNotEmpty() && !isStoreAddressValid) Color.Red else Color.Gray.copy(alpha = 0.5f)
@@ -147,29 +158,39 @@ fun StoreInfoStep(
             }
         }
         
-        // 추가 안내 정보
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = Primary.copy(alpha = 0.1f)
-            ),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+        // 테이블 갯수
+        Column {
+            OutlinedTextField(
+                value = tableCount,
+                onValueChange = { input ->
+                    // 숫자만 입력 허용
+                    val filtered = input.filter { it.isDigit() }
+                    if (filtered.isEmpty() || filtered.toIntOrNull() != null) {
+                        onTableCountChange(filtered)
+                    }
+                },
+                label = { Text("테이블 갯수") },
+                placeholder = { Text("매장의 테이블 수를 입력해주세요") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = if (tableCount.isNotEmpty() && isTableCountValid) Color.Green else MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = if (tableCount.isNotEmpty() && !isTableCountValid) Color.Red else Color.Gray.copy(alpha = 0.5f)
+                ),
+                isError = tableCount.isNotEmpty() && !isTableCountValid
+            )
+            
+            if (tableCount.isNotEmpty() && !isTableCountValid) {
                 Text(
-                    text = "거의 다 완료되었습니다!",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Primary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "매장 정보는 마케팅 기회 분석에 활용됩니다.",
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    lineHeight = 18.sp
+                    text = "테이블 갯수를 입력해주세요 (1 이상)",
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
                 )
             }
         }
