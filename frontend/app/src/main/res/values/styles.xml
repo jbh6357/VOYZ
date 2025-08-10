@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 안드로이드 12+ 스플래시 스크린 테마 -->
+    <style name="Theme.VOYZ.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/korean_red</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_inset</item>
+        <item name="windowSplashScreenAnimationDuration">2000</item>
+        <item name="postSplashScreenTheme">@style/Theme.VOYZ</item>
+    </style>
+</resources>
