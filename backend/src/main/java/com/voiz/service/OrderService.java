@@ -39,7 +39,13 @@ public class OrderService {
 	            .map(menu -> {
 	                // 번역 (한국어면 번역 안 함)
 	                String translatedName = fastApiClient.requestTranslate(menu.getMenuName(), language);
-	                String translatedDesc = fastApiClient.requestTranslate(menu.getMenuDescription(), language);
+	                String translatedDesc = null;
+	                if(menu.getMenuDescription()!=null) {
+	                	translatedDesc = fastApiClient.requestTranslate(menu.getMenuDescription(), language);
+	                }else {
+	                	translatedDesc = menu.getMenuDescription();
+	                }
+//	                String translatedDesc = fastApiClient.requestTranslate(menu.getMenuDescription(), language);
 
 	                return new MenusDto(
 		                	menu.getMenuIdx(),
