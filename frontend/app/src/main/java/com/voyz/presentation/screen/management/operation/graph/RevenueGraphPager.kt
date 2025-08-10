@@ -6,23 +6,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,25 +21,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.voyz.presentation.screen.management.operation.MenuSales
-import com.voyz.presentation.screen.management.operation.PeriodTab
-import com.voyz.presentation.screen.management.operation.generateXAxisLabels
 import java.time.LocalDate
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RevenueGraphPager(graphList: List<@Composable () -> Unit>) {
-    val pagerState = rememberPagerState(initialPage = 0) {
-        graphList.size
-    }
+    val pagerState = rememberPagerState(initialPage = 0) { graphList.size }
 
     Column(
         modifier = Modifier
@@ -59,12 +48,12 @@ fun RevenueGraphPager(graphList: List<@Composable () -> Unit>) {
     ) {
         Box(
             modifier = Modifier
-                .weight(1f)          // ColumnScope.weight
+                .weight(1f)
                 .fillMaxWidth()
         ) {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()   // 여기서는 weight 제거
+                modifier = Modifier.fillMaxSize()
             ) { page ->
                 graphList[page]()
             }
@@ -85,270 +74,212 @@ fun RevenueGraphPager(graphList: List<@Composable () -> Unit>) {
                             shape = CircleShape
                         )
                 )
-                if (idx < graphList.size - 1) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                }
+                if (idx < graphList.size - 1) Spacer(modifier = Modifier.width(4.dp))
             }
         }
     }
 }
 
+data class MenuSales(
+    val name: String,
+    val count: Float,
+    val color: Color
+)
+
 @Composable
- fun MonthlyRevenueLineChartAnimated(
-    startDate: LocalDate,
-    endDate:   LocalDate,
-    granularity: PeriodTab,
+fun MonthlyRevenueBarChartAnimated(
+    data: List<Float>,
     periodInfo: String,
     modifier: Modifier = Modifier
- ) {
+) {
     var startAnimation by remember { mutableStateOf(false) }
     val progress by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = 1000,
-            easing = LinearOutSlowInEasing
-        )
+        animationSpec = tween(durationMillis = 800, easing = LinearOutSlowInEasing)
     )
     LaunchedEffect(Unit) { startAnimation = true }
 
-    val slots = when(granularity) {
-        PeriodTab.YEAR  -> 6   // 분기별 4개: 3,6,9,12월
-        PeriodTab.MONTH -> 6   // 주차 1~4주차
-        PeriodTab.WEEK  -> 7   // 요일 월~일
-    }
-
-    val xLabels = generateXAxisLabels(startDate, endDate, granularity, slots)
-    val divisions = xLabels.size
-
-    val currentMonthData = listOf(12000, 14000, 13000, 15000, 16000, 15500, 17000)
-    val previousMonthData = listOf(11000, 13500, 12500, 14500, 15000, 14800, 16000)
-
-    val displayCurrent = if (currentMonthData.size >= divisions)
-        currentMonthData.take(divisions)
-    else
-        currentMonthData + List(divisions - currentMonthData.size) { currentMonthData.last() }
-
-    val displayPrevious = if (previousMonthData.size >= divisions)
-        previousMonthData.take(divisions)
-    else
-        previousMonthData + List(divisions - previousMonthData.size) { previousMonthData.last() }
-
-    val ySteps = listOf(20000f,15000f,10000f,5000f)
-    val minY = 5000f; val maxY = 20000f; val yRange = maxY - minY
-
-
-    Column(
+    Box(
         modifier = modifier
-            .fillMaxSize()
             .background(Color(0xFFE3F2FD), RoundedCornerShape(8.dp))
             .padding(16.dp)
     ) {
-
-        //파란박스 상단 기간 고정출력
+        // 1) 기간 텍스트
         Text(
             text = periodInfo,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color.Black,
-            modifier = Modifier.padding(start = 8.dp)
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.align(Alignment.TopStart)
         )
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f),
-            verticalAlignment = Alignment.CenterVertically
+        // 2) 막대 차트 그리는 캔버스
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 24.dp) // 텍스트와 겹치지 않게
         ) {
-            // Y축 레이블
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(40.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.End
-            ) {
-                ySteps.forEach { yVal ->
-                    Text(
-                        text     = yVal.toInt().toString(),
-                        fontSize = 12.sp,
-                        color    = Color.DarkGray
-                    )
-                }
+            val barAreaHeight = size.height * 0.85f
+            val spacing = size.width / (data.size * 2f)
+            val barWidth = spacing
+            val startX = spacing / 2f
+            val maxY = (data.maxOrNull() ?: 0f) * 1.2f
+
+            // Y축 점선
+            repeat(5) { i ->
+                val y = barAreaHeight - (i * (maxY / 5) * barAreaHeight / maxY)
+                drawLine(
+                    color = Color.LightGray,
+                    start = Offset(0f, y),
+                    end = Offset(size.width, y),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
+                )
             }
-
-            Spacer(Modifier.width(4.dp))
-
-            // 그래프 + X축
-            Column(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.weight(1f)) {
-                    Canvas(Modifier.fillMaxSize()) {
-                        val divisions = xLabels.size
-                        val spacingX  = size.width / (divisions - 1)
-
-                        // 수평선
-                        for ((index, yVal) in ySteps.withIndex()) {
-                            val y = size.height * (index / (ySteps.size - 1).toFloat())
-                            drawLine(
-                                color       = Color.LightGray,
-                                start       = Offset(0f, y),
-                                end         = Offset(size.width, y),
-                                strokeWidth = 1f
-                            )
-                        }
-
-                        // 수직선
-                        for (i in 0 until divisions) {
-                            val x = i * spacingX
-                            drawLine(
-                                color       = Color(0xFFBDBDBD),
-                                start       = Offset(x, 0f),
-                                end         = Offset(x, size.height),
-                                strokeWidth = 0.5f
-                            )
-                        }
-
-                        // 애니메이션 적용: 현재 달 선
-                        val animCur = displayCurrent.map { minY + (it - minY) * progress }
-                        for (i in 0 until animCur.size - 1) {
-                            val x1 = i * spacingX
-                            val y1 = size.height - ((animCur[i] - minY) / yRange) * size.height
-                            val x2 = (i + 1) * spacingX
-                            val y2 = size.height - ((animCur[i + 1] - minY) / yRange) * size.height
-                            drawLine(Color.Blue, Offset(x1, y1), Offset(x2, y2), strokeWidth = 4f)
-                        }
-
-                        // 3) displayPrevious 그리기
-                        val animPrev = displayPrevious.map { minY + (it - minY) * progress }
-                        for (i in 0 until animPrev.size - 1) {
-                            val x1 = i * spacingX
-                            val y1 = size.height - ((animPrev[i] - minY) / yRange) * size.height
-                            val x2 = (i + 1) * spacingX
-                            val y2 = size.height - ((animPrev[i + 1] - minY) / yRange) * size.height
-                            drawLine(Color.Gray, Offset(x1, y1), Offset(x2, y2), strokeWidth = 4f)
-                        }
-                    }
-                }
-
-                // X축 레이블
-                Row(
-                    modifier              = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    xLabels.forEach { label ->
-                        Text(
-                            text      = label,
-                            fontSize  = 12.sp,
-                            textAlign = TextAlign.Center,
-                            color     = Color.DarkGray
-                        )
-                    }
-                }
+            // 데이터 바
+            data.forEachIndexed { idx, value ->
+                val barHeight = value * barAreaHeight / maxY * progress
+                val left = startX + idx * spacing * 2f
+                drawRoundRect(
+                    color = Color(0xFFFFCC80),
+                    topLeft = Offset(left, barAreaHeight - barHeight),
+                    size = Size(barWidth, barHeight),
+                    cornerRadius = CornerRadius(10f, 10f)
+                )
+            }
+        }
+        // 3) X축 레이블
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            data.indices.forEach { i ->
+                Text(
+                    text = "${i + 1}주차",
+                    fontSize = 12.sp,
+                    color = Color.Black,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
-}
 
+}
 @Composable
 fun TopMenuDonutChartAnimated(
     menuSales: List<MenuSales>,
     periodInfo: String,
     modifier: Modifier = Modifier
 ) {
-    // 애니메이션 트리거 상태
     var startAnimation by remember { mutableStateOf(false) }
     val progress by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = 1000,
-            easing = LinearOutSlowInEasing
-        )
+        animationSpec = tween(durationMillis = 1000, easing = LinearOutSlowInEasing)
     )
-
-    // 한 번만 애니메이션 시작
-    LaunchedEffect(Unit) {
-        startAnimation = true
-    }
-
-    // 각 슬라이스 비율 계산
-    val total = menuSales.sumOf { it.count }
-    val sweepAngles = menuSales.map { it.count.toFloat() / total * 360f }
-    val animatedSweepAngles = sweepAngles.map { it * progress }
-    val percentages = menuSales.map { it.count.toFloat() / total * 100 }
+    LaunchedEffect(Unit) { startAnimation = true }
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(400.dp)
+        modifier = modifier
             .background(Color(0xFFE3F2FD), RoundedCornerShape(8.dp))
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+            .padding(16.dp)
     ) {
+        // 기간 텍스트
         Text(
             text = periodInfo,
             fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color.Black,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 8.dp)
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.align(Alignment.TopStart)
         )
 
+        // 차트와 범례를 Row로 배치
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 32.dp), // 기간 텍스트와 겹치지 않게
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(modifier = Modifier.width(24.dp))
-            // 왼쪽: 애니메이션 도넛 차트
+            // 왼쪽: 도넛 차트 (전체 너비의 50%)
             Box(
                 modifier = Modifier
-                    .weight(0.8f)
-                    .aspectRatio(1f),
+                    .weight(0.5f)
+                    .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = size.minDimension / 2.5f
+                // 도넛 차트
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .aspectRatio(1f) // 정사각형 유지
+                ) {
+                    // 도넛 크기를 Canvas의 80%로 제한
+                    val chartSize = size.minDimension * 0.8f
+                    val center = Offset(size.width / 2, size.height / 2)
+                    val strokeWidth = chartSize / 3f // 도넛 두께
+                    val radius = (chartSize - strokeWidth) / 2
+
                     var startAngle = -90f
-                    animatedSweepAngles.forEach { sweep ->
+                    val sweepAngles = menuSales.map {
+                        it.count / menuSales.sumOf { it.count.toDouble() }.toFloat() * 360f
+                    }
+
+                    sweepAngles.map { it * progress }.forEachIndexed { idx, sweep ->
                         drawArc(
-                            color = menuSales[animatedSweepAngles.indexOf(sweep)].color,
+                            color = menuSales[idx].color,
                             startAngle = startAngle,
                             sweepAngle = sweep,
                             useCenter = false,
+                            topLeft = Offset(
+                                center.x - radius - strokeWidth/2,
+                                center.y - radius - strokeWidth/2
+                            ),
+                            size = Size(
+                                (radius + strokeWidth/2) * 2,
+                                (radius + strokeWidth/2) * 2
+                            ),
                             style = Stroke(width = strokeWidth)
                         )
                         startAngle += sweep
                     }
                 }
+
+                // 도넛 중앙 텍스트
                 Text(
-                    text = "TOP 5\n판매 순위",
+                    "TOP 5\n판매 순위",
                     textAlign = TextAlign.Center,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
                 )
             }
-
-            // 오른쪽: 범례
+            Spacer(modifier = Modifier.weight(0.05f))
+            // 오른쪽: 범례 (전체 너비의 50%)
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 50.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .weight(0.25f)
+                    .fillMaxHeight()
+                    .padding(all = 5.dp),
+                verticalArrangement = Arrangement.Center
             ) {
-                menuSales.forEachIndexed { index, item ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                val total = menuSales.sumOf { it.count.toDouble() }.toFloat()
+                menuSales.forEachIndexed { idx, item ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
                         Box(
-                            modifier = Modifier
-                                .size(10.dp)
+                            Modifier
+                                .size(8.dp)
                                 .background(item.color, CircleShape)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(Modifier.width(6.dp))
                         Text(
-                            text = "${item.name} - ${String.format("%.1f", percentages[index])}%",
+                            "${item.name}",
                             fontSize = 13.sp,
-                            color = Color.Black
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            "${"%.1f".format(item.count.toFloat() / total * 100)}%",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
