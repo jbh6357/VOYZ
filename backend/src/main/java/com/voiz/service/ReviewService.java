@@ -19,10 +19,10 @@ public class ReviewService {
     
     public void saveReview(ReviewRequestDto reviewRequestDto) {
         Reviews review = new Reviews();
-        review.setMenuIdx(reviewRequestDto.getMenuIdx()); // menuIdx 저장 로직 추가
-        review.setOrderId(reviewRequestDto.getOrderId());
+        review.setMenuIdx(String.valueOf(reviewRequestDto.getMenuIdx())); // menuIdx를 String으로 변환
+        review.setOrderIdx(reviewRequestDto.getOrderId());
         review.setUserId(reviewRequestDto.getUserId());
-        review.setComment(reviewRequestDto.getComment());
+        review.setReviewComment(reviewRequestDto.getComment());
         review.setRating(reviewRequestDto.getRating());
         review.setNationality(reviewRequestDto.getNationality());
         review.setLanguage(reviewRequestDto.getLanguage());
@@ -36,7 +36,7 @@ public class ReviewService {
     public List<ReviewResponseDto> getReviewsByMenuId(Long menuId, String userId, String nationality) {
         
         // Repository에서 menuId에 해당하는 리뷰 목록을 가져오기
-        List<Reviews> reviews = reviewRepository.findByMenuIdx(menuId);
+        List<Reviews> reviews = reviewRepository.findByMenuId(String.valueOf(menuId));
 
         // userId, nationality*(이거 근데 필요한 파라메터인가?) 조건으로 필터링하고 DTO로 변환
         return reviews.stream()
@@ -50,15 +50,15 @@ public class ReviewService {
     // Reviews 엔티티를 ReviewResponseDto로 변환
     private ReviewResponseDto convertToDto(Reviews review) {
         ReviewResponseDto dto = new ReviewResponseDto();
-        dto.setReviewId(review.getReviewId().intValue());
-        dto.setMenuId(String.valueOf(review.getMenuIdx())); // menuIdx를 String으로 변환
-        dto.setOrderId(review.getOrderId());
+        dto.setReviewId(review.getReviewIdx().intValue());
+        dto.setMenuId(review.getMenuIdx()); // menuIdx는 이미 String
+        dto.setOrderId(review.getOrderIdx());
         dto.setUserId(review.getUserId());
-        dto.setComment(review.getComment());
+        dto.setComment(review.getReviewComment());
         dto.setRating(review.getRating());
         dto.setNationality(review.getNationality());
         dto.setLanguage(review.getLanguage());
-        dto.setCreatedAt(review.getCreatedAt());
+        dto.setCreatedAt(review.getCreatedAt().toString()); // LocalDateTime을 String으로 변환
         return dto;
     }
     
