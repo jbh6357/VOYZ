@@ -30,4 +30,7 @@ public class DataCollectorController {
 	        return ResponseEntity.internalServerError().build();
 	    }
 	}
+
+
+
 }

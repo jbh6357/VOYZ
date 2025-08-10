@@ -3,17 +3,18 @@ import { useState, useEffect, useCallback } from 'react';
 // Components
 import LanguageSelector from './components/UI/LanguageSelector.jsx';
 import MenuSection from './components/Menu/MenuSection.jsx';
-import OrderPage from './components/Menu/OrderPage.jsx';
+import OrderPage from './pages/OrderPage/index.jsx';
 import ReviewModal from './components/Review/ReviewModal.jsx';
-import WriteReviewPage from './components/Review/WriteReviewPage.jsx';
+import WriteReviewPage from './pages/ReviewPage/index.jsx';
 import NotificationPermissionModal from './components/UI/NotificationPermissionModal.jsx';
 import PaymentModal from './components/Payment/PaymentModal.jsx';
 import TossPaymentWidget from './components/Payment/TossPaymentWidget.jsx';
 import PayPalPaymentWidget from './components/Payment/PayPalPaymentWidget.jsx';
-import SuccessPage from './components/UI/SuccessPage.jsx';
+import SuccessPage from './pages/SuccessPage/index.jsx';
 
 // Data & Utils
-import { sampleMenuData } from './datas/sampleData.js';
+import { sampleMenuData } from './constants/sampleData.js';
+import { getMenusByUserId, getUrlParams } from './api/menu.js';
 import { useMenu } from './hooks/useMenu.js';
 import { formatPrice } from './utils/helpers.js';
 import {
@@ -24,6 +25,13 @@ import {
 } from './utils/pushNotifications.js';
 
 function App() {
+    // 상태 관리
+    const [menuData, setMenuData] = useState(sampleMenuData); // 기본값으로 샘플 데이터 사용
+    const [userId, setUserId] = useState(null);
+    const [tableNumber, setTableNumber] = useState(null);
+    const [isLoadingMenu, setIsLoadingMenu] = useState(false);
+    const [menuError, setMenuError] = useState(null);
+
     // 앱 로드 시 알림 권한 확인 및 요청 + URL 파라미터 체크
     useEffect(() => {
         const checkNotificationPermission = async () => {
@@ -44,6 +52,44 @@ function App() {
                 setTimeout(() => {
                     setShowNotificationModal(true);
                 }, 1000);
+            }
+        };
+
+        // URL 파라미터에서 userId와 table 추출 및 메뉴 로드
+        const loadMenuFromUrl = async () => {
+            const { userId: urlUserId, table: urlTable } = getUrlParams();
+            
+            if (urlUserId) {
+                console.log('🔗 URL에서 파라미터 감지:', { userId: urlUserId, table: urlTable });
+                setUserId(urlUserId);
+                setTableNumber(urlTable);
+                
+                // 실제 메뉴 데이터 로드
+                try {
+                    setIsLoadingMenu(true);
+                    setMenuError(null);
+                    
+                    const menuItems = await getMenusByUserId(urlUserId);
+                    
+                    if (menuItems && menuItems.length > 0) {
+                        // API에서 받은 데이터를 기존 sampleMenuData 형식으로 변환
+                        const transformedMenuData = transformApiMenuData(menuItems);
+                        setMenuData(transformedMenuData);
+                        console.log('✅ 실제 메뉴 데이터 로드 완료');
+                    } else {
+                        console.log('📝 메뉴 데이터가 없어 샘플 데이터 사용');
+                        setMenuData(sampleMenuData);
+                    }
+                } catch (error) {
+                    console.error('❌ 메뉴 로드 실패:', error);
+                    setMenuError('메뉴를 불러오는데 실패했습니다. 샘플 메뉴를 표시합니다.');
+                    setMenuData(sampleMenuData);
+                } finally {
+                    setIsLoadingMenu(false);
+                }
+            } else {
+                console.log('🏠 userId가 없어 샘플 데이터 사용');
+                setMenuData(sampleMenuData);
             }
         };
 
@@ -108,6 +154,8 @@ function App() {
             window.history.replaceState({}, document.title, '/');
         }
 
+        // 함수들 실행
+        loadMenuFromUrl();
         checkNotificationPermission();
     }, []);
     const [selectedLang, setSelectedLang] = useState('ko');
@@ -123,10 +171,58 @@ function App() {
 
     const { cart, addToCart, removeFromCart, getTotalItems, getTotalPrice, clearCart } = useMenu();
 
+    // API에서 받은 메뉴 데이터를 sampleMenuData 형식으로 변환하는 함수
+    const transformApiMenuData = (apiMenuItems) => {
+        const menuByCategory = {};
+        
+        apiMenuItems.forEach((item, index) => {
+            const category = item.category || '메인메뉴';
+            
+            if (!menuByCategory[category]) {
+                menuByCategory[category] = [];
+            }
+            
+            // API 데이터를 기존 형식에 맞게 변환
+            const transformedItem = {
+                id: item.menuIdx,
+                name: {
+                    ko: item.menuName || '메뉴',
+                    en: item.menuNameEn || item.menuName || 'Menu',
+                    zh: item.menuNameZh || item.menuName || '菜单',
+                    ja: item.menuNameJa || item.menuName || 'メニュー'
+                },
+                price: (typeof item.menuPrice === 'number' && item.menuPrice >= 0) ? item.menuPrice : 0,
+                description: {
+                    ko: (item.menuDescription && item.menuDescription.trim()) || null,
+                    en: item.menuDescriptionEn || null,
+                    zh: item.menuDescriptionZh || null,
+                    ja: item.menuDescriptionJa || null
+                },
+                image: (item.imageUrl && item.imageUrl.trim()) || null,
+                category: item.category || '메뉴',
+                rating: (typeof item.rating === 'number' && item.rating > 0) ? item.rating : null,
+                reviewCount: (typeof item.reviewCount === 'number' && item.reviewCount >= 0) ? item.reviewCount : 0,
+                reviews: (item.reviews && Array.isArray(item.reviews) && item.reviews.length > 0) 
+                    ? item.reviews 
+                    : []
+            };
+            
+            menuByCategory[category].push(transformedItem);
+        });
+        
+        return {
+            restaurant: {
+                name: userId ? `${userId.split('@')[0]}님의 레스토랑` : sampleMenuData.restaurant.name,
+                subtitle: tableNumber ? `테이블 ${tableNumber}` : sampleMenuData.restaurant.subtitle
+            },
+            menu: menuByCategory
+        };
+    };
+
     // 토스페이먼츠는 TossPaymentWidget 컴포넌트에서 직접 로드
 
     const getAllItems = () => {
-        return Object.values(sampleMenuData.menu).flat();
+        return Object.values(menuData.menu).flat();
     };
 
     const handleOrderClick = () => {
@@ -291,8 +387,8 @@ function App() {
     return (
         <div className='mobile-container'>
             <header className='header'>
-                <h1 className='restaurant-name'>{sampleMenuData.restaurant.name}</h1>
-                <p className='restaurant-subtitle'>{sampleMenuData.restaurant.subtitle}</p>
+                <h1 className='restaurant-name'>{menuData.restaurant.name}</h1>
+                <p className='restaurant-subtitle'>{menuData.restaurant.subtitle}</p>
 
                 <LanguageSelector
                     selectedLang={selectedLang}
@@ -300,8 +396,24 @@ function App() {
                 />
             </header>
 
+            {/* 메뉴 에러 표시 */}
+            {menuError && (
+                <div className='menu-error-toast'>
+                    <div className='error-message'>⚠️ {menuError}</div>
+                    <button onClick={() => setMenuError(null)}>×</button>
+                </div>
+            )}
+
+            {/* 메뉴 로딩 상태 */}
+            {isLoadingMenu && (
+                <div className='loading-container'>
+                    <div className='loading-spinner'>🍽️</div>
+                    <p>메뉴를 불러오는 중...</p>
+                </div>
+            )}
+
             <main>
-                {Object.entries(sampleMenuData.menu).map(([category, items]) => (
+                {Object.entries(menuData.menu).map(([category, items]) => (
                     <MenuSection
                         key={category}
                         category={category}

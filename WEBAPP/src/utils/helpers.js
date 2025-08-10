@@ -5,13 +5,17 @@ export const getCountryFlag = (countryCode) => {
 }
 
 export const getItemName = (item, selectedLang) => {
-  const nameKey = `name${selectedLang.charAt(0).toUpperCase() + selectedLang.slice(1)}`
-  return item[nameKey] || item.name
+  if (item.name && typeof item.name === 'object') {
+    return item.name[selectedLang] || item.name.ko || item.name.en || '메뉴'
+  }
+  return item.name || '메뉴'
 }
 
 export const getItemDescription = (item, selectedLang) => {
-  const descKey = `description${selectedLang.charAt(0).toUpperCase() + selectedLang.slice(1)}`
-  return item[descKey] || item.description
+  if (item.description && typeof item.description === 'object') {
+    return item.description[selectedLang] || item.description.ko || item.description.en || null
+  }
+  return item.description || null
 }
 
 export const getReviewText = (review, selectedLang, reviewViewMode) => {

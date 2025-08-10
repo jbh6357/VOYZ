@@ -105,6 +105,12 @@
 	        <version>3.5.2</version>
 	    </dependency>
 
+		<!-- xml 파싱 관련 의존성 -->
+		<dependency>
+        	<groupId>com.fasterxml.jackson.dataformat</groupId>
+        	<artifactId>jackson-dataformat-xml</artifactId>
+    	</dependency>
+
 		<!-- firebase -->
 		<dependency>
 		    <groupId>com.google.firebase</groupId>
