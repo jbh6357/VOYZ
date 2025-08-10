@@ -49,4 +49,5 @@ object ApiClient {
     val analyticsApiService: AnalyticsApiService by lazy {
         retrofit.create(AnalyticsApiService::class.java)
     }
+    val qrApiService: QrApiService = retrofit.create(QrApiService::class.java)
 }
