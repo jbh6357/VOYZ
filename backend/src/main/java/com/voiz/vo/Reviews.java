@@ -1,7 +1,6 @@
 package com.voiz.vo;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -27,39 +26,35 @@ public class Reviews {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "review_seq_generator")
     @SequenceGenerator(name = "review_seq_generator", sequenceName = "VOYZ_REVIEWS_SEQ", allocationSize = 1)
     @Column(name = "REVIEW_IDX", nullable = false)
-    private Long reviewId; // 리뷰 ID
+    private Long reviewIdx;
 
     @Column(name = "ORDER_IDX", nullable = false)
-    private String orderId; // 주문 ID
-
-    @Column(name = "MENU_IDX", nullable = false)
-    private Long menuIdx; // 메뉴 ID
+    private String orderIdx;
 
     @Column(name = "USER_ID", nullable = false)
-    private String userId; // 사용자 ID
-
-     @Column(name = "REVIEW_COMMENT", nullable = false)
-    private String comment; // 리뷰 내용
+    private String userId;
 
     @Column(name = "RATING", nullable = false)
-    private int rating; // 평점
+    private int rating;
+
+    @Column(name = "REVIEW_COMMENT", nullable = false)
+    private String reviewComment;
 
     @Column(name = "NATIONALITY", nullable = false)
-    private String nationality; // 국적
+    private String nationality;
 
     @Column(name = "LANGUAGE")
-    private String language; // 언어
+    private String language;
 
-    @Column(name = "MENU_IDX", nullable = false)
-    private int  menuId; // 메뉴 ID 목록
+    @Column(name = "STATUS")
+    private String status;
 
-   @CreationTimestamp
+    @CreationTimestamp
     @Column(name = "CREATED_AT", updatable = false)
     private LocalDateTime createdAt;
 
-   
-    
-
+    @Column(name = "MENU_IDX", nullable = false)
+    private String menuIdx;
 
     
 }
