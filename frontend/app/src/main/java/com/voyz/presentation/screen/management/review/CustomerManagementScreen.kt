@@ -48,22 +48,7 @@ fun CustomerManagementScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier
-                .offset(x = with(density) { (animatedOffset + dragOffset).toDp() })
-                .pointerInput(isSidebarOpen) {
-                    if (!isSidebarOpen) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                if (dragOffset > sidebarWidth * 0.3f) {
-                                    isSidebarOpen = true
-                                }
-                                dragOffset = 0f
-                            }
-                        ) { _, dragAmount ->
-                            val newOffset = (dragOffset + dragAmount).coerceIn(0f, sidebarWidth)
-                            dragOffset = newOffset
-                        }
-                    }
-                },
+                .offset(x = with(density) { animatedOffset.toDp() }),
             topBar = {
                 CommonTopBar(
                     onMenuClick = { isSidebarOpen = true },
