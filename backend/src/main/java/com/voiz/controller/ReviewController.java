@@ -42,7 +42,7 @@ public class ReviewController {
     @GetMapping("/menu/{menuId}")
     @Operation(summary = "메뉴별 리뷰 목록 조회")
     public ResponseEntity<ReviewDto> getReviewsByMenuId(
-            @PathVariable long menuId,
+            @PathVariable int menuId,
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String nationality) {
         
