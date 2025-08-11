@@ -30,6 +30,8 @@ public class AnalyticsService {
     private final SalesOrderRepository salesOrderRepository;
     
     private final ReviewRepository reviewRepository;
+    
+    private final com.voiz.mapper.MenusRepository menusRepository;
 
 
     // Controller가 호출하는 메서드.
@@ -139,6 +141,23 @@ public class AnalyticsService {
         
     }
 
+    public com.voiz.dto.NationalitySummaryDto getNationalitySummary(String userId, Integer year, Integer month, Integer week) {
+        var list = getNationalityAnalytics(userId, year, month, week);
+        long local = list.stream()
+                .filter(dto -> isLocal(dto.getNationality()))
+                .mapToLong(NationalityAnalyticsDto::getCount)
+                .sum();
+        long total = list.stream().mapToLong(NationalityAnalyticsDto::getCount).sum();
+        long foreign = total - local;
+        return new com.voiz.dto.NationalitySummaryDto(local, foreign, list);
+    }
+
+    private boolean isLocal(String nationality) {
+        if (nationality == null) return false;
+        String n = nationality.trim().toUpperCase();
+        return n.equals("KR") || n.equals("KOR") || n.equals("KOREA") || n.equals("대한민국") || n.equals("한국");
+    }
+
     public ReviewSummaryDto getReviewSummary(String userId, LocalDate startDate, LocalDate endDate, int positiveThreshold, int negativeThreshold) {
         var startDateTime = startDate.atStartOfDay();
         var endDateTime = endDate.atTime(LocalTime.MAX);
@@ -171,6 +190,16 @@ public class AnalyticsService {
         var startDateTime = startDate.atStartOfDay();
         var endDateTime = endDate.atTime(LocalTime.MAX);
         return reviewRepository.findReviewsByFilters(userId, startDateTime, endDateTime, nationality, minRating, maxRating, menuIds);
+    }
+
+    public java.util.Map<Integer, String> getMenuNames(java.util.Set<Integer> menuIdxSet) {
+        if (menuIdxSet == null || menuIdxSet.isEmpty()) return java.util.Collections.emptyMap();
+        var menus = menusRepository.findAllById(menuIdxSet);
+        java.util.Map<Integer, String> map = new java.util.HashMap<>();
+        for (var m : menus) {
+            map.put(m.getMenuIdx(), m.getMenuName());
+        }
+        return map;
     }
 
 

@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 public class ReviewResponseDto {
 
     private int reviewIdx;
-    // private String restaurantId; // 레스토랑 ID
     private int menuIdx; 
     private int orderIdx;
     private String userId;
@@ -19,6 +18,7 @@ public class ReviewResponseDto {
     private int rating;
     private String nationality;
     private String language;
-    private LocalDateTime createdAt; // 리뷰 작성 시간
+    private LocalDateTime createdAt;
+    private String menuName; // optional: joined from VOYZ_MENUS
     
 }

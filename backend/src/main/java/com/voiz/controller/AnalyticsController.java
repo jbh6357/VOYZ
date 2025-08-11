@@ -6,6 +6,7 @@ import com.voiz.dto.ReviewSummaryDto;
 import com.voiz.dto.OrderTimeAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
 import com.voiz.service.AnalyticsService;
+import com.voiz.service.FastApiClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.List;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final FastApiClient fastApiClient;
 
 
     @GetMapping("/sales/{userId}")
@@ -59,9 +61,19 @@ public class AnalyticsController {
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer week) {
-        
         List<NationalityAnalyticsDto> stats = analyticsService.getNationalityAnalytics(userId, year, month, week);
         return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/customers/{userId}/nationality/summary")
+    @Operation(summary = "국적 통계 요약(내/외국인)", description = "국적 분포와 함께 내국인/외국인 수를 요약하여 반환합니다.")
+    public ResponseEntity<com.voiz.dto.NationalitySummaryDto> getNationalitySummary(
+            @PathVariable String userId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer week) {
+        var summary = analyticsService.getNationalitySummary(userId, year, month, week);
+        return ResponseEntity.ok(summary);
     }
 
 
@@ -102,6 +114,9 @@ public class AnalyticsController {
             @RequestParam(required = false) List<Integer> menuIds
     ) {
         var reviews = analyticsService.getReviewsByFilters(userId, startDate, endDate, nationality, minRating, maxRating, menuIds);
+        // 메뉴명 매핑
+        java.util.Set<Integer> menuIdSet = reviews.stream().map(com.voiz.vo.Reviews::getMenuIdx).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<Integer, String> menuIdToName = analyticsService.getMenuNames(menuIdSet);
         // map to DTO
         List<com.voiz.dto.ReviewResponseDto> dtos = reviews.stream().map(r -> {
             var dto = new com.voiz.dto.ReviewResponseDto();
@@ -114,8 +129,43 @@ public class AnalyticsController {
             dto.setNationality(r.getNationality());
             dto.setLanguage(r.getLanguage());
             dto.setCreatedAt(r.getCreatedAt());
+            dto.setMenuName(menuIdToName.get(r.getMenuIdx()));
             return dto;
         }).toList();
         return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/reviews/{userId}/keywords")
+    @Operation(summary = "리뷰 키워드 분석", description = "긍/부정 상위 키워드를 전체 및 메뉴별로 반환합니다.")
+    public ResponseEntity<String> getReviewKeywords(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            @RequestParam(defaultValue = "4") int positiveThreshold,
+            @RequestParam(defaultValue = "2") int negativeThreshold,
+            @RequestParam(defaultValue = "5") int topK,
+            @RequestParam(defaultValue = "openai") String mode
+    ) {
+        var reviews = analyticsService.getReviewsByFilters(userId, startDate, endDate, null, null, null, null);
+
+        // ML 서버 payload 구성
+        java.util.List<java.util.Map<String, Object>> comments = new java.util.ArrayList<>();
+        for (var r : reviews) {
+            java.util.Map<String, Object> m = new java.util.HashMap<>();
+            m.put("text", r.getComment());
+            m.put("rating", r.getRating());
+            m.put("menuIdx", r.getMenuIdx());
+            m.put("language", r.getLanguage());
+            comments.add(m);
+        }
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("comments", comments);
+        payload.put("positiveThreshold", positiveThreshold);
+        payload.put("negativeThreshold", negativeThreshold);
+        payload.put("topK", topK);
+        payload.put("mode", mode);
+
+        var response = fastApiClient.postDataToFastApi("/api/reviews/keywords", payload);
+        return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
     }
 }
