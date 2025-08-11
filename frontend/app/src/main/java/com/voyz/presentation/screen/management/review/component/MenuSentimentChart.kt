@@ -30,7 +30,7 @@ fun MenuSentimentChart(
 ) {
     if (data.isEmpty()) {
         Box(
-            modifier = modifier.fillMaxWidth().height(200.dp),
+            modifier = modifier.fillMaxWidth().height(180.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -48,7 +48,11 @@ fun MenuSentimentChart(
         pageCount = { Int.MAX_VALUE }
     )
     
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(180.dp)
+    ) {
         if (data.size == 1) {
             // 메뉴가 1개일 때는 단일 카드 표시 (스와이프 불가)
             val pulseAnimation by rememberInfiniteTransition(label = "pulse").animateFloat(
@@ -174,19 +178,22 @@ private fun MenuSentimentCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = menu.menuName ?: "메뉴 ${menu.menuId}",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1D1D1F),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "총 ${totalReviews}개 리뷰",
-                        fontSize = 14.sp,
-                        color = Color(0xFF8E8E93)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = menu.menuName ?: "메뉴 ${menu.menuId}",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f, false)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "( ${totalReviews} )",
+                            fontSize = 14.sp,
+                            color = Color(0xFF8E8E93)
+                        )
+                    }
                 }
                 
                 // 평점 표시
@@ -209,6 +216,23 @@ private fun MenuSentimentCard(
                         modifier = Modifier.padding(start = 4.dp)
                     )
                 }
+            }
+            
+            // 리뷰 한줄평 표시
+            Spacer(modifier = Modifier.height(8.dp))
+            val summary = menu.reviewSummary?.takeIf { it.isNotBlank() && it != "리뷰가 없습니다" } 
+                ?: generateSimpleSummary(menu)
+            if (summary.isNotBlank()) {
+                Text(
+                    text = "\" $summary \"",
+                    fontSize = 13.sp,
+                    color = Color(0xFF8E8E93),
+                    fontWeight = FontWeight.Medium,
+                    style = androidx.compose.ui.text.TextStyle(
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -312,29 +336,41 @@ private fun SentimentLabel(
                 .background(color, RoundedCornerShape(50))
         )
         
-        Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Text(
                 text = label,
                 fontSize = 12.sp,
                 color = Color(0xFF8E8E93),
                 fontWeight = FontWeight.Medium
             )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = count.toString(),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1D1D1F)
-                )
-                Text(
-                    text = "(${(percentage * 100).toInt()}%)",
-                    fontSize = 11.sp,
-                    color = Color(0xFF8E8E93)
-                )
-            }
+            Text(
+                text = count.toString(),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF1D1D1F)
+            )
+            Text(
+                text = "(${(percentage * 100).toInt()}%)",
+                fontSize = 11.sp,
+                color = Color(0xFF8E8E93)
+            )
         }
+    }
+}
+
+// 다수 의견 기반 한줄평 생성 함수 (ML 서비스 실패시 대안)
+@Composable
+private fun generateSimpleSummary(menu: MenuSentimentDto): String {
+    val totalReviews = menu.positiveCount + menu.negativeCount + menu.neutralCount
+    
+    return when {
+        totalReviews == 0L -> ""
+        menu.positiveCount > menu.negativeCount && menu.positiveCount > menu.neutralCount -> "맛있다고 해요"
+        menu.negativeCount > menu.positiveCount && menu.negativeCount > menu.neutralCount -> "개선이 필요해요"
+        menu.neutralCount > menu.positiveCount && menu.neutralCount > menu.negativeCount -> "괜찮은 편이에요"
+        else -> "의견이 다양해요"
     }
 }
