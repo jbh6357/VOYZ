@@ -141,6 +141,7 @@ fun OperationManagementScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .background(Color.White)
                                 .padding(horizontal = 20.dp)
                                 .verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(20.dp)
