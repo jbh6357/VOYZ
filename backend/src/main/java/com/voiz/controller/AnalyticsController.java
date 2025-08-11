@@ -2,6 +2,7 @@ package com.voiz.controller;
 
 import com.voiz.dto.MenuSalesDto;
 import com.voiz.dto.NationalityAnalyticsDto;
+import com.voiz.dto.ReviewSummaryDto;
 import com.voiz.dto.OrderTimeAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
 import com.voiz.service.AnalyticsService;
@@ -74,5 +75,47 @@ public class AnalyticsController {
 
         List<OrderTimeAnalyticsDto> analytics = analyticsService.getOrderAnalyticsByTime(userId, startDate, endDate);
         return ResponseEntity.ok(analytics);
+    }
+
+    @GetMapping("/reviews/{userId}/summary")
+    @Operation(summary = "리뷰 요약 통계", description = "기간 기준 총 리뷰 수, 평균 평점, 긍정/부정 리뷰 수를 반환합니다. 긍/부정 임계값은 기본값(positive>=4, negative<=2)을 사용합니다.")
+    public ResponseEntity<ReviewSummaryDto> getReviewSummary(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            @RequestParam(defaultValue = "4") int positiveThreshold,
+            @RequestParam(defaultValue = "2") int negativeThreshold
+    ) {
+        ReviewSummaryDto summary = analyticsService.getReviewSummary(userId, startDate, endDate, positiveThreshold, negativeThreshold);
+        return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/reviews/{userId}")
+    @Operation(summary = "리뷰 목록 조회", description = "기간/국적/평점/메뉴 필터로 리뷰 목록을 조회합니다.")
+    public ResponseEntity<List<com.voiz.dto.ReviewResponseDto>> getReviews(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            @RequestParam(required = false) String nationality,
+            @RequestParam(required = false) Integer minRating,
+            @RequestParam(required = false) Integer maxRating,
+            @RequestParam(required = false) List<Integer> menuIds
+    ) {
+        var reviews = analyticsService.getReviewsByFilters(userId, startDate, endDate, nationality, minRating, maxRating, menuIds);
+        // map to DTO
+        List<com.voiz.dto.ReviewResponseDto> dtos = reviews.stream().map(r -> {
+            var dto = new com.voiz.dto.ReviewResponseDto();
+            dto.setReviewIdx(r.getReviewIdx().intValue());
+            dto.setMenuIdx(r.getMenuIdx());
+            dto.setOrderIdx(r.getOrderIdx());
+            dto.setUserId(r.getUserId());
+            dto.setComment(r.getComment());
+            dto.setRating(r.getRating());
+            dto.setNationality(r.getNationality());
+            dto.setLanguage(r.getLanguage());
+            dto.setCreatedAt(r.getCreatedAt());
+            return dto;
+        }).toList();
+        return ResponseEntity.ok(dtos);
     }
 }

@@ -2,13 +2,13 @@ package com.voiz.service;
 
 import com.voiz.dto.MenuSalesDto;
 import com.voiz.dto.NationalityAnalyticsDto;
+import com.voiz.dto.ReviewSummaryDto;
 import com.voiz.dto.OrderTimeAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
 import com.voiz.mapper.ReviewRepository;
 import com.voiz.mapper.SalesOrderRepository;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -137,6 +137,40 @@ public class AnalyticsService {
         return reviewRepository.countReviewsByNationalityAndDateRange(userId, startDateTime, endDateTime);
 
         
+    }
+
+    public ReviewSummaryDto getReviewSummary(String userId, LocalDate startDate, LocalDate endDate, int positiveThreshold, int negativeThreshold) {
+        var startDateTime = startDate.atStartOfDay();
+        var endDateTime = endDate.atTime(LocalTime.MAX);
+
+        Object[] summary = reviewRepository.summarizeReviews(userId, startDateTime, endDateTime);
+        long total = 0L;
+        double avg = 0.0;
+        if (summary != null && summary.length >= 2) {
+            Number totalNum = (Number) summary[0];
+            Number avgNum = (Number) summary[1];
+            total = totalNum != null ? totalNum.longValue() : 0L;
+            avg = avgNum != null ? avgNum.doubleValue() : 0.0;
+        }
+
+        long positive = reviewRepository.countPositive(userId, positiveThreshold, startDateTime, endDateTime);
+        long negative = reviewRepository.countNegative(userId, negativeThreshold, startDateTime, endDateTime);
+
+        return new ReviewSummaryDto(total, avg, positive, negative);
+    }
+
+    public List<com.voiz.vo.Reviews> getReviewsByFilters(
+            String userId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String nationality,
+            Integer minRating,
+            Integer maxRating,
+            List<Integer> menuIds
+    ) {
+        var startDateTime = startDate.atStartOfDay();
+        var endDateTime = endDate.atTime(LocalTime.MAX);
+        return reviewRepository.findReviewsByFilters(userId, startDateTime, endDateTime, nationality, minRating, maxRating, menuIds);
     }
 
 
