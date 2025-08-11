@@ -20,11 +20,10 @@ public class ReviewService {
     
     public void saveReview(ReviewRequestDto reviewRequestDto) {
         Reviews review = new Reviews();
-
         review.setMenuIdx(reviewRequestDto.getMenuIdx()); // menuIdx 저장 로직 추가
         review.setOrderIdx(reviewRequestDto.getOrderIdx());
         review.setUserId(reviewRequestDto.getUserId());
-        review.setReviewComment(reviewRequestDto.getComment());
+        review.setComment(reviewRequestDto.getComment());
         review.setRating(reviewRequestDto.getRating());
         review.setNationality(reviewRequestDto.getNationality());
         review.setLanguage(reviewRequestDto.getLanguage());
@@ -35,10 +34,10 @@ public class ReviewService {
    
     
      // 메뉴별 리뷰 목록 조회 메서드
-    public ReviewDto getReviewsByMenuId(Long menuId, String userId, String nationality) {
+    public ReviewDto getReviewsByMenuId(int menuIdx, String userId, String nationality) {
         
         // Repository에서 menuId에 해당하는 리뷰 목록을 가져오기
-        List<Reviews> reviews = reviewRepository.findByMenuId(String.valueOf(menuId));
+        List<Reviews> reviews = reviewRepository.findByMenuIdx(menuIdx);
 
         // userId, nationality 조건으로 필터링하고 DTO로 변환
         List<ReviewResponseDto> reviewDtos = reviews.stream()
@@ -64,14 +63,14 @@ public class ReviewService {
     private ReviewResponseDto convertToDto(Reviews review) {
         ReviewResponseDto dto = new ReviewResponseDto();
         dto.setReviewIdx(review.getReviewIdx().intValue());
-        dto.setMenuIdx(review.getMenuIdx()); 
+        dto.setMenuIdx(review.getMenuIdx());
         dto.setOrderIdx(review.getOrderIdx());
         dto.setUserId(review.getUserId());
-        dto.setComment(review.getReviewComment());
+        dto.setComment(review.getComment());
         dto.setRating(review.getRating());
         dto.setNationality(review.getNationality());
         dto.setLanguage(review.getLanguage());
-        dto.setCreatedAt(review.getCreatedAt().toString()); // LocalDateTime을 String으로 변환
+        dto.setCreatedAt(review.getCreatedAt());
         return dto;
     }
     
