@@ -11,7 +11,7 @@ public class ReviewResponseDto {
 
     private int reviewIdx;
     // private String restaurantId; // 레스토랑 ID
-    private String menuIdx; 
+    private int menuIdx; 
     private int orderIdx;
     private String userId;
     private String comment;
