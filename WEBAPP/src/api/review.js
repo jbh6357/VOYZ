@@ -2,7 +2,7 @@ import { API_CONFIG } from "../config/api.js";
 
 /**
  * 메뉴별 리뷰 목록을 가져오는 API
- * @param {string} menuId - 메뉴 ID
+ * @param {int} menuId - 메뉴 ID
  * @returns {Promise<Array>} 리뷰 아이템 배열
  */
 export const getReviewsByMenuId = async (menuId) => {
