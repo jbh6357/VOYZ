@@ -26,24 +26,6 @@ app = FastAPI(
     description=API_CONFIG["description"]
 )
 
-from fastapi.middleware.cors import CORSMiddleware
-
-origins = [
-    "http://localhost:3000",  # React 개발 서버 주소 예시
-    "http://localhost:5173",  # Vite 기본 포트
-    "http://127.0.0.1:3000",
-    # 필요에 따라 추가
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,  # 허용할 출처 목록
-    allow_credentials=True,
-    allow_methods=["*"],    # 모든 HTTP 메서드 허용
-    allow_headers=["*"],    # 모든 헤더 허용
-)
-
-
 # 환경변수로 인증 설정 (선택사항)
 google_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 if google_credentials_path and os.path.exists(google_credentials_path):
@@ -345,4 +327,5 @@ if __name__ == "__main__":
         app, 
         host=API_CONFIG["host"], 
         port=API_CONFIG["port"]
+
     ) 
