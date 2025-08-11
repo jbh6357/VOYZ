@@ -20,10 +20,11 @@ public class ReviewService {
     
     public void saveReview(ReviewRequestDto reviewRequestDto) {
         Reviews review = new Reviews();
+
         review.setMenuIdx(reviewRequestDto.getMenuIdx()); // menuIdx 저장 로직 추가
         review.setOrderIdx(reviewRequestDto.getOrderIdx());
         review.setUserId(reviewRequestDto.getUserId());
-        review.setComment(reviewRequestDto.getComment());
+        review.setReviewComment(reviewRequestDto.getComment());
         review.setRating(reviewRequestDto.getRating());
         review.setNationality(reviewRequestDto.getNationality());
         review.setLanguage(reviewRequestDto.getLanguage());
@@ -37,7 +38,7 @@ public class ReviewService {
     public ReviewDto getReviewsByMenuId(Long menuId, String userId, String nationality) {
         
         // Repository에서 menuId에 해당하는 리뷰 목록을 가져오기
-        List<Reviews> reviews = reviewRepository.findByMenuIdx(menuId);
+        List<Reviews> reviews = reviewRepository.findByMenuId(String.valueOf(menuId));
 
         // userId, nationality 조건으로 필터링하고 DTO로 변환
         List<ReviewResponseDto> reviewDtos = reviews.stream()
@@ -63,14 +64,14 @@ public class ReviewService {
     private ReviewResponseDto convertToDto(Reviews review) {
         ReviewResponseDto dto = new ReviewResponseDto();
         dto.setReviewIdx(review.getReviewIdx().intValue());
-        dto.setMenuIdx(String.valueOf(review.getMenuIdx())); // menuIdx를 String으로 변환
+        dto.setMenuIdx(review.getMenuIdx()); 
         dto.setOrderIdx(review.getOrderIdx());
         dto.setUserId(review.getUserId());
-        dto.setComment(review.getComment());
+        dto.setComment(review.getReviewComment());
         dto.setRating(review.getRating());
         dto.setNationality(review.getNationality());
         dto.setLanguage(review.getLanguage());
-        dto.setCreatedAt(review.getCreatedAt());
+        dto.setCreatedAt(review.getCreatedAt().toString()); // LocalDateTime을 String으로 변환
         return dto;
     }
     
