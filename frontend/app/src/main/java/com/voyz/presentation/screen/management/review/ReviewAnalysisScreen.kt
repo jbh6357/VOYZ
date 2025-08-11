@@ -56,6 +56,8 @@ fun ReviewAnalysisScreen() {
     var menuDateRange by remember { mutableStateOf(defaultStart to defaultEnd) }
     var menuSentiments by remember { mutableStateOf<List<MenuSentimentDto>>(emptyList()) }
     var isMenuLoading by remember { mutableStateOf(false) }
+    var selectedNationality by remember { mutableStateOf<String?>(null) }
+    var availableNationalities by remember { mutableStateOf<List<String>>(emptyList()) }
 
     // 국가별 분석 데이터 로드 함수
     fun loadCountryData() {
@@ -85,11 +87,23 @@ fun ReviewAnalysisScreen() {
                 val start = menuDateRange.first.format(DateTimeFormatter.ISO_LOCAL_DATE)
                 val end = menuDateRange.second.format(DateTimeFormatter.ISO_LOCAL_DATE)
                 
-                menuSentiments = analyticsRepository.getMenuSentiment(id, start, end, 4, 2)
+                menuSentiments = analyticsRepository.getMenuSentiment(id, start, end, 4, 2, selectedNationality)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
                 isMenuLoading = false
+            }
+        }
+    }
+
+    // 국가 목록 로드 함수
+    fun loadNationalities() {
+        val id = userId ?: return
+        scope.launch {
+            try {
+                availableNationalities = analyticsRepository.getReviewNationalities(id)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -99,6 +113,7 @@ fun ReviewAnalysisScreen() {
         if (userId != null) {
             loadCountryData()
             loadMenuData()
+            loadNationalities()
         }
     }
 
@@ -145,7 +160,7 @@ fun ReviewAnalysisScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "국가별 분석",
+                        text = "평점 높은 국가",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF1D1D1F)
@@ -203,7 +218,7 @@ fun ReviewAnalysisScreen() {
                                 ) {
                                     Text(
                                         text = label,
-                                        fontSize = 11.sp,
+                                        fontSize = 9.sp,
                                         fontWeight = if (selectedCountryIndex == index) FontWeight.SemiBold else FontWeight.Medium,
                                         color = if (selectedCountryIndex == index) Color(0xFF1D1D1F) else Color(0xFF8E8E93)
                                     )
@@ -240,7 +255,7 @@ fun ReviewAnalysisScreen() {
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                // 제목과 기간 세그먼트 컨트롤
+                // 제목과 국가 드롭다운
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -253,64 +268,80 @@ fun ReviewAnalysisScreen() {
                         color = Color(0xFF1D1D1F)
                     )
                     
-                    // 기간 세그먼트 컨트롤
-                    val menuPeriodOptions = listOf(
-                        "지난 7일" to { 
-                            val end = LocalDate.now()
-                            val start = end.minusDays(6)
-                            start to end
-                        },
-                        "이번 달" to {
-                            val today = LocalDate.now()
-                            val start = today.withDayOfMonth(1)
-                            val end = today
-                            start to end
-                        },
-                        "올해" to {
-                            val today = LocalDate.now()
-                            val start = today.withDayOfYear(1)
-                            val end = today
-                            start to end
+                    // 국가 좌우 버튼 네비게이션
+                    val nationalityOptions = listOf(null) + availableNationalities // null = 전체
+                    var currentNationalityIndex by remember { mutableStateOf(0) }
+                    
+                    // 선택된 국가 동기화
+                    LaunchedEffect(currentNationalityIndex, nationalityOptions) {
+                        if (nationalityOptions.isNotEmpty()) {
+                            selectedNationality = nationalityOptions.getOrNull(currentNationalityIndex)
+                            loadMenuData()
                         }
-                    )
+                    }
                     
-                    var selectedMenuIndex by remember { mutableStateOf(1) } // 기본값: 이번 달
-                    
-                    Box(
-                        modifier = Modifier
-                            .width(140.dp)
-                            .background(
-                                color = Color(0xFFF2F2F7),
-                                shape = RoundedCornerShape(7.dp)
-                            )
-                            .padding(2.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row {
-                            menuPeriodOptions.forEachIndexed { index, (label, rangeFn) ->
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(5.dp))
-                                        .background(
-                                            if (selectedMenuIndex == index) Color.White
-                                            else Color.Transparent
-                                        )
-                                        .clickable { 
-                                            selectedMenuIndex = index
-                                            menuDateRange = rangeFn()
-                                            loadMenuData()
-                                        }
-                                        .padding(vertical = 6.dp, horizontal = 4.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = label,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (selectedMenuIndex == index) FontWeight.SemiBold else FontWeight.Medium,
-                                        color = if (selectedMenuIndex == index) Color(0xFF1D1D1F) else Color(0xFF8E8E93)
-                                    )
-                                }
+                        // 왼쪽 버튼
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clickable(enabled = nationalityOptions.size > 1) {
+                                    currentNationalityIndex = (currentNationalityIndex - 1 + nationalityOptions.size) % nationalityOptions.size
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "◀",
+                                fontSize = 10.sp,
+                                color = if (nationalityOptions.size > 1) Color(0xFF1D1D1F) else Color(0xFF8E8E93)
+                            )
+                        }
+                        
+                        // 현재 국가 표시
+                        Box(
+                            modifier = Modifier
+                                .width(80.dp)
+                                .background(
+                                    color = Color(0xFFF2F2F7),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val displayText = if (selectedNationality == null) {
+                                "전체"
+                            } else {
+                                val flag = com.voyz.presentation.screen.management.review.util.NationalityFlagMapper.flagFor(selectedNationality!!)
+                                "$flag $selectedNationality"
                             }
+                            
+                            Text(
+                                text = displayText,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF1D1D1F),
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                        }
+                        
+                        // 오른쪽 버튼
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clickable(enabled = nationalityOptions.size > 1) {
+                                    currentNationalityIndex = (currentNationalityIndex + 1) % nationalityOptions.size
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "▶",
+                                fontSize = 10.sp,
+                                color = if (nationalityOptions.size > 1) Color(0xFF1D1D1F) else Color(0xFF8E8E93)
+                            )
                         }
                     }
                 }

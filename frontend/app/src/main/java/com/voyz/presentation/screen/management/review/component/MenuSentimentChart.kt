@@ -1,12 +1,14 @@
 package com.voyz.presentation.screen.management.review.component
 
 import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,23 +42,87 @@ fun MenuSentimentChart(
         return
     }
 
-    // 수평 스크롤 방식으로 변경
-    Box(
-        modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        Row(
-            modifier = Modifier
-                .horizontalScroll(rememberScrollState())
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            data.forEach { menu ->
+    // HorizontalPager로 무한 순환 스크롤 구현
+    val pagerState = rememberPagerState(
+        initialPage = Int.MAX_VALUE / 2,
+        pageCount = { Int.MAX_VALUE }
+    )
+    
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (data.size == 1) {
+            // 메뉴가 1개일 때는 단일 카드 표시 (스와이프 불가)
+            val pulseAnimation by rememberInfiniteTransition(label = "pulse").animateFloat(
+                initialValue = 1f,
+                targetValue = 1.02f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = EaseInOutSine),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "pulse"
+            )
+            
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 MenuSentimentCard(
-                    menu = menu,
-                    onClick = { onMenuClick(menu) },
-                    modifier = Modifier.width(280.dp) // 고정 폭
+                    menu = data[0],
+                    onClick = { }, // 클릭 비활성화
+                    modifier = Modifier
+                        .width(280.dp)
+                        .graphicsLayer {
+                            scaleX = pulseAnimation
+                            scaleY = pulseAnimation
+                        }
                 )
+            }
+        } else {
+            // 메뉴가 2개 이상일 때는 페이저 사용
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(Unit) {
+                        // 페이저 영역에서의 수평 드래그를 가로채서 사이드바 제스처 방지
+                        detectHorizontalDragGestures { _, _ -> 
+                            // 드래그 이벤트를 소비해서 사이드바로 전파되지 않도록 함
+                        }
+                    },
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                pageSpacing = 12.dp
+            ) { page ->
+                val actualPage = page % data.size
+                MenuSentimentCard(
+                    menu = data[actualPage],
+                    onClick = { }, // 클릭 비활성화
+                    modifier = Modifier.width(280.dp)
+                )
+            }
+        }
+        
+        // 페이지 인디케이터 (도트)
+        if (data.size > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(data.size) { index ->
+                    val isSelected = pagerState.currentPage % data.size == index
+                    Box(
+                        modifier = Modifier
+                            .size(if (isSelected) 8.dp else 6.dp)
+                            .background(
+                                color = if (isSelected) Color(0xFFCD212A) else Color(0xFFE5E5EA),
+                                shape = androidx.compose.foundation.shape.CircleShape
+                            )
+                    )
+                    if (index < data.size - 1) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                }
             }
         }
     }
@@ -94,13 +160,12 @@ private fun MenuSentimentCard(
 
     Card(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() },
+            .clip(RoundedCornerShape(16.dp)),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(8.dp)
         ) {
             // 메뉴 정보 헤더
             Row(
@@ -157,20 +222,21 @@ private fun MenuSentimentCard(
                         .height(8.dp)
                         .background(
                             color = Color(0xFFF2F2F7),
-                            shape = RoundedCornerShape(4.dp)
+                            shape = RoundedCornerShape(6.dp)
                         )
                 ) {
-                    Row(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(6.dp))
+                    ) {
                         // 긍정
                         if (animatedPositiveRatio > 0f) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .fillMaxWidth(animatedPositiveRatio)
-                                    .background(
-                                        color = Color(0xFF30D158),
-                                        shape = RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
-                                    )
+                                    .background(Color(0xFF30D158))
                             )
                         }
                         
@@ -190,10 +256,7 @@ private fun MenuSentimentCard(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .fillMaxWidth()
-                                    .background(
-                                        color = Color(0xFFFF453A),
-                                        shape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
-                                    )
+                                    .background(Color(0xFFFF453A))
                             )
                         }
                     }
