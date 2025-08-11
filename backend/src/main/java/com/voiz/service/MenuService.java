@@ -53,6 +53,50 @@ public class MenuService {
 	    menu.setCategory(category);
 	    menusRepository.save(menu);
 	}
+	
+	public void createMenuWithImage(String userId, String menuName, int menuPrice, String menuDescription, 
+			String category, MultipartFile image) throws IOException {
+		// 중복 메뉴 체크 (같은 사용자, 같은 메뉴명)
+		List<Menus> existingMenus = menusRepository.findByUserIdAndMenuName(userId, menuName);
+		if (!existingMenus.isEmpty()) {
+			throw new IllegalArgumentException("이미 등록된 메뉴입니다: " + menuName);
+		}
+		
+		Menus menu = new Menus();
+		menu.setUserId(userId);
+		menu.setMenuName(menuName);
+		menu.setMenuPrice(menuPrice);
+		menu.setMenuDescription(menuDescription);
+		menu.setCategory(category);
+		
+		// 이미지가 있으면 저장
+		if (image != null && !image.isEmpty()) {
+			// 프로젝트 루트 기준으로 이미지 파일 저장 경로 설정
+			String uploadsDir = System.getProperty("user.dir") + File.separator + "uploads" + 
+					File.separator + "menuImages" + File.separator;
+			
+			// 파일 이름 생성
+			String fileName = UUID.randomUUID().toString().replace("-", "") + "_" + image.getOriginalFilename();
+			
+			// DB에 저장할 경로 문자열 (웹에서 접근 가능한 경로)
+			String dbFilePath = "/uploads/menuImages/" + fileName;
+			
+			// 디렉토리 생성
+			File dir = new File(uploadsDir);
+			if (!dir.exists()) {
+				dir.mkdirs();
+			}
+			
+			// 파일 저장
+			File savedFile = new File(dir, fileName);
+			image.transferTo(savedFile);
+			
+			// 이미지 URL 설정
+			menu.setImageUrl(dbFilePath);
+		}
+		
+		menusRepository.save(menu);
+	}
 
 	public String uploadMenuImage(int menuIdx, MultipartFile file) throws IOException {
 		// 1. 메뉴 존재 여부 확인
