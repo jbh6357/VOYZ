@@ -189,9 +189,19 @@ public class AnalyticsController {
             @RequestParam LocalDate startDate,
             @RequestParam LocalDate endDate,
             @RequestParam(defaultValue = "4") int positiveThreshold,
-            @RequestParam(defaultValue = "2") int negativeThreshold
+            @RequestParam(defaultValue = "2") int negativeThreshold,
+            @RequestParam(required = false) String nationality
     ) {
-        var list = analyticsService.getMenuSentiment(userId, startDate, endDate, positiveThreshold, negativeThreshold);
+        var list = analyticsService.getMenuSentiment(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/reviews/{userId}/nationalities")
+    @Operation(summary = "리뷰 작성 국가 목록", description = "해당 매장에 리뷰를 작성한 국가 목록을 조회합니다.")
+    public ResponseEntity<java.util.List<String>> getReviewNationalities(
+            @PathVariable String userId
+    ) {
+        var list = analyticsService.getReviewNationalities(userId);
         return ResponseEntity.ok(list);
     }
 }

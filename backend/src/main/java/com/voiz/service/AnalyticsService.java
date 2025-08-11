@@ -245,11 +245,12 @@ public class AnalyticsService {
             LocalDate startDate,
             LocalDate endDate,
             int positiveThreshold,
-            int negativeThreshold
+            int negativeThreshold,
+            String nationality
     ) {
         var startDateTime = startDate.atStartOfDay();
         var endDateTime = endDate.atTime(LocalTime.MAX);
-        var rows = reviewRepository.aggregateMenuSentiment(userId, startDateTime, endDateTime, positiveThreshold, negativeThreshold);
+        var rows = reviewRepository.aggregateMenuSentiment(userId, startDateTime, endDateTime, positiveThreshold, negativeThreshold, nationality);
         java.util.Set<Integer> menuIds = new java.util.HashSet<>();
         for (Object[] r : rows) {
             menuIds.add(((Number) r[0]).intValue());
@@ -267,6 +268,10 @@ public class AnalyticsService {
             list.add(new com.voiz.dto.MenuSentimentDto(menuId, menuName, pos, neg, neutral, avg));
         }
         return list;
+    }
+
+    public java.util.List<String> getReviewNationalities(String userId) {
+        return reviewRepository.findDistinctNationalitiesByUserId(userId);
     }
 
 

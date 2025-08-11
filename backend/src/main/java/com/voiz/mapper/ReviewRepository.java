@@ -76,6 +76,7 @@ public interface ReviewRepository extends JpaRepository<Reviews, Long> {
            "SUM(CASE WHEN r.rating <= :negativeThreshold THEN 1 ELSE 0 END), " +
            "AVG(r.rating) " +
            "FROM Reviews r WHERE r.userId = :userId AND r.createdAt BETWEEN :startDate AND :endDate " +
+           "AND (:nationality IS NULL OR r.nationality = :nationality) " +
            "GROUP BY r.menuIdx " +
            "HAVING COUNT(r) > 0 " +
            "ORDER BY COUNT(r) DESC")
@@ -84,6 +85,10 @@ public interface ReviewRepository extends JpaRepository<Reviews, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             @Param("positiveThreshold") int positiveThreshold,
-            @Param("negativeThreshold") int negativeThreshold);
+            @Param("negativeThreshold") int negativeThreshold,
+            @Param("nationality") String nationality);
+
+    @Query("SELECT DISTINCT r.nationality FROM Reviews r WHERE r.userId = :userId ORDER BY r.nationality")
+    List<String> findDistinctNationalitiesByUserId(@Param("userId") String userId);
 
 }
