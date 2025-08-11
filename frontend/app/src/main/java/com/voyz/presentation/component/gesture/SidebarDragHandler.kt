@@ -20,6 +20,12 @@ fun Modifier.sidebarDragGesture(
     return if (isEnabled) {
         this.pointerInput(Unit) {
             detectHorizontalDragGestures(
+                onDragStart = { offset ->
+                    // 왼쪽 가장자리에서만 드래그 시작 허용 (50px 이내)
+                    if (offset.x > 50f) {
+                        return@detectHorizontalDragGestures
+                    }
+                },
                 onDragEnd = {
                     if (currentDragOffset > sidebarWidth * 0.3f) {
                         onSidebarOpen()

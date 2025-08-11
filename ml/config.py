@@ -100,3 +100,8 @@ class TranslateRequest(BaseModel):
 class TranslateRequest2(BaseModel):
     texts: List[str]
     targetLanguage: str
+
+# 리뷰 번역 요청 모델
+class ReviewTranslateRequest(BaseModel):
+    reviews: List[str]  # 리뷰 텍스트들
+    targetLanguage: str = "ko"  # 기본값: 한국어

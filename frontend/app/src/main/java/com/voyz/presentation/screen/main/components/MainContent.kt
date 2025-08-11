@@ -26,7 +26,6 @@ import com.voyz.datas.model.MarketingOpportunity
 import com.voyz.presentation.component.calendar.CalendarComponent
 import com.voyz.presentation.component.calendar.CalendarViewModel
 import com.voyz.presentation.component.fab.FloatingActionMenu
-import com.voyz.presentation.component.gesture.sidebarDragGesture
 import com.voyz.presentation.component.topbar.CommonTopBar
 import com.voyz.presentation.screen.main.MainScreenState
 import java.time.LocalDate
@@ -57,14 +56,7 @@ fun MainContent(
 
     Scaffold(
         modifier = modifier
-            .offset(x = with(density) { (animatedOffset + state.dragOffset).toDp() })
-            .sidebarDragGesture(
-                isEnabled = !state.isSidebarOpen,
-                sidebarWidth = sidebarWidth,
-                currentDragOffset = state.dragOffset,
-                onDragOffsetChange = onDragOffsetChange,
-                onSidebarOpen = onSidebarOpen
-            ),
+            .offset(x = with(density) { (animatedOffset + state.dragOffset).toDp() }),
         contentWindowInsets = WindowInsets(0),
         topBar = {
             CommonTopBar(

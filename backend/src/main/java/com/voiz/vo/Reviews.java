@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "VOYZ_Reviews")
@@ -47,9 +48,9 @@ public class Reviews {
     @Column(name = "LANGUAGE")
     private String language; // 언어
 
-     @CreationTimestamp
+    @CreationTimestamp
     @Column(name = "CREATED_AT", updatable = false)
-    private String createdAt; // 리뷰 작성 시간
+    private LocalDateTime createdAt; // 리뷰 작성 시간
 
    
     

@@ -3,6 +3,7 @@ package com.voiz.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -10,7 +11,6 @@ import lombok.NoArgsConstructor;
 public class ReviewResponseDto {
 
     private int reviewIdx;
-    // private String restaurantId; // 레스토랑 ID
     private int menuIdx; 
     private int orderIdx;
     private String userId;
@@ -18,6 +18,7 @@ public class ReviewResponseDto {
     private int rating;
     private String nationality;
     private String language;
-    private String createdAt; // 리뷰 작성 시간
+    private LocalDateTime createdAt;
+    private String menuName; // optional: joined from VOYZ_MENUS
     
 }

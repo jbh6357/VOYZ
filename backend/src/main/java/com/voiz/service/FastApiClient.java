@@ -209,4 +209,28 @@ public class FastApiClient {
 		
 	}
 
+	/**
+	 * 리뷰 일괄 번역 메서드
+	 * @param request 번역 요청 (reviews: List<String>, targetLanguage: String)
+	 * @return 번역된 리뷰 목록
+	 */
+	public Map<String, Object> translateReviews(Map<String, Object> request) {
+		try {
+	        String endpoint = "/api/reviews/translate";
+	        String url = fastApiBaseUrl + endpoint;
+
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+
+	        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(request, headers);
+
+	        ResponseEntity<Map> response = restTemplate.exchange(
+	            url, HttpMethod.POST, requestEntity, Map.class);
+
+	        return response.getBody();
+	    } catch (Exception e) {
+	        throw new RuntimeException("리뷰 번역 서비스 연결 실패: " + e.getMessage(), e);
+	    }
+	}
+
 } 

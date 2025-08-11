@@ -31,4 +31,17 @@ public class TranslateController {
 	        return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
 	    }
 	}
+
+	@PostMapping("/reviews")
+	@Operation(summary = "리뷰 일괄 번역", description = "리뷰 목록을 일괄로 번역합니다.")
+	public ResponseEntity<Map<String, Object>> translateReviews(
+	    @RequestBody Map<String, Object> request) {
+	    
+	    try {
+	        Map<String, Object> result = translateService.translateReviews(request);
+	        return ResponseEntity.ok(result);
+	    } catch (Exception e) {
+	        return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+	    }
+	}
 }

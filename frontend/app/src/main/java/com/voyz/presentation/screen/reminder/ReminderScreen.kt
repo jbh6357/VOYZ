@@ -49,7 +49,6 @@ fun ReminderScreen(
     today: LocalDate = LocalDate.now()
 ) {
     var isSidebarOpen by remember { mutableStateOf(false) }
-    var dragOffset by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
     val sidebarWidth = with(density) { 280.dp.toPx() }
 
@@ -72,21 +71,7 @@ fun ReminderScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier
-                .offset(x = with(density) { (animatedOffset + dragOffset).toDp() })
-                .pointerInput(isSidebarOpen) {
-                    if (!isSidebarOpen) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                if (dragOffset > sidebarWidth * 0.3f) {
-                                    isSidebarOpen = true
-                                }
-                                dragOffset = 0f
-                            }
-                        ) { _, dragAmount ->
-                            dragOffset = (dragOffset + dragAmount).coerceIn(0f, sidebarWidth)
-                        }
-                    }
-                },
+                .offset(x = with(density) { animatedOffset.toDp() }),
             topBar = {
                 CommonTopBar(
                     onMenuClick = { isSidebarOpen = true },
@@ -210,7 +195,6 @@ fun ReminderScreen(
                     .pointerInput(Unit) {
                         detectTapGestures {
                             isSidebarOpen = false
-                            dragOffset = 0f
                         }
                     }
                     .zIndex(0.5f)
@@ -223,16 +207,15 @@ fun ReminderScreen(
                     .fillMaxHeight()
                     .width(280.dp)
                     .graphicsLayer {
-                        translationX = animatedOffset + dragOffset - sidebarWidth
+                        translationX = animatedOffset - sidebarWidth
                     }
                     .zIndex(1f)
             ) {
                 SidebarComponent(
                     isOpen = isSidebarOpen,
-                    animatedOffset = animatedOffset + dragOffset,
+                    animatedOffset = animatedOffset,
                     onClose = {
                         isSidebarOpen = false
-                        dragOffset = 0f
                     },
                     navController = navController,
                     modifier = Modifier.fillMaxSize()

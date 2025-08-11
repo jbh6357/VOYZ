@@ -26,6 +26,8 @@ VOYZ는 외국인 고객 유치와 서비스 향상을 돕는 요식업 마케�
 - **네트워킹**: Retrofit2, OkHttp
 - **상태관리**: ViewModel, DataStore
 - **비동기**: Coroutines, Flow
+- **차트**: MPAndroidChart (파이차트 구현)
+- **유틸리티**: NationalityFlagMapper (국가별 플래그 이모지 매핑)
 
 ### Web App (WEBAPP)
 - **프레임워크**: React 18, Vite
@@ -116,6 +118,7 @@ VOYZ/
 - **Tables**: QR 코드 테이블 관리
 - **Reviews**: 다국어 리뷰 및 번역 데이터
 - **VisitorStats**: 국가별 방문 통계
+- **NationalityAnalytics**: 국가별 방문객 분석 데이터
 - **Token**: JWT 토큰 관리
 
 ## 🔗 API 엔드포인트
@@ -131,6 +134,7 @@ VOYZ/
 - `/api/tables/**` - 테이블 관리
 - `/api/qr/**` - QR 코드 생성
 - `/api/analysis/**` - 데이터 분석
+- `/api/analytics/**` - 리뷰 및 국가별 방문객 분석
 
 ### ML Service APIs
 - `POST /api/match/specialDay` - 특일-외국인 방문객 매칭
@@ -192,11 +196,17 @@ VOYZ/
 - QR 기반 주문 시스템 (토스페이먼츠, PayPal 결제)
 - JWT 기반 인증 시스템
 - 특일 데이터 수집 및 AI 매칭 시스템
+- 국가별 고객 통계 분석 기능
+- 리뷰 목록 화면 (ReviewListScreen)
 
 ### 🚧 개발 중인 기능
 - OCR 메뉴 등록 후 자동 저장 기능
 - 외국인 방문 예측 캘린더 UI
 - 국가별 선호 메뉴 분석 대시보드
+- 리뷰 분석 화면 (ReviewAnalysisScreen)
+  - 국가별 방문객 통계 (월/연/주 기준)
+  - 리뷰 통계 및 키워드 분석 (OpenAI 기반)
+  - 기간별 데이터 필터링 기능
 
 ### 📋 예정된 기능 (차별화/프리미엄)
 - LLM 기반 메뉴 컨시어지 채팅

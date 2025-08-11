@@ -2,14 +2,18 @@ package com.voiz.service;
 
 import com.voiz.dto.MenuSalesDto;
 import com.voiz.dto.NationalityAnalyticsDto;
+import com.voiz.dto.ReviewSummaryDto;
 import com.voiz.dto.OrderTimeAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
+import com.voiz.dto.CountryRatingDto;
+import com.voiz.dto.MenuSentimentDto;
 import com.voiz.mapper.ReviewRepository;
 import com.voiz.mapper.SalesOrderRepository;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -30,6 +34,8 @@ public class AnalyticsService {
     private final SalesOrderRepository salesOrderRepository;
     
     private final ReviewRepository reviewRepository;
+    
+    private final com.voiz.mapper.MenusRepository menusRepository;
 
 
     // Controller가 호출하는 메서드.
@@ -139,6 +145,67 @@ public class AnalyticsService {
         
     }
 
+    public com.voiz.dto.NationalitySummaryDto getNationalitySummary(String userId, Integer year, Integer month, Integer week) {
+        var list = getNationalityAnalytics(userId, year, month, week);
+        long local = list.stream()
+                .filter(dto -> isLocal(dto.getNationality()))
+                .mapToLong(NationalityAnalyticsDto::getCount)
+                .sum();
+        long total = list.stream().mapToLong(NationalityAnalyticsDto::getCount).sum();
+        long foreign = total - local;
+        return new com.voiz.dto.NationalitySummaryDto(local, foreign, list);
+    }
+
+    private boolean isLocal(String nationality) {
+        if (nationality == null) return false;
+        String n = nationality.trim().toUpperCase();
+        return n.equals("KR") || n.equals("KOR") || n.equals("KOREA") || n.equals("대한민국") || n.equals("한국");
+    }
+
+    public ReviewSummaryDto getReviewSummary(String userId, LocalDate startDate, LocalDate endDate, int positiveThreshold, int negativeThreshold) {
+        var startDateTime = startDate.atStartOfDay();
+        var endDateTime = endDate.atTime(LocalTime.MAX);
+
+        Object[] summary = reviewRepository.summarizeReviews(userId, startDateTime, endDateTime);
+        long total = 0L;
+        double avg = 0.0;
+        if (summary != null && summary.length >= 2) {
+            Number totalNum = (Number) summary[0];
+            Number avgNum = (Number) summary[1];
+            total = totalNum != null ? totalNum.longValue() : 0L;
+            avg = avgNum != null ? avgNum.doubleValue() : 0.0;
+        }
+
+        long positive = reviewRepository.countPositive(userId, positiveThreshold, startDateTime, endDateTime);
+        long negative = reviewRepository.countNegative(userId, negativeThreshold, startDateTime, endDateTime);
+
+        return new ReviewSummaryDto(total, avg, positive, negative);
+    }
+
+    public List<com.voiz.vo.Reviews> getReviewsByFilters(
+            String userId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String nationality,
+            Integer minRating,
+            Integer maxRating,
+            List<Integer> menuIds
+    ) {
+        var startDateTime = startDate.atStartOfDay();
+        var endDateTime = endDate.atTime(LocalTime.MAX);
+        return reviewRepository.findReviewsByFilters(userId, startDateTime, endDateTime, nationality, minRating, maxRating, menuIds);
+    }
+
+    public java.util.Map<Integer, String> getMenuNames(java.util.Set<Integer> menuIdxSet) {
+        if (menuIdxSet == null || menuIdxSet.isEmpty()) return java.util.Collections.emptyMap();
+        var menus = menusRepository.findAllById(menuIdxSet);
+        java.util.Map<Integer, String> map = new java.util.HashMap<>();
+        for (var m : menus) {
+            map.put(m.getMenuIdx(), m.getMenuName());
+        }
+        return map;
+    }
+
 
 
     // 시간별 주문 통계 조회 메서드
@@ -155,6 +222,356 @@ public class AnalyticsService {
                     return new OrderTimeAnalyticsDto(hour, orderCount);
                 })
                 .collect(Collectors.toList());
+    }
+
+    public java.util.List<com.voiz.dto.CountryRatingDto> getCountryRatings(
+            String userId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        var startDateTime = startDate.atStartOfDay();
+        var endDateTime = endDate.atTime(LocalTime.MAX);
+        var rows = reviewRepository.aggregateCountryRatings(userId, startDateTime, endDateTime);
+        java.util.List<com.voiz.dto.CountryRatingDto> list = new java.util.ArrayList<>();
+        for (Object[] r : rows) {
+            String nationality = (String) r[0];
+            long count = ((Number) r[1]).longValue();
+            double avg = ((Number) r[2]).doubleValue();
+            list.add(new com.voiz.dto.CountryRatingDto(nationality, count, avg));
+        }
+        return list;
+    }
+
+    public java.util.List<com.voiz.dto.MenuSentimentDto> getMenuSentiment(
+            String userId,
+            LocalDate startDate,
+            LocalDate endDate,
+            int positiveThreshold,
+            int negativeThreshold,
+            String nationality
+    ) {
+        var startDateTime = startDate.atStartOfDay();
+        var endDateTime = endDate.atTime(LocalTime.MAX);
+        
+        if (nationality != null) {
+            // 특정 국가만 조회 (기존 로직 유지)
+            var rows = reviewRepository.aggregateMenuSentiment(userId, startDateTime, endDateTime, positiveThreshold, negativeThreshold, nationality);
+            java.util.Set<Integer> menuIds = new java.util.HashSet<>();
+            for (Object[] r : rows) {
+                menuIds.add(((Number) r[0]).intValue());
+            }
+            var idToName = getMenuNames(menuIds);
+            java.util.List<com.voiz.dto.MenuSentimentDto> list = new java.util.ArrayList<>();
+            for (Object[] r : rows) {
+                int menuId = ((Number) r[0]).intValue();
+                long count = ((Number) r[1]).longValue();
+                long pos = ((Number) r[2]).longValue();
+                long neg = ((Number) r[3]).longValue();
+                double avg = ((Number) r[4]).doubleValue();
+                long neutral = count - pos - neg;
+                String menuName = idToName.get(menuId);
+                var dto = new com.voiz.dto.MenuSentimentDto(menuId, menuName, pos, neg, neutral, avg);
+                dto.setNationality(nationality);
+                list.add(dto);
+            }
+            return list;
+        } else {
+            // 전체 데이터 조회 - 국가 관계없이 메뉴별로 통합
+            var rows = reviewRepository.aggregateMenuSentiment(userId, startDateTime, endDateTime, positiveThreshold, negativeThreshold, null);
+            java.util.Set<Integer> menuIds = new java.util.HashSet<>();
+            for (Object[] r : rows) {
+                menuIds.add(((Number) r[0]).intValue());
+            }
+            var idToName = getMenuNames(menuIds);
+            java.util.List<com.voiz.dto.MenuSentimentDto> list = new java.util.ArrayList<>();
+            for (Object[] r : rows) {
+                int menuId = ((Number) r[0]).intValue();
+                long count = ((Number) r[1]).longValue();
+                long pos = ((Number) r[2]).longValue();
+                long neg = ((Number) r[3]).longValue();
+                double avg = ((Number) r[4]).doubleValue();
+                long neutral = count - pos - neg;
+                String menuName = idToName.get(menuId);
+                var dto = new com.voiz.dto.MenuSentimentDto(menuId, menuName, pos, neg, neutral, avg);
+                dto.setNationality(null); // 전체 데이터이므로 null
+                list.add(dto);
+            }
+            return list;
+        }
+    }
+
+    public java.util.List<String> getReviewNationalities(String userId) {
+        return reviewRepository.findDistinctNationalitiesByUserId(userId);
+    }
+
+    public String generateMenuReviewSummary(Integer menuId, String menuName, String userId, String nationality) {
+        System.out.println("🔍 generateMenuReviewSummary 시작");
+        System.out.println("  - menuId: " + menuId);
+        System.out.println("  - menuName: " + menuName);
+        System.out.println("  - userId: " + userId);
+        System.out.println("  - nationality: " + nationality);
+        
+        // 해당 메뉴의 리뷰 데이터 조회
+        var reviews = reviewRepository.findReviewsByMenuAndUser(menuId, userId, nationality);
+        System.out.println("📝 리뷰 조회 결과: " + reviews.size() + "개");
+        
+        if (reviews.isEmpty()) {
+            System.out.println("❌ 리뷰가 없어서 기본 메시지 반환");
+            return "리뷰가 없습니다";
+        }
+        
+        // 감정별 개수 계산
+        long positiveCount = reviews.stream().mapToLong(r -> ((Number) r[1]).intValue() >= 4 ? 1 : 0).sum();
+        long neutralCount = reviews.stream().mapToLong(r -> ((Number) r[1]).intValue() == 3 ? 1 : 0).sum();
+        long negativeCount = reviews.stream().mapToLong(r -> ((Number) r[1]).intValue() <= 2 ? 1 : 0).sum();
+        
+        System.out.println("📊 감정별 개수 - 긍정: " + positiveCount + ", 중립: " + neutralCount + ", 부정: " + negativeCount);
+        
+        try {
+            // 가장 많은 비중을 차지하는 감정 결정
+            String prioritySentiment = "positive";
+            if (negativeCount > positiveCount && negativeCount > neutralCount) {
+                prioritySentiment = "negative";
+            } else if (neutralCount > positiveCount && neutralCount > negativeCount) {
+                prioritySentiment = "neutral";
+            }
+            System.out.println("🎯 우선 감정: " + prioritySentiment);
+            
+            // ML 서비스 요청 데이터 구성 (내용 분석용)
+            java.util.List<java.util.Map<String, Object>> reviewList = new java.util.ArrayList<>();
+            for (Object[] review : reviews) {
+                String text = (String) review[0];
+                int rating = ((Number) review[1]).intValue();
+                
+                String sentiment = "neutral";
+                if (rating >= 4) sentiment = "positive";
+                else if (rating <= 2) sentiment = "negative";
+                
+                java.util.Map<String, Object> reviewData = new java.util.HashMap<>();
+                reviewData.put("text", text);
+                reviewData.put("sentiment", sentiment);
+                reviewData.put("rating", rating);
+                reviewList.add(reviewData);
+            }
+            
+            // ML 서비스 호출 (내용 분석)
+            RestTemplate restTemplate = new RestTemplate();
+            String mlServiceUrl = "http://localhost:8000/api/reviews/content-analysis";
+            
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+            requestBody.put("menuName", menuName);
+            requestBody.put("reviews", reviewList);
+            requestBody.put("prioritySentiment", prioritySentiment);
+            
+            System.out.println("🤖 ML 서비스 호출 시작: " + mlServiceUrl);
+            System.out.println("📤 요청 데이터 - 메뉴: " + menuName + ", 리뷰 수: " + reviewList.size() + ", 우선감정: " + prioritySentiment);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<java.util.Map> response = restTemplate.postForEntity(mlServiceUrl, entity, java.util.Map.class);
+            
+            System.out.println("📥 ML 서비스 응답 상태: " + response.getStatusCode());
+            System.out.println("📥 ML 서비스 응답 본문: " + response.getBody());
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                String insight = (String) response.getBody().get("insight");
+                System.out.println("✅ ML 서비스에서 한줄평 받음: " + insight);
+                return insight;
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ ML 서비스 호출 실패: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        // ML 서비스 실패시 감정별 기본 메시지 생성 (다수 의견 기준)
+        String fallbackMessage;
+        if (positiveCount > negativeCount && positiveCount > neutralCount) {
+            fallbackMessage = "맛있다고 해요";
+        } else if (negativeCount > positiveCount && negativeCount > neutralCount) {
+            fallbackMessage = "개선이 필요해요";
+        } else if (neutralCount > positiveCount && neutralCount > negativeCount) {
+            fallbackMessage = "괜찮은 편이에요";
+        } else {
+            fallbackMessage = "의견이 다양해요";
+        }
+        
+        System.out.println("🔄 ML 서비스 실패로 기본 메시지 사용: " + fallbackMessage);
+        return fallbackMessage;
+    }
+
+    public java.util.List<com.voiz.dto.MenuSentimentDto> getMenuSentimentWithSummary(
+            String userId,
+            LocalDate startDate,
+            LocalDate endDate,
+            int positiveThreshold,
+            int negativeThreshold,
+            String nationality
+    ) {
+        System.out.println("🔄 Service: getMenuSentimentWithSummary 시작");
+        System.out.println("  - userId: " + userId);
+        System.out.println("  - nationality: " + nationality);
+        
+        var list = getMenuSentiment(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
+        System.out.println("📊 Service: 메뉴 감정 데이터 조회 완료, 메뉴 수: " + list.size());
+        
+        // 각 메뉴에 대해 한줄 평 생성
+        for (MenuSentimentDto menu : list) {
+            // nationality가 null이면 전체 데이터, 있으면 해당 국가만
+            String targetNationality = (nationality != null) ? nationality : menu.getNationality();
+            System.out.println("🍽️ Service: 메뉴 '" + menu.getMenuName() + "'의 한줄평 생성 시작 (targetNationality: " + targetNationality + ")");
+            
+            String summary = generateMenuReviewSummary(menu.getMenuId(), menu.getMenuName(), userId, targetNationality);
+            menu.setReviewSummary(summary);
+            
+            System.out.println("✅ Service: 메뉴 '" + menu.getMenuName() + "'의 한줄평 생성 완료: " + summary);
+        }
+        
+        System.out.println("✅ Service: getMenuSentimentWithSummary 완료");
+        return list;
+    }
+
+    public java.util.Map<String, Object> generateComprehensiveInsights(String userId, LocalDate startDate, LocalDate endDate) {
+        try {
+            // 전체 리뷰 데이터 조회 (메뉴 이름 포함)
+            var startDateTime = startDate.atStartOfDay();
+            var endDateTime = endDate.atTime(java.time.LocalTime.MAX);
+            var reviewsWithMenus = reviewRepository.findReviewsWithMenuName(userId, startDateTime, endDateTime, null, null, null, null);
+            
+            if (reviewsWithMenus.isEmpty()) {
+                java.util.Map<String, Object> emptyResult = new java.util.HashMap<>();
+                java.util.List<java.util.Map<String, Object>> emptyInsights = new java.util.ArrayList<>();
+                emptyInsights.add(java.util.Map.of(
+                    "type", "trend",
+                    "title", "데이터 부족",
+                    "description", "더 많은 리뷰가 필요해요",
+                    "priority", "low"
+                ));
+                emptyResult.put("insights", emptyInsights);
+                return emptyResult;
+            }
+            
+            // ML 서비스 요청 데이터 구성
+            java.util.List<java.util.Map<String, Object>> reviewList = new java.util.ArrayList<>();
+            for (Object[] reviewData : reviewsWithMenus) {
+                // Object[] 구조: reviewIdx, orderIdx, menuIdx, userId, comment, rating, nationality, language, createdAt, menuName
+                java.util.Map<String, Object> reviewMap = new java.util.HashMap<>();
+                reviewMap.put("comment", reviewData[4]);  // comment
+                reviewMap.put("rating", reviewData[5]);   // rating
+                reviewMap.put("nationality", reviewData[6]); // nationality
+                reviewMap.put("menuName", reviewData[9]); // menuName
+                reviewMap.put("createdAt", reviewData[8].toString()); // createdAt
+                reviewList.add(reviewMap);
+            }
+            
+            // 기간 타입 결정
+            long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+            String timeRange = daysBetween <= 7 ? "week" : daysBetween <= 31 ? "month" : "year";
+            
+            // ML 서비스 호출
+            RestTemplate restTemplate = new RestTemplate();
+            String mlServiceUrl = "http://localhost:8000/api/reviews/comprehensive-insights";
+            
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+            requestBody.put("reviews", reviewList);
+            requestBody.put("timeRange", timeRange);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<java.util.Map> response = restTemplate.postForEntity(mlServiceUrl, entity, java.util.Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody();
+            }
+            
+        } catch (Exception e) {
+            System.err.println("종합 인사이트 생성 실패: " + e.getMessage());
+        }
+        
+        // 기본 인사이트 반환
+        java.util.Map<String, Object> defaultResult = new java.util.HashMap<>();
+        java.util.List<java.util.Map<String, Object>> defaultInsights = new java.util.ArrayList<>();
+        
+        defaultInsights.add(java.util.Map.of(
+            "type", "trend",
+            "title", "리뷰 활동 증가",
+            "description", "고객들의 관심이 높아졌어요",
+            "priority", "high"
+        ));
+        
+        defaultInsights.add(java.util.Map.of(
+            "type", "improvement",
+            "title", "개선 기회 발견",
+            "description", "고객 의견을 분석해보세요",
+            "priority", "medium"
+        ));
+        
+        defaultInsights.add(java.util.Map.of(
+            "type", "strength",
+            "title", "긍정 평가 유지",
+            "description", "전반적으로 좋은 평가예요",
+            "priority", "high"
+        ));
+        
+        defaultResult.put("insights", defaultInsights);
+        return defaultResult;
+    }
+
+    public java.util.Map<String, Object> generateMenuInsights(java.util.List<MenuSentimentDto> menus) {
+        try {
+            // ML 서비스 요청 데이터 구성
+            java.util.List<java.util.Map<String, Object>> menuList = new java.util.ArrayList<>();
+            for (MenuSentimentDto menu : menus) {
+                java.util.Map<String, Object> menuData = new java.util.HashMap<>();
+                menuData.put("menuName", menu.getMenuName());
+                menuData.put("positiveCount", menu.getPositiveCount());
+                menuData.put("negativeCount", menu.getNegativeCount());
+                menuData.put("neutralCount", menu.getNeutralCount());
+                menuData.put("averageRating", menu.getAverageRating());
+                menuData.put("reviewSummary", menu.getReviewSummary());
+                menuList.add(menuData);
+            }
+            
+            // ML 서비스 호출
+            RestTemplate restTemplate = new RestTemplate();
+            String mlServiceUrl = "http://localhost:8000/api/reviews/insights";
+            
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+            requestBody.put("menus", menuList);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<java.util.Map> response = restTemplate.postForEntity(mlServiceUrl, entity, java.util.Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody();
+            }
+            
+        } catch (Exception e) {
+            System.err.println("인사이트 생성 실패: " + e.getMessage());
+        }
+        
+        // 기본 인사이트 반환
+        java.util.Map<String, Object> defaultInsights = new java.util.HashMap<>();
+        java.util.List<String> insights = new java.util.ArrayList<>();
+        java.util.List<String> recommendations = new java.util.ArrayList<>();
+        
+        if (!menus.isEmpty()) {
+            long totalReviews = menus.stream().mapToLong(m -> 
+                m.getPositiveCount() + m.getNegativeCount() + m.getNeutralCount()).sum();
+            insights.add("총 " + totalReviews + "개의 리뷰를 분석했습니다");
+            recommendations.add("지속적으로 고객 피드백을 확인해보세요");
+        }
+        
+        defaultInsights.put("insights", insights);
+        defaultInsights.put("recommendations", recommendations);
+        return defaultInsights;
     }
 
 

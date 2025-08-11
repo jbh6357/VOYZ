@@ -19,7 +19,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ReviewStatBox(
     totalReviews: Int,
@@ -85,57 +88,19 @@ fun ReviewStatBox(
             Spacer(modifier = Modifier.height(8.dp))
 
             // ✅ 긍정/부정 리뷰 수 + 키워드 박스
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "긍정 리뷰: ${positiveReviews}개",
-                        color = Color(0xFF4CAF50),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "긍정 리뷰: ${positiveReviews}개", color = Color(0xFF4CAF50), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(6.dp))
-
-                    AnimatedVisibility(
-                        visible = showKeywords.value,
-                        enter = fadeIn(tween(400)) + slideInVertically(tween(400)),
-                    ) {
-                        KeywordColumn(
-                            title = "긍정 키워드",
-                            keywords = topPositiveKeywords,
-                            backgroundColor = Color(0xFFE8F5E9),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    AnimatedVisibility(visible = showKeywords.value, enter = fadeIn(tween(400)) + slideInVertically(tween(400))) {
+                        KeywordChips(title = "긍정 키워드", keywords = topPositiveKeywords, backgroundColor = Color(0xFFE8F5E9))
                     }
                 }
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "부정 리뷰: ${negativeReviews}개",
-                        color = Color(0xFFF44336),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
-                    )
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "부정 리뷰: ${negativeReviews}개", color = Color(0xFFF44336), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(6.dp))
-
-                    AnimatedVisibility(
-                        visible = showKeywords.value,
-                        enter = fadeIn(tween(500)) + slideInVertically(tween(500)),
-                    ) {
-                        KeywordColumn(
-                            title = "부정 키워드",
-                            keywords = topNegativeKeywords,
-                            backgroundColor = Color(0xFFFFEBEE),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    AnimatedVisibility(visible = showKeywords.value, enter = fadeIn(tween(500)) + slideInVertically(tween(500))) {
+                        KeywordChips(title = "부정 키워드", keywords = topNegativeKeywords, backgroundColor = Color(0xFFFFEBEE))
                     }
                 }
             }
@@ -155,23 +120,27 @@ private fun KeywordColumn(
             .background(backgroundColor, RoundedCornerShape(8.dp))
             .padding(12.dp)
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            ),
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
+        Text(text = title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, fontSize = 16.sp), modifier = Modifier.padding(bottom = 6.dp))
+        keywords.forEach { Text(text = "• $it", style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, color = Color.DarkGray)) }
+    }
+}
 
-        keywords.forEach {
-            Text(
-                text = "• $it",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 15.sp,
-                    color = Color.DarkGray
-                )
-            )
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun KeywordChips(title: String, keywords: List<String>, backgroundColor: Color) {
+    Column(
+        modifier = Modifier
+            .background(backgroundColor, RoundedCornerShape(8.dp))
+            .padding(12.dp)
+    ) {
+        Text(text = title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, fontSize = 16.sp))
+        Spacer(Modifier.height(6.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            keywords.take(10).forEach { k ->
+                Surface(shape = RoundedCornerShape(999.dp), color = Color.White, tonalElevation = 1.dp) {
+                    Text(text = k, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), fontSize = 13.sp)
+                }
+            }
         }
     }
 }

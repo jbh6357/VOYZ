@@ -30,6 +30,8 @@ import com.voyz.presentation.screen.management.operation.OperationManagementMenu
 import com.voyz.presentation.screen.management.operation.OperationManagementMenuProcessingScreen
 import com.voyz.datas.model.dto.MenuItemDto
 import com.voyz.presentation.screen.management.operation.MenuRepository
+import com.voyz.presentation.service.ScheduledAnalysisManager
+import com.voyz.datas.datastore.UserPreferencesManager
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 
@@ -40,10 +42,23 @@ fun NavGraph(navController: NavHostController) {
     val menuRepository = remember { MenuRepository() }
     val coroutineScope = rememberCoroutineScope()
     
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scheduledAnalysisManager = remember { ScheduledAnalysisManager(context) }
+    val userPreferencesManager = remember { UserPreferencesManager(context) }
+    
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
+                    // 로그인 성공 시 정기 작업 스케줄링 설정 및 즉시 리뷰 업데이트
+                    println("🚀 로그인 성공 - 정기 작업 스케줄링 시작")
+                    
+                    // 1. 정기 작업 스케줄링 (매일 9시, 월요일 9시)
+                    scheduledAnalysisManager.setupScheduledTasks()
+                    
+                    // 2. 로그인 시 리뷰/번역 즉시 업데이트
+                    scheduledAnalysisManager.updateReviewsOnLogin()
+                    
                     navController.navigate("reminder") {
                         popUpTo("login") { inclusive = true }
                     }
