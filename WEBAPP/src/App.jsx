@@ -468,8 +468,8 @@ function App() {
     // 리뷰 알림을 위해 주문 정보를 localStorage에 저장
     localStorage.setItem("lastOrderedItems", JSON.stringify(items));
 
-    console.log("📄 페이지를 success로 변경");
-    setCurrentPage("success");
+    console.log("📄 페이지를 writeReview로 변경");
+    setCurrentPage("writeReview");
     clearCart();
   };
 
