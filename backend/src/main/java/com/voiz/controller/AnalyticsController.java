@@ -2,6 +2,7 @@ package com.voiz.controller;
 
 import com.voiz.dto.MenuSalesDto;
 import com.voiz.dto.NationalityAnalyticsDto;
+import com.voiz.dto.OrderTimeAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
 import com.voiz.service.AnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +20,7 @@ import java.util.List;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+
 
     @GetMapping("/sales/{userId}")
     @Operation(summary = "매출 통계 조회", description = "시작일과 종료일을 기준으로 매출 통계를 조회합니다. 조회 기간에 따라 집계 단위(월/주/요일)가 자동으로 변경됩니다.")
@@ -62,4 +64,15 @@ public class AnalyticsController {
     }
 
 
+
+    @GetMapping("/orders/{userId}/time")
+    @Operation(summary = "시간대별 주문 통계 조회", description = "지정된 기간 동안의 시간대별 주문 건수를 조회하여, 가게의 피크 타임 분석 데이터를 제공합니다.")
+    public ResponseEntity<List<OrderTimeAnalyticsDto>> getOrderAnalyticsByTime(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate) {
+
+        List<OrderTimeAnalyticsDto> analytics = analyticsService.getOrderAnalyticsByTime(userId, startDate, endDate);
+        return ResponseEntity.ok(analytics);
+    }
 }

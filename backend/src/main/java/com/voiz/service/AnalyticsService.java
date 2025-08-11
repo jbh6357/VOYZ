@@ -2,6 +2,7 @@ package com.voiz.service;
 
 import com.voiz.dto.MenuSalesDto;
 import com.voiz.dto.NationalityAnalyticsDto;
+import com.voiz.dto.OrderTimeAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
 import com.voiz.mapper.ReviewRepository;
 import com.voiz.mapper.SalesOrderRepository;
@@ -136,6 +137,24 @@ public class AnalyticsService {
         return reviewRepository.countReviewsByNationalityAndDateRange(userId, startDateTime, endDateTime);
 
         
+    }
+
+
+
+    // 시간별 주문 통계 조회 메서드
+    public List<OrderTimeAnalyticsDto> getOrderAnalyticsByTime(String userId, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
+        List<Object[]> results = salesOrderRepository.findOrderCountByHour(userId, startDateTime, endDateTime);
+
+        return results.stream()
+                .map((Object[] record) -> { 
+                    String hour = (String) record[0];
+                    Long orderCount = ((Number) record[1]).longValue();
+                    return new OrderTimeAnalyticsDto(hour, orderCount);
+                })
+                .collect(Collectors.toList());
     }
 
 
