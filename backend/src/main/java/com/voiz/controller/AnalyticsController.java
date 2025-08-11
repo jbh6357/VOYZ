@@ -193,13 +193,27 @@ public class AnalyticsController {
             @RequestParam(required = false) String nationality,
             @RequestParam(defaultValue = "false") boolean includeSummary
     ) {
+        System.out.println("📊 Controller: 메뉴 감정 분석 API 호출");
+        System.out.println("  - userId: " + userId);
+        System.out.println("  - startDate: " + startDate);
+        System.out.println("  - endDate: " + endDate);
+        System.out.println("  - nationality: " + nationality);
+        System.out.println("  - includeSummary: " + includeSummary);
+        
         java.util.List<com.voiz.dto.MenuSentimentDto> list;
         
         if (includeSummary) {
+            System.out.println("🔄 Controller: 한줄평 포함 요청 - getMenuSentimentWithSummary 호출");
             list = analyticsService.getMenuSentimentWithSummary(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
         } else {
+            System.out.println("🔄 Controller: 기본 요청 - getMenuSentiment 호출");
             list = analyticsService.getMenuSentiment(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
         }
+        
+        System.out.println("✅ Controller: 메뉴 감정 분석 완료, 결과 수: " + list.size());
+        list.forEach(menu -> {
+            System.out.println("  🍽️ " + menu.getMenuName() + " - 한줄평: " + menu.getReviewSummary());
+        });
         
         return ResponseEntity.ok(list);
     }
