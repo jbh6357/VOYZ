@@ -15,7 +15,7 @@ public interface ReviewRepository extends JpaRepository<Reviews, Long> {
 
     
     @Query("SELECT r FROM Reviews r WHERE r.menuIdx = :menuId")
-    List<Reviews> findByMenuId(@Param("menuId") String menuId);
+    List<Reviews> findByMenuIdx(@Param("menuId") int menuId);
 
 
     @Query("SELECT new com.voiz.dto.NationalityAnalyticsDto(r.nationality, COUNT(r)) " +
