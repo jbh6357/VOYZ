@@ -47,6 +47,23 @@ public interface ReviewRepository extends JpaRepository<Reviews, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
 
+    @Query("SELECT r.reviewIdx, r.orderIdx, r.menuIdx, r.userId, r.comment, r.rating, r.nationality, r.language, r.createdAt, m.menuName " +
+           "FROM Reviews r JOIN Menus m ON r.menuIdx = m.menuIdx " +
+           "WHERE r.userId = :userId AND r.createdAt BETWEEN :startDate AND :endDate " +
+           "AND (:nationality IS NULL OR r.nationality = :nationality) " +
+           "AND (:minRating IS NULL OR r.rating >= :minRating) " +
+           "AND (:maxRating IS NULL OR r.rating <= :maxRating) " +
+           "AND (:menuIds IS NULL OR r.menuIdx IN :menuIds) " +
+           "ORDER BY r.createdAt DESC")
+    List<Object[]> findReviewsWithMenuName(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("nationality") String nationality,
+            @Param("minRating") Integer minRating,
+            @Param("maxRating") Integer maxRating,
+            @Param("menuIds") List<Integer> menuIds);
+
     @Query("SELECT r FROM Reviews r WHERE r.userId = :userId AND r.createdAt BETWEEN :startDate AND :endDate " +
             "AND (:nationality IS NULL OR r.nationality = :nationality) " +
             "AND (:minRating IS NULL OR r.rating >= :minRating) " +

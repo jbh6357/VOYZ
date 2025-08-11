@@ -227,4 +227,22 @@ public class AnalyticsController {
         var insights = analyticsService.generateMenuInsights(menus);
         return ResponseEntity.ok(insights);
     }
+
+    @GetMapping("/reviews/{userId}/comprehensive-insights")
+    @Operation(summary = "종합 리뷰 인사이트", description = "전체 리뷰를 분석하여 핵심 인사이트 3가지를 생성합니다.")
+    public ResponseEntity<java.util.Map<String, Object>> getComprehensiveInsights(
+            @PathVariable String userId,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate
+    ) {
+        // 기본값 설정: 최근 1개월
+        if (startDate == null || endDate == null) {
+            LocalDate today = LocalDate.now();
+            startDate = today.minusMonths(1).withDayOfMonth(1);
+            endDate = today;
+        }
+        
+        var insights = analyticsService.generateComprehensiveInsights(userId, startDate, endDate);
+        return ResponseEntity.ok(insights);
+    }
 }

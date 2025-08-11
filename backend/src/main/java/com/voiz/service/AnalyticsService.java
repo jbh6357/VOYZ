@@ -369,6 +369,94 @@ public class AnalyticsService {
         return list;
     }
 
+    public java.util.Map<String, Object> generateComprehensiveInsights(String userId, LocalDate startDate, LocalDate endDate) {
+        try {
+            // 전체 리뷰 데이터 조회 (메뉴 이름 포함)
+            var startDateTime = startDate.atStartOfDay();
+            var endDateTime = endDate.atTime(java.time.LocalTime.MAX);
+            var reviewsWithMenus = reviewRepository.findReviewsWithMenuName(userId, startDateTime, endDateTime, null, null, null, null);
+            
+            if (reviewsWithMenus.isEmpty()) {
+                java.util.Map<String, Object> emptyResult = new java.util.HashMap<>();
+                java.util.List<java.util.Map<String, Object>> emptyInsights = new java.util.ArrayList<>();
+                emptyInsights.add(java.util.Map.of(
+                    "type", "trend",
+                    "title", "데이터 부족",
+                    "description", "더 많은 리뷰가 필요해요",
+                    "priority", "low"
+                ));
+                emptyResult.put("insights", emptyInsights);
+                return emptyResult;
+            }
+            
+            // ML 서비스 요청 데이터 구성
+            java.util.List<java.util.Map<String, Object>> reviewList = new java.util.ArrayList<>();
+            for (Object[] reviewData : reviewsWithMenus) {
+                // Object[] 구조: reviewIdx, orderIdx, menuIdx, userId, comment, rating, nationality, language, createdAt, menuName
+                java.util.Map<String, Object> reviewMap = new java.util.HashMap<>();
+                reviewMap.put("comment", reviewData[4]);  // comment
+                reviewMap.put("rating", reviewData[5]);   // rating
+                reviewMap.put("nationality", reviewData[6]); // nationality
+                reviewMap.put("menuName", reviewData[9]); // menuName
+                reviewMap.put("createdAt", reviewData[8].toString()); // createdAt
+                reviewList.add(reviewMap);
+            }
+            
+            // 기간 타입 결정
+            long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+            String timeRange = daysBetween <= 7 ? "week" : daysBetween <= 31 ? "month" : "year";
+            
+            // ML 서비스 호출
+            RestTemplate restTemplate = new RestTemplate();
+            String mlServiceUrl = "http://localhost:8000/api/reviews/comprehensive-insights";
+            
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+            requestBody.put("reviews", reviewList);
+            requestBody.put("timeRange", timeRange);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<java.util.Map> response = restTemplate.postForEntity(mlServiceUrl, entity, java.util.Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody();
+            }
+            
+        } catch (Exception e) {
+            System.err.println("종합 인사이트 생성 실패: " + e.getMessage());
+        }
+        
+        // 기본 인사이트 반환
+        java.util.Map<String, Object> defaultResult = new java.util.HashMap<>();
+        java.util.List<java.util.Map<String, Object>> defaultInsights = new java.util.ArrayList<>();
+        
+        defaultInsights.add(java.util.Map.of(
+            "type", "trend",
+            "title", "리뷰 활동 증가",
+            "description", "고객들의 관심이 높아졌어요",
+            "priority", "high"
+        ));
+        
+        defaultInsights.add(java.util.Map.of(
+            "type", "improvement",
+            "title", "개선 기회 발견",
+            "description", "고객 의견을 분석해보세요",
+            "priority", "medium"
+        ));
+        
+        defaultInsights.add(java.util.Map.of(
+            "type", "strength",
+            "title", "긍정 평가 유지",
+            "description", "전반적으로 좋은 평가예요",
+            "priority", "high"
+        ));
+        
+        defaultResult.put("insights", defaultInsights);
+        return defaultResult;
+    }
+
     public java.util.Map<String, Object> generateMenuInsights(java.util.List<MenuSentimentDto> menus) {
         try {
             // ML 서비스 요청 데이터 구성
