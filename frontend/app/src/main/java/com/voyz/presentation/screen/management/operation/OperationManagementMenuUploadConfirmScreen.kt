@@ -40,6 +40,18 @@ import androidx.compose.runtime.LaunchedEffect
 import com.voyz.datas.model.dto.MenuItemDto
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.border
 
 // 메뉴 아이템 데이터 클래스
 data class EditMenuItem(
@@ -47,6 +59,8 @@ data class EditMenuItem(
     var name: String,
     var price: String,
     var category: String,
+    var description: String = "", // 메뉴 설명 추가
+    var imageUri: Uri? = null, // 메뉴 이미지 URI 추가
     var isDuplicate: Boolean = false, // 중복 여부를 데이터에 포함
     var originalName: String = "" // 원본 이름 저장 (중복 체크용)
 )
@@ -111,15 +125,16 @@ fun OperationManagementMenuConfirmScreen(
                     EditMenuItem(
                         name = ocrItem.menuName,
                         price = ocrItem.menuPrice.toString(),
-                        category = "메인" // 기본값
+                        category = "메인", // 기본값
+                        description = ocrItem.menuDescription ?: ""
                     )
                 }
             } else {
                 // 테스트용 더미 데이터
                 listOf(
-                    EditMenuItem(name = "된장찌개", price = "7000", category = "메인"),
-                    EditMenuItem(name = "김치찌개", price = "7500", category = "메인"),
-                    EditMenuItem(name = "제육볶음", price = "8000", category = "메인")
+                    EditMenuItem(name = "된장찌개", price = "7000", category = "메인", description = "구수한 된장찌개"),
+                    EditMenuItem(name = "김치찌개", price = "7500", category = "메인", description = "얼큰한 김치찌개"),
+                    EditMenuItem(name = "제육볶음", price = "8000", category = "메인", description = "매콤한 제육볶음")
                 )
             }
             
@@ -162,7 +177,8 @@ fun OperationManagementMenuConfirmScreen(
         val newItem = EditMenuItem(
             name = "",
             price = "0",
-            category = "메인"
+            category = "메인",
+            description = ""
         )
         menuList = listOf(newItem) + menuList
     }
@@ -211,12 +227,14 @@ fun OperationManagementMenuConfirmScreen(
                     
                     val priceInt = menu.price.toIntOrNull() ?: 0
                     
-                    val result = menuRepository.createMenu(
+                    val result = menuRepository.createMenuWithImage(
                         userId = userId,
                         menuName = menu.name.trim(),
                         menuPrice = priceInt,
-                        menuDescription = "",
-                        category = menu.category
+                        menuDescription = menu.description.trim(),
+                        category = menu.category,
+                        imageUri = menu.imageUri,
+                        context = context
                     )
                     
                     if (result.isSuccess) {
@@ -263,6 +281,7 @@ fun OperationManagementMenuConfirmScreen(
     }
     
     Scaffold(
+        containerColor = Color.White, // 완전한 흰색 배경
         topBar = {
             TopAppBar(
                 windowInsets = WindowInsets(0),
@@ -286,6 +305,7 @@ fun OperationManagementMenuConfirmScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
                 .fillMaxSize()
+                .background(Color.White) // 명시적 흰색 배경
         ) {
             // 진행 상태 표시
             StepProgressIndicator(
@@ -294,22 +314,6 @@ fun OperationManagementMenuConfirmScreen(
             )
             
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // 업로드된 이미지 표시
-            imageUri?.let { uri ->
-                AsyncImage(
-                    model = uri,
-                    contentDescription = "업로드된 메뉴판 이미지",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
             
             // 메뉴 추가 버튼
             OutlinedButton(
@@ -329,8 +333,13 @@ fun OperationManagementMenuConfirmScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .border(
+                            width = 1.dp,
+                            color = Color(0xFFCD212A).copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
                         .background(
-                            color = MaterialTheme.colorScheme.errorContainer,
+                            color = Color(0xFFFFF0F0),
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(12.dp),
@@ -339,7 +348,8 @@ fun OperationManagementMenuConfirmScreen(
                     Text(
                         text = "⚠️ 이미 존재하는 메뉴 ${duplicateCount}개",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = Color(0xFFCD212A),
+                        fontWeight = FontWeight.Medium
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -424,110 +434,264 @@ fun MenuEditCard(
     onDelete: () -> Unit,
     onFocusChanged: (Boolean) -> Unit = {}
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(false) }
+    var categoryExpanded by remember { mutableStateOf(false) }
     
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        
-        // 메뉴명
-        OutlinedTextField(
-            value = item.name,
-            onValueChange = { newName ->
-                onUpdate(item.copy(name = newName))
-            },
-            label = { Text("메뉴명", fontSize = 12.sp) },
-            modifier = Modifier
-                .weight(1.8f)
-                .onFocusChanged { focusState ->
-                    onFocusChanged(focusState.hasFocus)
-                },
-            singleLine = true,
-            isError = item.isDuplicate && item.name.isNotBlank(),
-            textStyle = MaterialTheme.typography.bodyMedium,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = if (item.isDuplicate && item.name.isNotBlank()) {
-                    MaterialTheme.colorScheme.error
+    // 이미지 선택 런처
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            onUpdate(item.copy(imageUri = it))
+        }
+    }
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .then(
+                if (item.isDuplicate && item.name.isNotBlank()) {
+                    Modifier.border(
+                        width = 1.5.dp,
+                        color = Color(0xFFCD212A).copy(alpha = 0.3f), // 30% 투명도로 연하게
+                        shape = RoundedCornerShape(12.dp)
+                    )
                 } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                unfocusedBorderColor = if (item.isDuplicate && item.name.isNotBlank()) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.outline
+                    Modifier
                 }
-            )
-        )
-        
-        // 카테고리
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded },
-            modifier = Modifier.weight(1.2f)
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            OutlinedTextField(
-                readOnly = true,
-                value = item.category,
-                onValueChange = {},
-                label = { Text("카테고리", fontSize = 12.sp) },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                },
+            // 기본 상태: 메뉴명 + 확장 버튼
+            Row(
                 modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                    .fillMaxWidth(),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium
-            )
-            
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                categories.forEach { category ->
-                    DropdownMenuItem(
-                        text = { Text(category, fontSize = 14.sp) },
-                        onClick = {
-                            onUpdate(item.copy(category = category))
-                            expanded = false
+                // 메뉴명 (읽기 전용 표시)
+                Text(
+                    text = if (item.name.isBlank()) "메뉴명을 입력하세요" else item.name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (item.name.isBlank()) Color(0xFF8E8E93) else Color(0xFF1D1D1F),
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // 가격 미리보기
+                Text(
+                    text = if (item.price.isNotBlank()) {
+                        val priceInt = item.price.toIntOrNull() ?: 0
+                        "${DecimalFormat("#,###").format(priceInt)}원"
+                    } else "가격 미설정",
+                    fontSize = 14.sp,
+                    color = Color(0xFF007AFF),
+                    fontWeight = FontWeight.SemiBold
+                )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                // 확장/축소 아이콘
+                Text(
+                    text = if (isExpanded) "▲" else "▼",
+                    fontSize = 12.sp,
+                    color = Color(0xFF8E8E93)
+                )
+            }
+            
+            // 확장된 상태: 모든 편집 필드
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+                
+                // 메뉴명 입력
+                OutlinedTextField(
+                    value = item.name,
+                    onValueChange = { newName ->
+                        onUpdate(item.copy(name = newName))
+                    },
+                    label = { Text("메뉴명", fontSize = 12.sp) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            onFocusChanged(focusState.hasFocus)
+                        },
+                    singleLine = true,
+                    isError = item.isDuplicate && item.name.isNotBlank(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (item.isDuplicate && item.name.isNotBlank()) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                        unfocusedBorderColor = if (item.isDuplicate && item.name.isNotBlank()) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.outline
                         }
                     )
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 카테고리 (좌측)
+                    ExposedDropdownMenuBox(
+                        expanded = categoryExpanded,
+                        onExpandedChange = { categoryExpanded = !categoryExpanded },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            readOnly = true,
+                            value = item.category,
+                            onValueChange = {},
+                            label = { Text("카테고리", fontSize = 12.sp) },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
+                            },
+                            modifier = Modifier
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                .fillMaxWidth(),
+                            singleLine = true
+                        )
+                        
+                        ExposedDropdownMenu(
+                            expanded = categoryExpanded,
+                            onDismissRequest = { categoryExpanded = false }
+                        ) {
+                            categories.forEach { category ->
+                                DropdownMenuItem(
+                                    text = { Text(category, fontSize = 14.sp) },
+                                    onClick = {
+                                        onUpdate(item.copy(category = category))
+                                        categoryExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    
+                    // 가격 (우측)
+                    OutlinedTextField(
+                        value = remember(item.price) {
+                            val numeric = item.price.filter { it.isDigit() }
+                            val number = numeric.toLongOrNull() ?: 0L
+                            if (number == 0L) "" else DecimalFormat("#,###").format(number)
+                        },
+                        onValueChange = { newValue ->
+                            val numeric = newValue.filter { it.isDigit() }
+                            onUpdate(item.copy(price = numeric))
+                        },
+                        label = { Text("가격", fontSize = 12.sp) },
+                        modifier = Modifier.weight(1f),
+                        suffix = { Text("원", fontSize = 11.sp) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // 메뉴 설명 입력
+                OutlinedTextField(
+                    value = item.description,
+                    onValueChange = { newDescription ->
+                        onUpdate(item.copy(description = newDescription))
+                    },
+                    label = { Text("메뉴 설명 (선택사항)", fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("예: 신선한 재료로 만든 시그니처 메뉴", fontSize = 11.sp) },
+                    maxLines = 2,
+                    singleLine = false
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // 이미지 표시 영역
+                item.imageUri?.let { uri ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(4f / 3f) // 4:3 비율
+                    ) {
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = "메뉴 이미지",
+                            contentScale = ContentScale.Crop, // 이미지를 꽉 채우면서 비율 유지
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFFF2F2F7))
+                        )
+                        
+                        // 이미지 삭제 버튼 (오른쪽 상단)
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(24.dp)
+                                .background(
+                                    color = Color.Black.copy(alpha = 0.6f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable { onUpdate(item.copy(imageUri = null)) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "이미지 삭제",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+                
+                // 액션 버튼들
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // 이미지 추가/변경 버튼
+                    OutlinedButton(
+                        onClick = { imagePickerLauncher.launch("image/*") },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = if (item.imageUri != null) "이미지 변경" else "이미지 추가",
+                            fontSize = 12.sp
+                        )
+                    }
+                    
+                    // 메뉴 삭제 버튼
+                    OutlinedButton(
+                        onClick = onDelete,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("메뉴 삭제", fontSize = 12.sp)
+                    }
+                }
                 }
             }
-        }
-        
-        // 가격
-        OutlinedTextField(
-            value = remember(item.price) {
-                val numeric = item.price.filter { it.isDigit() }
-                val number = numeric.toLongOrNull() ?: 0L
-                if (number == 0L) "" else DecimalFormat("#,###").format(number)
-            },
-            onValueChange = { newValue ->
-                val numeric = newValue.filter { it.isDigit() }
-                onUpdate(item.copy(price = numeric))
-            },
-            label = { Text("가격", fontSize = 12.sp) },
-            modifier = Modifier.weight(1.2f),
-            suffix = { Text("원", fontSize = 11.sp) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodyMedium
-        )
-        
-        // 삭제 버튼 (작게)
-        IconButton(
-            onClick = onDelete,
-            modifier = Modifier.size(36.dp)
-        ) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = "삭제",
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(18.dp)
-            )
         }
     }
 }
