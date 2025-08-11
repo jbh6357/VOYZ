@@ -13,6 +13,14 @@ import kotlinx.coroutines.delay
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -77,6 +85,23 @@ fun NationalityPieChart(
             )
 
             startAngle += sweep
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun NationalityLegend(labels: List<String>, colors: List<Color>, maxItems: Int = 6, modifier: Modifier = Modifier) {
+    val items = labels.take(maxItems)
+    FlowRow(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items.forEachIndexed { idx, label ->
+            val color = colors[idx % colors.size]
+            Surface(shape = RoundedCornerShape(999.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
+                Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(modifier = Modifier.size(10.dp).background(color, RoundedCornerShape(2.dp)))
+                    Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
         }
     }
 }
