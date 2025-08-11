@@ -45,27 +45,37 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
                         @Param("startDate") LocalDateTime startDate,
                         @Param("endDate") LocalDateTime endDate);
 
-        
-        
-
         // 메뉴별 매출 상위 5개 조회
         @Query(value = "SELECT MENU_NAME, TOTAL_SALES FROM ( " +
-                   "  SELECT m.MENU_NAME, SUM(oi.TOTAL_PRICE) as TOTAL_SALES " +
-                   "  FROM VOYZ_ORDERS o " +
-                   "  JOIN VOYZ_ORDERS_ITEMS oi ON o.ORDER_IDX = oi.ORDER_IDX " +
-                   "  JOIN VOYZ_MENUS m ON oi.MENU_IDX = m.MENU_IDX " +
-                   "  WHERE o.USER_ID = :userId " +
-                   "    AND o.STATUS = 'Completed' " +
-                   "    AND o.CREATED_AT BETWEEN :startDate AND :endDate " +
-                   "    AND (:category IS NULL OR m.CATEGORY = :category) " + 
-                   "  GROUP BY m.MENU_NAME " +
-                   "  ORDER BY TOTAL_SALES DESC " +
-                   ") WHERE ROWNUM <= :topCount", 
-           nativeQuery = true)
-    List<Object[]> findTopSellingMenus(@Param("userId") String userId,
-                                       @Param("startDate") LocalDateTime startDate,
-                                       @Param("endDate") LocalDateTime endDate,
-                                       @Param("category") String category, 
-                                       @Param("topCount") int topCount);  
+                        "  SELECT m.MENU_NAME, SUM(oi.TOTAL_PRICE) as TOTAL_SALES " +
+                        "  FROM VOYZ_ORDERS o " +
+                        "  JOIN VOYZ_ORDERS_ITEMS oi ON o.ORDER_IDX = oi.ORDER_IDX " +
+                        "  JOIN VOYZ_MENUS m ON oi.MENU_IDX = m.MENU_IDX " +
+                        "  WHERE o.USER_ID = :userId " +
+                        "    AND o.STATUS = 'Completed' " +
+                        "    AND o.CREATED_AT BETWEEN :startDate AND :endDate " +
+                        "    AND (:category IS NULL OR m.CATEGORY = :category) " +
+                        "  GROUP BY m.MENU_NAME " +
+                        "  ORDER BY TOTAL_SALES DESC " +
+                        ") WHERE ROWNUM <= :topCount", nativeQuery = true)
+        List<Object[]> findTopSellingMenus(@Param("userId") String userId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        @Param("category") String category,
+                        @Param("topCount") int topCount);
 
+
+
+
+        
+        // 시간대별 주문 수 조회
+        @Query(value = "SELECT TO_CHAR(o.created_at, 'HH24') as hour, COUNT(o.order_idx) as order_count " +
+                        "FROM VOYZ_ORDERS o " +
+                        "WHERE o.user_id = :userId " +
+                        "  AND o.created_at BETWEEN :startDate AND :endDate " +
+                        "GROUP BY TO_CHAR(o.created_at, 'HH24') " +
+                        "ORDER BY hour", nativeQuery = true)
+        List<Object[]> findOrderCountByHour(@Param("userId") String userId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 }
