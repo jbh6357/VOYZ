@@ -26,6 +26,9 @@ public class MenuSentimentDto {
     @Schema(description = "리뷰 한줄 평", example = "맛이 좋다는 평가")
     private String reviewSummary;
     
+    @Schema(description = "국가별 필터링용 국적 코드", example = "KR")
+    private String nationality;
+    
     public MenuSentimentDto() {}
     
     public MenuSentimentDto(Integer menuId, String menuName, Long positiveCount, Long negativeCount, Long neutralCount, Double averageRating) {
@@ -46,6 +49,18 @@ public class MenuSentimentDto {
         this.neutralCount = neutralCount;
         this.averageRating = averageRating;
         this.reviewSummary = reviewSummary;
+        this.nationality = null;
+    }
+    
+    public MenuSentimentDto(Integer menuId, String menuName, Long positiveCount, Long negativeCount, Long neutralCount, Double averageRating, String reviewSummary, String nationality) {
+        this.menuId = menuId;
+        this.menuName = menuName;
+        this.positiveCount = positiveCount;
+        this.negativeCount = negativeCount;
+        this.neutralCount = neutralCount;
+        this.averageRating = averageRating;
+        this.reviewSummary = reviewSummary;
+        this.nationality = nationality;
     }
     
     public Integer getMenuId() {
@@ -102,5 +117,13 @@ public class MenuSentimentDto {
     
     public void setReviewSummary(String reviewSummary) {
         this.reviewSummary = reviewSummary;
+    }
+    
+    public String getNationality() {
+        return nationality;
+    }
+    
+    public void setNationality(String nationality) {
+        this.nationality = nationality;
     }
 }

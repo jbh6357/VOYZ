@@ -252,24 +252,52 @@ public class AnalyticsService {
     ) {
         var startDateTime = startDate.atStartOfDay();
         var endDateTime = endDate.atTime(LocalTime.MAX);
-        var rows = reviewRepository.aggregateMenuSentiment(userId, startDateTime, endDateTime, positiveThreshold, negativeThreshold, nationality);
-        java.util.Set<Integer> menuIds = new java.util.HashSet<>();
-        for (Object[] r : rows) {
-            menuIds.add(((Number) r[0]).intValue());
+        
+        if (nationality != null) {
+            // 특정 국가만 조회 (기존 로직 유지)
+            var rows = reviewRepository.aggregateMenuSentiment(userId, startDateTime, endDateTime, positiveThreshold, negativeThreshold, nationality);
+            java.util.Set<Integer> menuIds = new java.util.HashSet<>();
+            for (Object[] r : rows) {
+                menuIds.add(((Number) r[0]).intValue());
+            }
+            var idToName = getMenuNames(menuIds);
+            java.util.List<com.voiz.dto.MenuSentimentDto> list = new java.util.ArrayList<>();
+            for (Object[] r : rows) {
+                int menuId = ((Number) r[0]).intValue();
+                long count = ((Number) r[1]).longValue();
+                long pos = ((Number) r[2]).longValue();
+                long neg = ((Number) r[3]).longValue();
+                double avg = ((Number) r[4]).doubleValue();
+                long neutral = count - pos - neg;
+                String menuName = idToName.get(menuId);
+                var dto = new com.voiz.dto.MenuSentimentDto(menuId, menuName, pos, neg, neutral, avg);
+                dto.setNationality(nationality);
+                list.add(dto);
+            }
+            return list;
+        } else {
+            // 전체 데이터 조회 - 국가 관계없이 메뉴별로 통합
+            var rows = reviewRepository.aggregateMenuSentiment(userId, startDateTime, endDateTime, positiveThreshold, negativeThreshold, null);
+            java.util.Set<Integer> menuIds = new java.util.HashSet<>();
+            for (Object[] r : rows) {
+                menuIds.add(((Number) r[0]).intValue());
+            }
+            var idToName = getMenuNames(menuIds);
+            java.util.List<com.voiz.dto.MenuSentimentDto> list = new java.util.ArrayList<>();
+            for (Object[] r : rows) {
+                int menuId = ((Number) r[0]).intValue();
+                long count = ((Number) r[1]).longValue();
+                long pos = ((Number) r[2]).longValue();
+                long neg = ((Number) r[3]).longValue();
+                double avg = ((Number) r[4]).doubleValue();
+                long neutral = count - pos - neg;
+                String menuName = idToName.get(menuId);
+                var dto = new com.voiz.dto.MenuSentimentDto(menuId, menuName, pos, neg, neutral, avg);
+                dto.setNationality(null); // 전체 데이터이므로 null
+                list.add(dto);
+            }
+            return list;
         }
-        var idToName = getMenuNames(menuIds);
-        java.util.List<com.voiz.dto.MenuSentimentDto> list = new java.util.ArrayList<>();
-        for (Object[] r : rows) {
-            int menuId = ((Number) r[0]).intValue();
-            long count = ((Number) r[1]).longValue();
-            long pos = ((Number) r[2]).longValue();
-            long neg = ((Number) r[3]).longValue();
-            double avg = ((Number) r[4]).doubleValue();
-            long neutral = count - pos - neg;
-            String menuName = idToName.get(menuId);
-            list.add(new com.voiz.dto.MenuSentimentDto(menuId, menuName, pos, neg, neutral, avg));
-        }
-        return list;
     }
 
     public java.util.List<String> getReviewNationalities(String userId) {
@@ -277,10 +305,18 @@ public class AnalyticsService {
     }
 
     public String generateMenuReviewSummary(Integer menuId, String menuName, String userId, String nationality) {
+        System.out.println("🔍 generateMenuReviewSummary 시작");
+        System.out.println("  - menuId: " + menuId);
+        System.out.println("  - menuName: " + menuName);
+        System.out.println("  - userId: " + userId);
+        System.out.println("  - nationality: " + nationality);
+        
         // 해당 메뉴의 리뷰 데이터 조회
         var reviews = reviewRepository.findReviewsByMenuAndUser(menuId, userId, nationality);
+        System.out.println("📝 리뷰 조회 결과: " + reviews.size() + "개");
         
         if (reviews.isEmpty()) {
+            System.out.println("❌ 리뷰가 없어서 기본 메시지 반환");
             return "리뷰가 없습니다";
         }
         
@@ -288,6 +324,8 @@ public class AnalyticsService {
         long positiveCount = reviews.stream().mapToLong(r -> ((Number) r[1]).intValue() >= 4 ? 1 : 0).sum();
         long neutralCount = reviews.stream().mapToLong(r -> ((Number) r[1]).intValue() == 3 ? 1 : 0).sum();
         long negativeCount = reviews.stream().mapToLong(r -> ((Number) r[1]).intValue() <= 2 ? 1 : 0).sum();
+        
+        System.out.println("📊 감정별 개수 - 긍정: " + positiveCount + ", 중립: " + neutralCount + ", 부정: " + negativeCount);
         
         try {
             // 가장 많은 비중을 차지하는 감정 결정
@@ -297,6 +335,7 @@ public class AnalyticsService {
             } else if (neutralCount > positiveCount && neutralCount > negativeCount) {
                 prioritySentiment = "neutral";
             }
+            System.out.println("🎯 우선 감정: " + prioritySentiment);
             
             // ML 서비스 요청 데이터 구성 (내용 분석용)
             java.util.List<java.util.Map<String, Object>> reviewList = new java.util.ArrayList<>();
@@ -324,30 +363,43 @@ public class AnalyticsService {
             requestBody.put("reviews", reviewList);
             requestBody.put("prioritySentiment", prioritySentiment);
             
+            System.out.println("🤖 ML 서비스 호출 시작: " + mlServiceUrl);
+            System.out.println("📤 요청 데이터 - 메뉴: " + menuName + ", 리뷰 수: " + reviewList.size() + ", 우선감정: " + prioritySentiment);
+            
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
             
             ResponseEntity<java.util.Map> response = restTemplate.postForEntity(mlServiceUrl, entity, java.util.Map.class);
             
+            System.out.println("📥 ML 서비스 응답 상태: " + response.getStatusCode());
+            System.out.println("📥 ML 서비스 응답 본문: " + response.getBody());
+            
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                return (String) response.getBody().get("insight");
+                String insight = (String) response.getBody().get("insight");
+                System.out.println("✅ ML 서비스에서 한줄평 받음: " + insight);
+                return insight;
             }
             
         } catch (Exception e) {
-            System.err.println("ML 서비스 호출 실패: " + e.getMessage());
+            System.err.println("❌ ML 서비스 호출 실패: " + e.getMessage());
+            e.printStackTrace();
         }
         
         // ML 서비스 실패시 감정별 기본 메시지 생성 (다수 의견 기준)
+        String fallbackMessage;
         if (positiveCount > negativeCount && positiveCount > neutralCount) {
-            return "맛있다고 해요";
+            fallbackMessage = "맛있다고 해요";
         } else if (negativeCount > positiveCount && negativeCount > neutralCount) {
-            return "개선이 필요해요";
+            fallbackMessage = "개선이 필요해요";
         } else if (neutralCount > positiveCount && neutralCount > negativeCount) {
-            return "괜찮은 편이에요";
+            fallbackMessage = "괜찮은 편이에요";
         } else {
-            return "의견이 다양해요";
+            fallbackMessage = "의견이 다양해요";
         }
+        
+        System.out.println("🔄 ML 서비스 실패로 기본 메시지 사용: " + fallbackMessage);
+        return fallbackMessage;
     }
 
     public java.util.List<com.voiz.dto.MenuSentimentDto> getMenuSentimentWithSummary(
@@ -358,14 +410,26 @@ public class AnalyticsService {
             int negativeThreshold,
             String nationality
     ) {
+        System.out.println("🔄 Service: getMenuSentimentWithSummary 시작");
+        System.out.println("  - userId: " + userId);
+        System.out.println("  - nationality: " + nationality);
+        
         var list = getMenuSentiment(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
+        System.out.println("📊 Service: 메뉴 감정 데이터 조회 완료, 메뉴 수: " + list.size());
         
         // 각 메뉴에 대해 한줄 평 생성
         for (MenuSentimentDto menu : list) {
-            String summary = generateMenuReviewSummary(menu.getMenuId(), menu.getMenuName(), userId, nationality);
+            // nationality가 null이면 전체 데이터, 있으면 해당 국가만
+            String targetNationality = (nationality != null) ? nationality : menu.getNationality();
+            System.out.println("🍽️ Service: 메뉴 '" + menu.getMenuName() + "'의 한줄평 생성 시작 (targetNationality: " + targetNationality + ")");
+            
+            String summary = generateMenuReviewSummary(menu.getMenuId(), menu.getMenuName(), userId, targetNationality);
             menu.setReviewSummary(summary);
+            
+            System.out.println("✅ Service: 메뉴 '" + menu.getMenuName() + "'의 한줄평 생성 완료: " + summary);
         }
         
+        System.out.println("✅ Service: getMenuSentimentWithSummary 완료");
         return list;
     }
 

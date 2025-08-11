@@ -107,6 +107,22 @@ public interface ReviewRepository extends JpaRepository<Reviews, Long> {
 
     @Query("SELECT DISTINCT r.nationality FROM Reviews r WHERE r.userId = :userId ORDER BY r.nationality")
     List<String> findDistinctNationalitiesByUserId(@Param("userId") String userId);
+    
+    // 메뉴별로 모든 국가의 감성 분석 데이터를 한 번에 반환
+    @Query("SELECT r.menuIdx, r.nationality, COUNT(r), " +
+           "SUM(CASE WHEN r.rating >= :positiveThreshold THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN r.rating <= :negativeThreshold THEN 1 ELSE 0 END), " +
+           "AVG(r.rating) " +
+           "FROM Reviews r WHERE r.userId = :userId AND r.createdAt BETWEEN :startDate AND :endDate " +
+           "GROUP BY r.menuIdx, r.nationality " +
+           "HAVING COUNT(r) > 0 " +
+           "ORDER BY r.menuIdx, COUNT(r) DESC")
+    List<Object[]> aggregateMenuSentimentByNationality(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("positiveThreshold") int positiveThreshold,
+            @Param("negativeThreshold") int negativeThreshold);
 
     @Query("SELECT r.comment, r.rating FROM Reviews r WHERE r.menuIdx = :menuId AND r.userId = :userId " +
            "AND (:nationality IS NULL OR r.nationality = :nationality) " +
