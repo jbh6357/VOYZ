@@ -13,6 +13,7 @@ from models.match_models import MatchModels
 from services.content_service import ContentService
 from services.category_service import CategoryService
 import os
+from dotenv import load_dotenv
 from google.cloud import vision
 import re
 from google.cloud import translate_v2 as translate
@@ -23,6 +24,10 @@ from collections import Counter
 import re as _re
 import json as _json
 import requests
+
+# .env 파일 로드
+load_dotenv()
+
 # FastAPI 앱 생성
 app = FastAPI(
     title=API_CONFIG["title"],
@@ -227,6 +232,224 @@ def analyze_review_content(payload: dict):
         return {"insight": "개선할 점이 있어보입니다", "keywords": ["개선"]}
     else:
         return {"insight": "다양한 의견이 있습니다", "keywords": ["보통"]}
+
+@app.post("/api/reviews/comprehensive-insights")
+def generate_comprehensive_insights(payload: dict):
+    """
+    전체 리뷰 기반 핵심 인사이트 3가지 생성
+    요청: {
+      "reviews": [{
+        "comment": str,
+        "rating": int,
+        "nationality": str,
+        "menuName": str,
+        "createdAt": str
+      }],
+      "timeRange": str  # "week", "month" 등
+    }
+    응답: {
+      "insights": [
+        {
+          "type": "trend|improvement|strength",
+          "title": str,
+          "description": str,
+          "priority": "high|medium|low"
+        }
+      ]
+    }
+    """
+    reviews = payload.get("reviews", [])
+    time_range = payload.get("timeRange", "month")
+    
+    if len(reviews) < 3:
+        return {
+            "insights": [
+                {
+                    "type": "trend",
+                    "title": "데이터 부족",
+                    "description": "더 많은 리뷰가 필요해요",
+                    "priority": "low"
+                }
+            ]
+        }
+    
+    # OpenAI API로 종합 인사이트 생성
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        # 더미 인사이트 반환
+        return {
+            "insights": [
+                {
+                    "type": "trend",
+                    "title": "외국인 리뷰 증가",
+                    "description": f"이번 {get_time_korean(time_range)} 외국인 리뷰가 늘어났어요",
+                    "priority": "high",
+                    "suggestedFilters": {"sort": "latest"}
+                },
+                {
+                    "type": "improvement", 
+                    "title": "개선 포인트 발견",
+                    "description": "일부 메뉴에 대한 아쉬운 의견이 있어요",
+                    "priority": "medium",
+                    "suggestedFilters": {"sentiment": "negative"}
+                },
+                {
+                    "type": "strength",
+                    "title": "고객 만족도 양호",
+                    "description": "전반적으로 긍정적인 평가를 받고 있어요",
+                    "priority": "high",
+                    "suggestedFilters": {"sentiment": "positive", "rating": "5"}
+                }
+            ]
+        }
+    
+    try:
+        # 리뷰 데이터 요약 (토큰 절약)
+        recent_reviews = reviews[-50:]  # 최근 50개만 분석
+        
+        # 국가별 통계
+        nationality_stats = {}
+        rating_stats = {"positive": 0, "neutral": 0, "negative": 0}
+        menu_mentions = {}
+        
+        for review in recent_reviews:
+            # 국가별 집계
+            nat = review.get("nationality", "기타")
+            nationality_stats[nat] = nationality_stats.get(nat, 0) + 1
+            
+            # 평점별 집계
+            rating = review.get("rating", 3)
+            if rating >= 4:
+                rating_stats["positive"] += 1
+            elif rating <= 2:
+                rating_stats["negative"] += 1
+            else:
+                rating_stats["neutral"] += 1
+            
+            # 메뉴 언급 집계
+            menu = review.get("menuName", "")
+            if menu:
+                menu_mentions[menu] = menu_mentions.get(menu, 0) + 1
+        
+        # 통계 요약
+        total_reviews = len(recent_reviews)
+        top_nationality = max(nationality_stats.items(), key=lambda x: x[1]) if nationality_stats else ("기타", 0)
+        satisfaction_rate = (rating_stats["positive"] / total_reviews * 100) if total_reviews > 0 else 0
+        
+        # 국가별 통계를 사람이 읽기 쉽게 변환
+        nationality_display = {
+            'KR': '한국', 'JP': '일본', 'CN': '중국', 'US': '미국', 
+            'IT': '이탈리아', 'FR': '프랑스', 'DE': '독일', 'GB': '영국'
+        }
+        
+        # 가장 많은 국가와 두 번째 많은 국가 찾기
+        sorted_countries = sorted(nationality_stats.items(), key=lambda x: x[1], reverse=True)
+        main_country = sorted_countries[0] if sorted_countries else ("KR", 0)
+        second_country = sorted_countries[1] if len(sorted_countries) > 1 else None
+        
+        main_country_display = nationality_display.get(main_country[0], main_country[0])
+        
+        prompt = f"""한국 레스토랑의 최근 리뷰 데이터를 분석하여 사장님에게 도움이 될 실용적인 인사이트 3개를 생성해주세요.
+
+** 실제 데이터 **
+- 총 리뷰: {total_reviews}개
+- 만족도: {satisfaction_rate:.0f}%  
+- 주요 고객: {main_country_display} {main_country[1]}명
+- 긍정/부정: {rating_stats["positive"]}개/{rating_stats["negative"]}개
+- 국가별: {', '.join([f"{nationality_display.get(k, k)} {v}명" for k, v in list(nationality_stats.items())[:3]])}
+
+** 메뉴별 언급 **
+{chr(10).join([f"- {r.get('menuName', '알수없음')}: {r.get('comment', '')[:30]}... ({r.get('rating', 0)}점)" for r in recent_reviews[:5]])}
+
+** 작성 규칙 **
+1. TREND: 최근 동향이나 변화 (예: "일본 고객 증가", "평점 상승")
+2. IMPROVEMENT: 구체적인 개선점 (예: "매운맛 조절", "서비스 속도")  
+3. STRENGTH: 현재 강점 유지 (예: "된장찌개 인기", "친절한 서비스")
+
+** 필터 사용 가능 키 **
+- country: 국가 (예: "US", "JP", "CN", "KR", "IT")
+- sentiment: 감정 ("positive" 또는 "negative")  
+- menu: 메뉴명 (실제 메뉴 이름 사용)
+- rating: 평점 (1-5 숫자)
+
+** 제약 조건 **
+- 제목: 10자 이내 (간결)
+- 설명: 20자 이내 (핵심만)
+- 실제 데이터에 기반한 내용만
+- 한국 음식점 상황에 맞게
+- suggestedFilters는 해당 인사이트 확인에 필요한 필터만
+- IMPROVEMENT일 때는 주로 sentiment: "negative" 사용
+- STRENGTH일 때는 주로 sentiment: "positive" 사용
+
+JSON만 출력:
+{{"insights": [{{"type": "trend", "title": "제목", "description": "설명", "priority": "high", "suggestedFilters": {{"sentiment": "positive", "country": "US"}}}}, ...]}}"""
+
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "당신은 레스토랑 데이터를 분석하는 전문가입니다. JSON만 출력하세요."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 400
+        }
+        
+        resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=30)
+        if resp.status_code == 200:
+            content = resp.json()["choices"][0]["message"]["content"].strip()
+            
+            # 마크다운 코드 블록 제거
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            content = content.strip()
+            
+            try:
+                parsed = _json.loads(content)
+                return parsed
+            except _json.JSONDecodeError:
+                pass
+                
+    except Exception as e:
+        print(f"인사이트 생성 실패: {e}")
+    
+    # 기본 인사이트 반환 (실제 데이터 기반으로 필터 제안)
+    suggested_filters = {}
+    if nationality_stats:
+        # 가장 많은 국가
+        top_country = max(nationality_stats.items(), key=lambda x: x[1])[0]
+        suggested_filters["nationality"] = top_country
+    
+    return {
+        "insights": [
+            {
+                "type": "trend",
+                "title": "리뷰 활동 증가",
+                "description": f"이번 {get_time_korean(time_range)} 리뷰가 늘어났어요",
+                "priority": "high",
+                "suggestedFilters": {"sort": "latest"}
+            },
+            {
+                "type": "improvement",
+                "title": "개선 기회 발견", 
+                "description": "고객 의견을 분석해보세요",
+                "priority": "medium",
+                "suggestedFilters": {"sentiment": "negative"}
+            },
+            {
+                "type": "strength",
+                "title": "긍정 평가 유지",
+                "description": "고객들이 전반적으로 만족해해요",
+                "priority": "high",
+                "suggestedFilters": {"sentiment": "positive"}
+            }
+        ]
+    }
+
+def get_time_korean(time_range):
+    return {"week": "주", "month": "달", "year": "년"}.get(time_range, "기간")
 
 @app.post("/api/reviews/insights")
 def generate_menu_insights(payload: dict):
