@@ -5,6 +5,8 @@ import com.voiz.dto.NationalityAnalyticsDto;
 import com.voiz.dto.ReviewSummaryDto;
 import com.voiz.dto.OrderTimeAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
+import com.voiz.dto.CountryRatingDto;
+import com.voiz.dto.MenuSentimentDto;
 import com.voiz.service.AnalyticsService;
 import com.voiz.service.FastApiClient;
 import io.swagger.v3.oas.annotations.Operation;
@@ -167,5 +169,29 @@ public class AnalyticsController {
 
         var response = fastApiClient.postDataToFastApi("/api/reviews/keywords", payload);
         return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+    }
+
+    @GetMapping("/reviews/{userId}/nationality-ratings")
+    @Operation(summary = "국가별 평균 평점 및 작성 수", description = "기간 내 국가별 리뷰 수와 평균 평점을 집계합니다.")
+    public ResponseEntity<java.util.List<com.voiz.dto.CountryRatingDto>> getCountryRatings(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate
+    ) {
+        var list = analyticsService.getCountryRatings(userId, startDate, endDate);
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/reviews/{userId}/menu-sentiment")
+    @Operation(summary = "메뉴별 긍/부정 집계 및 평균 평점", description = "기간 내 메뉴별 긍정/부정/중립 개수와 평균 평점을 집계합니다.")
+    public ResponseEntity<java.util.List<com.voiz.dto.MenuSentimentDto>> getMenuSentiment(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            @RequestParam(defaultValue = "4") int positiveThreshold,
+            @RequestParam(defaultValue = "2") int negativeThreshold
+    ) {
+        var list = analyticsService.getMenuSentiment(userId, startDate, endDate, positiveThreshold, negativeThreshold);
+        return ResponseEntity.ok(list);
     }
 }

@@ -5,6 +5,8 @@ import com.voiz.dto.NationalityAnalyticsDto;
 import com.voiz.dto.ReviewSummaryDto;
 import com.voiz.dto.OrderTimeAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
+import com.voiz.dto.CountryRatingDto;
+import com.voiz.dto.MenuSentimentDto;
 import com.voiz.mapper.ReviewRepository;
 import com.voiz.mapper.SalesOrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -218,6 +220,53 @@ public class AnalyticsService {
                     return new OrderTimeAnalyticsDto(hour, orderCount);
                 })
                 .collect(Collectors.toList());
+    }
+
+    public java.util.List<com.voiz.dto.CountryRatingDto> getCountryRatings(
+            String userId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        var startDateTime = startDate.atStartOfDay();
+        var endDateTime = endDate.atTime(LocalTime.MAX);
+        var rows = reviewRepository.aggregateCountryRatings(userId, startDateTime, endDateTime);
+        java.util.List<com.voiz.dto.CountryRatingDto> list = new java.util.ArrayList<>();
+        for (Object[] r : rows) {
+            String nationality = (String) r[0];
+            long count = ((Number) r[1]).longValue();
+            double avg = ((Number) r[2]).doubleValue();
+            list.add(new com.voiz.dto.CountryRatingDto(nationality, count, avg));
+        }
+        return list;
+    }
+
+    public java.util.List<com.voiz.dto.MenuSentimentDto> getMenuSentiment(
+            String userId,
+            LocalDate startDate,
+            LocalDate endDate,
+            int positiveThreshold,
+            int negativeThreshold
+    ) {
+        var startDateTime = startDate.atStartOfDay();
+        var endDateTime = endDate.atTime(LocalTime.MAX);
+        var rows = reviewRepository.aggregateMenuSentiment(userId, startDateTime, endDateTime, positiveThreshold, negativeThreshold);
+        java.util.Set<Integer> menuIds = new java.util.HashSet<>();
+        for (Object[] r : rows) {
+            menuIds.add(((Number) r[0]).intValue());
+        }
+        var idToName = getMenuNames(menuIds);
+        java.util.List<com.voiz.dto.MenuSentimentDto> list = new java.util.ArrayList<>();
+        for (Object[] r : rows) {
+            int menuId = ((Number) r[0]).intValue();
+            long count = ((Number) r[1]).longValue();
+            long pos = ((Number) r[2]).longValue();
+            long neg = ((Number) r[3]).longValue();
+            double avg = ((Number) r[4]).doubleValue();
+            long neutral = count - pos - neg;
+            String menuName = idToName.get(menuId);
+            list.add(new com.voiz.dto.MenuSentimentDto(menuId, menuName, pos, neg, neutral, avg));
+        }
+        return list;
     }
 
 

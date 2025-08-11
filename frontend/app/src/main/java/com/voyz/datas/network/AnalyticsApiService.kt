@@ -5,6 +5,8 @@ import com.voyz.datas.model.dto.NationalityAnalyticsDto
 import com.voyz.datas.model.dto.ReviewResponseDto
 import com.voyz.datas.model.dto.ReviewSummaryDto
 import com.voyz.datas.model.dto.SalesAnalyticsDto
+import com.voyz.datas.model.dto.CountryRatingDto
+import com.voyz.datas.model.dto.MenuSentimentDto
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -84,4 +86,20 @@ interface AnalyticsApiService {
         @Query("topK") topK: Int = 5,
         @Query("mode") mode: String = "openai",
     ): retrofit2.Response<okhttp3.ResponseBody>
+
+    @GET("analytics/reviews/{userId}/nationality-ratings")
+    suspend fun getCountryRatings(
+        @Path("userId") userId: String,
+        @Query("startDate") startDate: String,
+        @Query("endDate") endDate: String,
+    ): List<CountryRatingDto>
+
+    @GET("analytics/reviews/{userId}/menu-sentiment")
+    suspend fun getMenuSentiment(
+        @Path("userId") userId: String,
+        @Query("startDate") startDate: String,
+        @Query("endDate") endDate: String,
+        @Query("positiveThreshold") positiveThreshold: Int = 4,
+        @Query("negativeThreshold") negativeThreshold: Int = 2,
+    ): List<MenuSentimentDto>
 }

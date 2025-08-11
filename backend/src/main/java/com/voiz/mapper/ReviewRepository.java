@@ -62,4 +62,28 @@ public interface ReviewRepository extends JpaRepository<Reviews, Long> {
             @Param("maxRating") Integer maxRating,
             @Param("menuIds") List<Integer> menuIds);
 
+    @Query("SELECT r.nationality, COUNT(r), AVG(r.rating) " +
+           "FROM Reviews r WHERE r.userId = :userId AND r.createdAt BETWEEN :startDate AND :endDate " +
+           "GROUP BY r.nationality " +
+           "ORDER BY COUNT(r) DESC")
+    List<Object[]> aggregateCountryRatings(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT r.menuIdx, COUNT(r), " +
+           "SUM(CASE WHEN r.rating >= :positiveThreshold THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN r.rating <= :negativeThreshold THEN 1 ELSE 0 END), " +
+           "AVG(r.rating) " +
+           "FROM Reviews r WHERE r.userId = :userId AND r.createdAt BETWEEN :startDate AND :endDate " +
+           "GROUP BY r.menuIdx " +
+           "HAVING COUNT(r) > 0 " +
+           "ORDER BY COUNT(r) DESC")
+    List<Object[]> aggregateMenuSentiment(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("positiveThreshold") int positiveThreshold,
+            @Param("negativeThreshold") int negativeThreshold);
+
 }
