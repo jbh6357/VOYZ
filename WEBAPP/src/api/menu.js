@@ -2,7 +2,7 @@ import { API_CONFIG } from "../config/api.js";
 
 /**
  * 사용자의 메뉴 목록을 가져오는 API
- * @param {String} userId - 사용자 ID (이메일)
+ * @param {string} userId - 사용자 ID (이메일)
  * @returns {Promise<Array>} 메뉴 아이템 배열
  */
 export const getMenusByUserId = async (userId) => {
