@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.voyz.presentation.screen.management.review.component.CountryRatingChart
 import com.voyz.presentation.screen.management.review.component.MenuSentimentChart
 import com.voyz.datas.datastore.UserPreferencesManager
+import com.voyz.datas.datastore.ReviewAnalysisCache
 import com.voyz.datas.repository.AnalyticsRepository
 import com.voyz.datas.model.dto.CountryRatingItem
 import com.voyz.datas.model.dto.CountryRatingDto
@@ -46,6 +47,7 @@ fun ReviewAnalysisScreen() {
 
     // 데이터 상태
     val analyticsRepository = remember { AnalyticsRepository() }
+    val analysisCache = remember { ReviewAnalysisCache(context) }
     
     // 국가별 분석 상태
     var countryDateRange by remember { mutableStateOf(defaultStart to defaultEnd) }
@@ -54,43 +56,109 @@ fun ReviewAnalysisScreen() {
     
     // 메뉴별 분석 상태
     var menuDateRange by remember { mutableStateOf(defaultStart to defaultEnd) }
-    var menuSentiments by remember { mutableStateOf<List<MenuSentimentDto>>(emptyList()) }
     var isMenuLoading by remember { mutableStateOf(false) }
     var selectedNationality by remember { mutableStateOf<String?>(null) }
     var availableNationalities by remember { mutableStateOf<List<String>>(emptyList()) }
+    
+    // 메뉴별 분석 데이터 (국가별로 개별 로드)
+    var menuSentiments by remember { mutableStateOf<List<MenuSentimentDto>>(emptyList()) }
 
-    // 국가별 분석 데이터 로드 함수
+    // 국가별 분석 데이터 로드 함수 (캐시 우선)
     fun loadCountryData() {
         val id = userId ?: return
         scope.launch {
             isCountryLoading = true
+            
             try {
-                val start = countryDateRange.first.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                val end = countryDateRange.second.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                
-                countryRatings = analyticsRepository.getCountryRatings(id, start, end)
+                // 1. 캐시된 데이터 먼저 확인
+                analysisCache.getCachedAnalysis(id).collect { cached ->
+                    if (cached != null && !cached.countryRatings.isNullOrEmpty()) {
+                        println("✅ 캐시된 국가별 분석 사용")
+                        countryRatings = cached.countryRatings.map { countryMap ->
+                            CountryRatingDto(
+                                nationality = countryMap["nationality"] as? String ?: "",
+                                count = (countryMap["count"] as? Number)?.toLong() ?: 0L,
+                                averageRating = (countryMap["averageRating"] as? Number)?.toDouble() ?: 0.0
+                            )
+                        }
+                        isCountryLoading = false
+                        return@collect
+                    }
+                    
+                    // 2. 캐시가 없으면 API 호출
+                    println("🔄 API에서 국가별 분석 로드")
+                    val start = countryDateRange.first.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    val end = countryDateRange.second.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    
+                    countryRatings = analyticsRepository.getCountryRatings(id, start, end)
+                    isCountryLoading = false
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-            } finally {
                 isCountryLoading = false
             }
         }
     }
 
 
-    // 메뉴별 분석 데이터 로드 함수
+    // 메뉴별 분석 데이터 로드 함수 (국가별 개별 캐시)
     fun loadMenuData() {
         val id = userId ?: return
         scope.launch {
             isMenuLoading = true
+            
             try {
-                val start = menuDateRange.first.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                val end = menuDateRange.second.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                
-                menuSentiments = analyticsRepository.getMenuSentiment(id, start, end, 4, 2, selectedNationality, true)
+                // 1. 해당 국가의 캐시 확인
+                analysisCache.getMenuAnalysisCache(id, selectedNationality).collect { cachedMenus ->
+                    if (cachedMenus.isNotEmpty()) {
+                        println("✅ 캐시된 메뉴별 분석 사용 (국가: ${selectedNationality ?: "전체"})")
+                        menuSentiments = cachedMenus.map { menuMap ->
+                            MenuSentimentDto(
+                                menuId = (menuMap["menuId"] as? Number)?.toInt() ?: 0,
+                                menuName = menuMap["menuName"] as? String ?: "",
+                                positiveCount = (menuMap["positiveCount"] as? Number)?.toLong() ?: 0L,
+                                negativeCount = (menuMap["negativeCount"] as? Number)?.toLong() ?: 0L,
+                                neutralCount = (menuMap["neutralCount"] as? Number)?.toLong() ?: 0L,
+                                averageRating = (menuMap["averageRating"] as? Number)?.toDouble() ?: 0.0,
+                                reviewSummary = menuMap["reviewSummary"] as? String,
+                                nationality = menuMap["nationality"] as? String
+                            )
+                        }
+                        isMenuLoading = false
+                        return@collect
+                    }
+                    
+                    // 2. 캐시가 없으면 해당 국가 API 호출
+                    println("🔄 API에서 메뉴별 분석 로드 (국가: ${selectedNationality ?: "전체"})")
+                    val start = menuDateRange.first.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    val end = menuDateRange.second.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                    
+                    val apiResult = analyticsRepository.getMenuSentiment(id, start, end, 4, 2, selectedNationality, true)
+                    println("📊 API 응답 데이터 수: ${apiResult.size}")
+                    apiResult.forEach { dto ->
+                        println("🍽️ 메뉴: ${dto.menuName}, 국가: ${dto.nationality}, 긍정: ${dto.positiveCount}")
+                    }
+                    menuSentiments = apiResult
+                    
+                    // 3. 결과를 캐시에 저장
+                    val menuMaps = apiResult.map { dto ->
+                        mapOf<String, Any>(
+                            "menuId" to dto.menuId,
+                            "menuName" to (dto.menuName ?: ""),
+                            "positiveCount" to dto.positiveCount,
+                            "negativeCount" to dto.negativeCount,
+                            "neutralCount" to dto.neutralCount,
+                            "averageRating" to dto.averageRating,
+                            "reviewSummary" to (dto.reviewSummary ?: ""),
+                            "nationality" to (dto.nationality ?: "")
+                        )
+                    }
+                    analysisCache.saveMenuAnalysis(id, selectedNationality, menuMaps)
+                    
+                    isMenuLoading = false
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-            } finally {
                 isMenuLoading = false
             }
         }
@@ -101,8 +169,11 @@ fun ReviewAnalysisScreen() {
         val id = userId ?: return
         scope.launch {
             try {
-                availableNationalities = analyticsRepository.getReviewNationalities(id)
+                val nationalities = analyticsRepository.getReviewNationalities(id)
+                println("🌍 사용 가능한 국가 목록: $nationalities")
+                availableNationalities = nationalities
             } catch (e: Exception) {
+                println("❌ 국가 목록 로드 실패: ${e.message}")
                 e.printStackTrace()
             }
         }
@@ -271,11 +342,11 @@ fun ReviewAnalysisScreen() {
                     val nationalityOptions = listOf(null) + availableNationalities // null = 전체
                     var currentNationalityIndex by remember { mutableStateOf(0) }
                     
-                    // 선택된 국가 동기화
+                    // 선택된 국가 동기화 (API 호출)
                     LaunchedEffect(currentNationalityIndex, nationalityOptions) {
                         if (nationalityOptions.isNotEmpty()) {
                             selectedNationality = nationalityOptions.getOrNull(currentNationalityIndex)
-                            loadMenuData()
+                            loadMenuData() // 국가 변경시 API 호출
                         }
                     }
                     
