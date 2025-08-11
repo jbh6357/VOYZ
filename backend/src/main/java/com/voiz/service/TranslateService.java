@@ -14,5 +14,9 @@ public class TranslateService {
 	public Map<String, Object> translateTexts(Map<String, Object> request) {
 		return fastApiClient.translateTexts(request);
 	}
+	
+	public Map<String, Object> translateReviews(Map<String, Object> request) {
+		return fastApiClient.translateReviews(request);
+	}
 
 }
