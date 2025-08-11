@@ -19,12 +19,151 @@ from google.cloud import translate_v2 as translate
 from config import MenuItem, TranslateRequest, TranslateRequest2
 from typing import List
 import math
+from collections import Counter
+import re as _re
+import json as _json
+import requests
 # FastAPI 앱 생성
 app = FastAPI(
     title=API_CONFIG["title"],
     version=API_CONFIG["version"],
     description=API_CONFIG["description"]
 )
+@app.post("/api/reviews/keywords")
+def extract_review_keywords(payload: dict):
+    """
+    요청: {
+      "comments": [{"text": str, "rating": int, "menuIdx": int, "language": str|null}],
+      "positiveThreshold": 4,
+      "negativeThreshold": 2,
+      "topK": 5
+    }
+    응답: {
+      "overall": {"positiveKeywords": [], "negativeKeywords": []},
+      "byMenu": [{"menuIdx": int, "positiveKeywords": [], "negativeKeywords": []}]
+    }
+    """
+    comments = payload.get("comments", [])
+    pos_th = int(payload.get("positiveThreshold", 4))
+    neg_th = int(payload.get("negativeThreshold", 2))
+    top_k = int(payload.get("topK", 5))
+
+    def tokenize(text: str):
+        if not text:
+            return []
+        # 아주 단순 토크나이징: 영/한/숫자만 남기고 공백 분리
+        cleaned = _re.sub(r"[^0-9A-Za-z가-힣\s]", " ", text)
+        tokens = [t.strip().lower() for t in cleaned.split() if len(t.strip()) >= 2]
+        return tokens
+
+    def top_keywords(texts):
+        counter = Counter()
+        for t in texts:
+            counter.update(tokenize(t))
+        return [w for w, _ in counter.most_common(top_k)]
+
+    pos_texts = [c.get("text", "") for c in comments if (c.get("rating") or 0) >= pos_th]
+    neg_texts = [c.get("text", "") for c in comments if (c.get("rating") or 0) <= neg_th]
+
+    mode = (payload.get("mode") or "simple").lower()
+
+    if mode == "openai":
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            try:
+                # 입력 축약 (토큰 폭주 방지)
+                def sample_texts(texts, limit=50, each_len=120):
+                    return [t[:each_len] for t in texts[:limit]]
+
+                prompt = {
+                    "instruction": (
+                        "Given review texts grouped by positive and negative (and by menuIdx), "
+                        "extract top unique keywords only (no sentences), prioritize aspect terms and nouns, "
+                        "deduplicate similar words, and return exactly the following JSON schema without extra text: "
+                        "{\"overall\": {\"positiveKeywords\": [], \"negativeKeywords\": []}, \"byMenu\": [{\"menuIdx\": 0, \"positiveKeywords\": [], \"negativeKeywords\": []}]}"
+                    ),
+                    "topK": top_k,
+                    "overall": {
+                        "positiveTexts": sample_texts(pos_texts),
+                        "negativeTexts": sample_texts(neg_texts),
+                    },
+                    "byMenu": {}
+                }
+                # byMenu 텍스트 구성
+                by_menu_texts = {}
+                for c in comments:
+                    mi = c.get("menuIdx")
+                    if mi is None:
+                        continue
+                    r = int(c.get("rating") or 0)
+                    entry = by_menu_texts.setdefault(mi, {"pos": [], "neg": []})
+                    (entry["pos"] if r >= pos_th else entry["neg"] if r <= neg_th else entry.setdefault("neu", [])).append((c.get("text") or "")[:120])
+                prompt["byMenu"] = {str(k): {"positiveTexts": v.get("pos", []), "negativeTexts": v.get("neg", [])} for k, v in by_menu_texts.items()}
+
+                headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+                data = {
+                    "model": "gpt-4o-mini",
+                    "messages": [
+                        {"role": "system", "content": "You are a precise NLP assistant for keyword extraction. Output strictly valid JSON only."},
+                        {"role": "user", "content": _json.dumps(prompt, ensure_ascii=False)}
+                    ],
+                    "temperature": 0.2,
+                    "max_tokens": 400
+                }
+                resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=30)
+                if resp.status_code == 200:
+                    content = resp.json()["choices"][0]["message"]["content"].strip()
+                    try:
+                        parsed = _json.loads(content)
+                        # 최소 유효성 검사 및 topK 제한
+                        def clamp(arr):
+                            if isinstance(arr, list):
+                                return [str(x)[:40] for x in arr][:top_k]
+                            return []
+                        overall = {
+                            "positiveKeywords": clamp(parsed.get("overall", {}).get("positiveKeywords", [])),
+                            "negativeKeywords": clamp(parsed.get("overall", {}).get("negativeKeywords", [])),
+                        }
+                        by_menu = []
+                        for item in parsed.get("byMenu", []):
+                            by_menu.append({
+                                "menuIdx": int(item.get("menuIdx", 0)),
+                                "positiveKeywords": clamp(item.get("positiveKeywords", [])),
+                                "negativeKeywords": clamp(item.get("negativeKeywords", [])),
+                            })
+                        return {"overall": overall, "byMenu": by_menu}
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+    overall = {
+        "positiveKeywords": top_keywords(pos_texts),
+        "negativeKeywords": top_keywords(neg_texts),
+    }
+
+    # 메뉴별
+    by_menu_map = {}
+    for c in comments:
+        menu_idx = c.get("menuIdx")
+        if menu_idx is None:
+            continue
+        m = by_menu_map.setdefault(menu_idx, {"pos": [], "neg": []})
+        rating = c.get("rating") or 0
+        if rating >= pos_th:
+            m["pos"].append(c.get("text", ""))
+        elif rating <= neg_th:
+            m["neg"].append(c.get("text", ""))
+
+    by_menu = []
+    for k, v in by_menu_map.items():
+        by_menu.append({
+            "menuIdx": k,
+            "positiveKeywords": top_keywords(v.get("pos", [])),
+            "negativeKeywords": top_keywords(v.get("neg", [])),
+        })
+
+    return {"overall": overall, "byMenu": by_menu}
 
 # 환경변수로 인증 설정 (선택사항)
 google_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
