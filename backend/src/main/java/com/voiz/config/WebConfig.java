@@ -10,6 +10,11 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 업로드된 이미지 파일 서빙
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/")
+                .setCachePeriod(3600); // 1시간 캐시
+        
         // React 빌드 파일 서빙
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/")

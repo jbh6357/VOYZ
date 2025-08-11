@@ -128,6 +128,28 @@ public class MenuController {
 	    return ResponseEntity.ok().build();
 	}
 	
+	@PutMapping(value = "/{menuIdx}/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@Operation(summary = "이미지와 함께 메뉴 수정")
+	public ResponseEntity<?> updateMenuWithImage(
+	        @PathVariable int menuIdx,
+	        @RequestParam String menuName,
+	        @RequestParam int menuPrice,
+	        @RequestParam String menuDescription,
+	        @RequestParam(required = false, defaultValue = "기타") String category,
+	        @RequestPart(value = "image", required = false) MultipartFile image) {
+		
+		try {
+			menuService.updateMenuWithImage(menuIdx, menuName, menuPrice, menuDescription, category, image);
+			return ResponseEntity.ok().build();
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+		} catch (IOException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("이미지 저장 중 오류가 발생했습니다.");
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("메뉴 수정 중 오류가 발생했습니다.");
+		}
+	}
+	
 	@DeleteMapping("/{menuIdx}")
 	@Operation(summary = "메뉴 삭제", description = "해당 메뉴를 삭제합니다.")
 	public ResponseEntity<Void> deleteMenu(@PathVariable int menuIdx) {
