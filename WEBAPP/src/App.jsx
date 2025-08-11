@@ -296,7 +296,7 @@ function App() {
 
           setShowTossWidget(false);
           setShowPayPalWidget(false);
-          setCurrentPage("success");
+          setCurrentPage("writeReview");
 
           // URL 정리
           window.history.replaceState({}, document.title, newUrl);
@@ -534,9 +534,6 @@ function App() {
     return (
       <SuccessPage
         onBackToMenu={handleBackToMenu}
-        onGoToReview={handleGoToReview}
-        orderedItems={orderedItems}
-        selectedLang={selectedLang}
       />
     );
   }
