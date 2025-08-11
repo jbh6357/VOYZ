@@ -87,7 +87,7 @@ fun ReviewAnalysisScreen() {
                 val start = menuDateRange.first.format(DateTimeFormatter.ISO_LOCAL_DATE)
                 val end = menuDateRange.second.format(DateTimeFormatter.ISO_LOCAL_DATE)
                 
-                menuSentiments = analyticsRepository.getMenuSentiment(id, start, end, 4, 2, selectedNationality)
+                menuSentiments = analyticsRepository.getMenuSentiment(id, start, end, 4, 2, selectedNationality, true)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -117,11 +117,11 @@ fun ReviewAnalysisScreen() {
         }
     }
 
-    // 국가별 평점 데이터를 CountryRatingItem으로 변환 (평점순 정렬)
+    // 국가별 평점 데이터를 CountryRatingItem으로 변환 (리뷰 많은 순, 같으면 평점 높은 순)
     val countryRatingItems = remember(countryRatings) {
         val totalCount = countryRatings.sumOf { it.count }
         countryRatings
-            .sortedByDescending { it.averageRating }
+            .sortedWith(compareByDescending<CountryRatingDto> { it.count }.thenByDescending { it.averageRating })
             .take(5)
             .map { rating ->
                 CountryRatingItem(
@@ -137,7 +137,6 @@ fun ReviewAnalysisScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFFFFF))
             .padding(horizontal = 20.dp)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -150,7 +149,7 @@ fun ReviewAnalysisScreen() {
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 // 제목과 기간 세그먼트 컨트롤
@@ -160,7 +159,7 @@ fun ReviewAnalysisScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "평점 높은 국가",
+                        text = "리뷰 많은 국가",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF1D1D1F)
@@ -191,10 +190,10 @@ fun ReviewAnalysisScreen() {
                     
                     Box(
                         modifier = Modifier
-                            .width(140.dp)
+                            .width(161.dp)
                             .background(
                                 color = Color(0xFFF2F2F7),
-                                shape = RoundedCornerShape(7.dp)
+                                shape = RoundedCornerShape(8.dp)
                             )
                             .padding(2.dp)
                     ) {
@@ -203,7 +202,7 @@ fun ReviewAnalysisScreen() {
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(5.dp))
+                                        .clip(RoundedCornerShape(6.dp))
                                         .background(
                                             if (selectedCountryIndex == index) Color.White
                                             else Color.Transparent
@@ -213,12 +212,12 @@ fun ReviewAnalysisScreen() {
                                             countryDateRange = rangeFn()
                                             loadCountryData()
                                         }
-                                        .padding(vertical = 6.dp, horizontal = 4.dp),
+                                        .padding(horizontal = 8.dp, vertical = 7.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = label,
-                                        fontSize = 9.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = if (selectedCountryIndex == index) FontWeight.SemiBold else FontWeight.Medium,
                                         color = if (selectedCountryIndex == index) Color(0xFF1D1D1F) else Color(0xFF8E8E93)
                                     )
@@ -252,7 +251,7 @@ fun ReviewAnalysisScreen() {
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 // 제목과 국가 드롭다운
@@ -282,13 +281,13 @@ fun ReviewAnalysisScreen() {
                     
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         // 왼쪽 버튼
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
-                                .clickable(enabled = nationalityOptions.size > 1) {
+                                .clickable(enabled = nationalityOptions.size > 1 && !isMenuLoading) {
                                     currentNationalityIndex = (currentNationalityIndex - 1 + nationalityOptions.size) % nationalityOptions.size
                                 },
                             contentAlignment = Alignment.Center
@@ -296,19 +295,19 @@ fun ReviewAnalysisScreen() {
                             Text(
                                 text = "◀",
                                 fontSize = 10.sp,
-                                color = if (nationalityOptions.size > 1) Color(0xFF1D1D1F) else Color(0xFF8E8E93)
+                                color = if (nationalityOptions.size > 1 && !isMenuLoading) Color(0xFF1D1D1F) else Color(0xFF8E8E93)
                             )
                         }
                         
                         // 현재 국가 표시
                         Box(
                             modifier = Modifier
-                                .width(80.dp)
+                                .width(71.dp)
                                 .background(
                                     color = Color(0xFFF2F2F7),
                                     shape = RoundedCornerShape(8.dp)
                                 )
-                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                                .padding(horizontal = 8.dp, vertical = 7.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             val displayText = if (selectedNationality == null) {
@@ -320,7 +319,7 @@ fun ReviewAnalysisScreen() {
                             
                             Text(
                                 text = displayText,
-                                fontSize = 12.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = Color(0xFF1D1D1F),
                                 maxLines = 1,
@@ -332,7 +331,7 @@ fun ReviewAnalysisScreen() {
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
-                                .clickable(enabled = nationalityOptions.size > 1) {
+                                .clickable(enabled = nationalityOptions.size > 1 && !isMenuLoading) {
                                     currentNationalityIndex = (currentNationalityIndex + 1) % nationalityOptions.size
                                 },
                             contentAlignment = Alignment.Center
@@ -340,7 +339,7 @@ fun ReviewAnalysisScreen() {
                             Text(
                                 text = "▶",
                                 fontSize = 10.sp,
-                                color = if (nationalityOptions.size > 1) Color(0xFF1D1D1F) else Color(0xFF8E8E93)
+                                color = if (nationalityOptions.size > 1 && !isMenuLoading) Color(0xFF1D1D1F) else Color(0xFF8E8E93)
                             )
                         }
                     }
