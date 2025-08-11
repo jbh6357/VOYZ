@@ -102,6 +102,7 @@ interface AnalyticsApiService {
         @Query("positiveThreshold") positiveThreshold: Int = 4,
         @Query("negativeThreshold") negativeThreshold: Int = 2,
         @Query("nationality") nationality: String? = null,
+        @Query("includeSummary") includeSummary: Boolean = false,
     ): List<MenuSentimentDto>
 
     @GET("analytics/reviews/{userId}/nationalities")

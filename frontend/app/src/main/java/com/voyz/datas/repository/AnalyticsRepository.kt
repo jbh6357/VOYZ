@@ -84,8 +84,9 @@ class AnalyticsRepository {
         positive: Int = 4,
         negative: Int = 2,
         nationality: String? = null,
+        includeSummary: Boolean = false,
     ): List<MenuSentimentDto> {
-        return api.getMenuSentiment(userId, start, end, positive, negative, nationality)
+        return api.getMenuSentiment(userId, start, end, positive, negative, nationality, includeSummary)
     }
 
     suspend fun getReviewNationalities(userId: String): List<String> {
