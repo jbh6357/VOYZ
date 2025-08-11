@@ -50,4 +50,5 @@ object ApiClient {
         retrofit.create(AnalyticsApiService::class.java)
     }
     val qrApiService: QrApiService = retrofit.create(QrApiService::class.java)
+    val translateApiService: TranslateApiService = retrofit.create(TranslateApiService::class.java)
 }

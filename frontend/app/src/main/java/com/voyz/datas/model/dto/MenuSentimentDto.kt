@@ -7,5 +7,6 @@ data class MenuSentimentDto(
     val negativeCount: Long,
     val neutralCount: Long,
     val averageRating: Double,
-    val reviewSummary: String? = null
+    val reviewSummary: String? = null,
+    val nationality: String? = null
 )
