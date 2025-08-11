@@ -207,6 +207,116 @@ class MenuRepository {
         }
     }
     
+    suspend fun updateMenu(
+        menuIdx: Int,
+        menuName: String,
+        menuPrice: Int,
+        menuDescription: String,
+        category: String
+    ): Result<String> {
+        return try {
+            val response = menuApiService.updateMenu(menuIdx, menuName, menuPrice, menuDescription, category)
+            
+            if (response.isSuccessful) {
+                android.util.Log.d("MenuRepository", "메뉴 수정 성공: menuIdx=$menuIdx")
+                Result.success("메뉴 수정 완료")
+            } else {
+                android.util.Log.e("MenuRepository", "메뉴 수정 실패: ${response.code()}")
+                Result.failure(Exception("메뉴 수정 실패: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MenuRepository", "메뉴 수정 오류", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun updateMenuWithImage(
+        menuIdx: Int,
+        menuName: String,
+        menuPrice: Int,
+        menuDescription: String,
+        category: String,
+        imageUri: Uri?,
+        context: android.content.Context
+    ): Result<String> {
+        return try {
+            // RequestBody 생성
+            val menuNameBody = menuName.toRequestBody("text/plain".toMediaTypeOrNull())
+            val menuPriceBody = menuPrice.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+            val menuDescriptionBody = menuDescription.toRequestBody("text/plain".toMediaTypeOrNull())
+            val categoryBody = category.toRequestBody("text/plain".toMediaTypeOrNull())
+            
+            // 이미지 파일 처리
+            val imagePart = imageUri?.let { uri ->
+                val contentResolver = context.contentResolver
+                val inputStream = contentResolver.openInputStream(uri)
+                val file = File(context.cacheDir, "menu_image_${System.currentTimeMillis()}.jpg")
+                
+                inputStream?.use { input ->
+                    val originalBitmap = BitmapFactory.decodeStream(input)
+                    val maxSize = 1280
+                    val width = originalBitmap.width
+                    val height = originalBitmap.height
+                    
+                    val newWidth: Int
+                    val newHeight: Int
+                    
+                    if (width > height) {
+                        if (width > maxSize) {
+                            newWidth = maxSize
+                            newHeight = (height * maxSize) / width
+                        } else {
+                            newWidth = width
+                            newHeight = height
+                        }
+                    } else {
+                        if (height > maxSize) {
+                            newHeight = maxSize
+                            newWidth = (width * maxSize) / height
+                        } else {
+                            newWidth = width
+                            newHeight = height
+                        }
+                    }
+                    
+                    val scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, newWidth, newHeight, true)
+                    
+                    file.outputStream().use { output ->
+                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, output)
+                    }
+                    
+                    if (originalBitmap != scaledBitmap) {
+                        originalBitmap.recycle()
+                    }
+                    scaledBitmap.recycle()
+                }
+                
+                val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+                val part = MultipartBody.Part.createFormData("image", file.name, requestFile)
+                
+                // 임시 파일 삭제는 API 호출 후에
+                file.deleteOnExit()
+                part
+            }
+            
+            val response = menuApiService.updateMenuWithImage(
+                menuIdx, menuNameBody, menuPriceBody, 
+                menuDescriptionBody, categoryBody, imagePart
+            )
+            
+            if (response.isSuccessful) {
+                android.util.Log.d("MenuRepository", "이미지와 함께 메뉴 수정 성공: menuIdx=$menuIdx")
+                Result.success("메뉴 수정 완료")
+            } else {
+                android.util.Log.e("MenuRepository", "이미지와 함께 메뉴 수정 실패: ${response.code()}")
+                Result.failure(Exception("메뉴 수정 실패: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MenuRepository", "이미지와 함께 메뉴 수정 오류", e)
+            Result.failure(e)
+        }
+    }
+    
     suspend fun deleteMenu(menuIdx: Int): Result<String> {
         return try {
             val response = menuApiService.deleteMenu(menuIdx)
