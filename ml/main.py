@@ -122,6 +122,7 @@ def create_suggest(request: CreateSuggestRequest):
 
 @app.post("/api/ocr")
 async def extract_text(file: UploadFile = File(...)):
+
     # Google Cloud 인증이 없으면 더미 데이터 반환
     google_credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
     if not google_credentials_path or not os.path.exists(google_credentials_path):
@@ -132,6 +133,7 @@ async def extract_text(file: UploadFile = File(...)):
             MenuItem(menuName="제육볶음", menuPrice=8000),
             MenuItem(menuName="불고기", menuPrice=9000)
         ]
+
     try:
         # 파일 타입 검증
         if not file.content_type.startswith('image/'):

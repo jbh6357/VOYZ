@@ -150,30 +150,16 @@ jobs:
 
                       # Python 패키지 설치
                       sudo apt-get update
-                      sudo apt-get install -y python3-pip python3-venv python3-dev python3-full
-
-                      # 기존 venv 삭제 후 새로 생성
-                      echo "Creating new virtual environment..."
-                      rm -rf venv
-                      python3 -m venv venv --clear
+                      sudo apt-get install -y python3-pip python3-venv python3-dev
                       
-                      # venv 활성화 확인
-                      if [ -f "venv/bin/activate" ]; then
-                          echo "Virtual environment created successfully"
-                          source venv/bin/activate
-                          
-                          # pip 업그레이드
-                          python -m pip install --upgrade pip setuptools wheel
-                          
-                          # requirements 설치
-                          python -m pip install -r requirements.txt
-                          
-                          # 설치 확인
-                          python -m pip list | grep google-cloud || echo "WARNING: Google Cloud packages not installed"
-                      else
-                          echo "ERROR: Failed to create virtual environment"
-                          exit 1
+                      # 기존 venv가 있으면 사용, 없으면 생성
+                      if [ ! -d "venv" ]; then
+                          python3 -m venv venv
                       fi
+                      
+                      # pip 업그레이드 및 패키지 설치
+                      ./venv/bin/pip install --upgrade pip setuptools wheel
+                      ./venv/bin/pip install -r requirements.txt                      
 
                       # 환경 변수 설정
                       echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
@@ -191,7 +177,7 @@ jobs:
 
                       # Google Cloud 인증 테스트
                       export GOOGLE_APPLICATION_CREDENTIALS=/home/ubuntu/voyz-ml/google-credentials.json
-                      source venv/bin/activate && python -c "from google.cloud import vision; print('Google Cloud Vision API 연결 성공')" || echo "Google Cloud 인증 실패 - OCR 기능 비활성화됨"
+                      ./venv/bin/python -c "from google.cloud import vision; print('Google Cloud Vision API 연결 성공')" || echo "Google Cloud 인증 실패 - OCR 기능 비활성화됨"
 
                       # systemd 서비스 파일 생성
                       sudo tee /etc/systemd/system/voyz-ml.service > /dev/null <<EOF
