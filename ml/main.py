@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from google.cloud import vision
 import re
 from google.cloud import translate_v2 as translate
-from config import MenuItem, TranslateRequest, TranslateRequest2
+from config import MenuItem, TranslateRequest, TranslateRequest2, ReviewTranslateRequest
 from typing import List
 import math
 from collections import Counter
@@ -153,11 +153,19 @@ def analyze_review_content(payload: dict):
       "keywords": [str]  # ["맛", "양", "가성비"]
     }
     """
+    print("🔍 ML 서비스: content-analysis 요청 받음")
+    print(f"  - payload: {payload}")
+    
     menu_name = payload.get("menuName", "메뉴")
     reviews = payload.get("reviews", [])
     priority_sentiment = payload.get("prioritySentiment", "positive")
     
+    print(f"📋 ML 서비스: 메뉴명={menu_name}, 리뷰수={len(reviews)}, 우선감정={priority_sentiment}")
+    for i, review in enumerate(reviews[:3]):  # 처음 3개만 로그
+        print(f"  📝 리뷰 {i+1}: {review.get('text', '')[:50]}... (감정: {review.get('sentiment', '')}, 평점: {review.get('rating', '')})")
+    
     if not reviews:
+        print("❌ ML 서비스: 리뷰가 없음")
         return {"insight": "리뷰가 없습니다", "keywords": []}
     
     # 우선순위 감정의 리뷰만 필터링
@@ -168,7 +176,10 @@ def analyze_review_content(payload: dict):
     
     # OpenAI API로 내용 분석
     api_key = os.getenv("OPENAI_API_KEY")
+    print(f"🔑 ML 서비스: OpenAI API 키 확인 - {'있음' if api_key else '없음'}")
+    
     if not api_key:
+        print("❌ ML 서비스: OpenAI API 키가 없어서 더미 데이터 반환")
         # 더미 분석 결과
         if priority_sentiment == "positive":
             return {"insight": "맛과 서비스가 좋다는 평가", "keywords": ["맛", "서비스"]}
@@ -179,6 +190,9 @@ def analyze_review_content(payload: dict):
     
     try:
         review_texts = [r.get("text", "")[:150] for r in target_reviews[:8]]  # 최대 8개 리뷰
+        print(f"🤖 ML 서비스: OpenAI API 호출 준비, 대상 리뷰 {len(review_texts)}개")
+        for i, text in enumerate(review_texts[:3]):
+            print(f"  📄 분석할 리뷰 {i+1}: {text[:50]}...")
         
         sentiment_desc = "긍정적인" if priority_sentiment == "positive" else "부정적인" if priority_sentiment == "negative" else "중립적인"
         
@@ -195,6 +209,9 @@ def analyze_review_content(payload: dict):
 
 요약:"""
 
+        print(f"📤 ML 서비스: OpenAI API 요청 시작")
+        print(f"  - 프롬프트 길이: {len(prompt)}자")
+        
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         data = {
             "model": "gpt-4o-mini",
@@ -207,8 +224,11 @@ def analyze_review_content(payload: dict):
         }
         
         resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=30)
+        print(f"📥 ML 서비스: OpenAI API 응답 상태 {resp.status_code}")
+        
         if resp.status_code == 200:
             content = resp.json()["choices"][0]["message"]["content"].strip()
+            print(f"✅ ML 서비스: OpenAI에서 받은 응답: {content}")
             
             # 키워드 추출 (간단한 방식)
             keywords = []
@@ -217,15 +237,22 @@ def analyze_review_content(payload: dict):
                 if keyword in content:
                     keywords.append(keyword)
             
-            return {
+            result = {
                 "insight": content[:15],  # 최대 15자로 단축
                 "keywords": keywords[:3]  # 최대 3개 키워드
             }
+            print(f"🎯 ML 서비스: 최종 결과 - {result}")
+            return result
+        else:
+            print(f"❌ ML 서비스: OpenAI API 응답 실패 - {resp.status_code}: {resp.text}")
             
     except Exception as e:
-        print(f"리뷰 내용 분석 실패: {e}")
+        print(f"❌ ML 서비스: 리뷰 내용 분석 실패: {e}")
+        import traceback
+        traceback.print_exc()
     
     # 실패시 기본값
+    print("🔄 ML 서비스: 기본값 반환")
     if priority_sentiment == "positive":
         return {"insight": "고객들이 만족해합니다", "keywords": ["만족"]}
     elif priority_sentiment == "negative":
@@ -950,6 +977,50 @@ def translate_text(req: TranslateRequest2):
     except Exception as e:
         print(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/reviews/translate")
+def translate_reviews(req: ReviewTranslateRequest):
+    """
+    리뷰 내용들을 일괄 번역
+    """
+    try:
+        translate_client = translate.Client()
+        
+        # 빈 리스트나 None 체크
+        if not req.reviews:
+            return {"translated_reviews": []}
+        
+        # 빈 문자열 필터링
+        filtered_reviews = [review for review in req.reviews if review and review.strip()]
+        if not filtered_reviews:
+            return {"translated_reviews": [""] * len(req.reviews)}
+        
+        # 청크 단위로 번역 (Google Translate API 제한 고려)
+        chunk_size = 100
+        all_translated_reviews = []
+        
+        for i in range(0, len(filtered_reviews), chunk_size):
+            chunk_of_reviews = filtered_reviews[i:i + chunk_size]
+            results = translate_client.translate(chunk_of_reviews, target_language=req.targetLanguage)
+            # 번역 결과에서 앞뒤 공백 및 개행 문자 제거
+            translated_chunk = [result["translatedText"].strip() for result in results]
+            all_translated_reviews.extend(translated_chunk)
+            
+        # 원본과 같은 길이로 맞춤 (빈 문자열 위치 복원)
+        result_reviews = []
+        translated_idx = 0
+        for original_review in req.reviews:
+            if original_review and original_review.strip():
+                result_reviews.append(all_translated_reviews[translated_idx])
+                translated_idx += 1
+            else:
+                result_reviews.append("")
+        
+        return {"translated_reviews": result_reviews}
+    
+    except Exception as e:
+        print(f"리뷰 번역 오류: {e}")
+        raise HTTPException(status_code=500, detail=f"번역 실패: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
