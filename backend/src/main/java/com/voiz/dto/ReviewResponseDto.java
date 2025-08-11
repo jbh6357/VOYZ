@@ -3,6 +3,7 @@ package com.voiz.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -18,6 +19,6 @@ public class ReviewResponseDto {
     private int rating;
     private String nationality;
     private String language;
-    private String createdAt; // 리뷰 작성 시간
+    private LocalDateTime createdAt; // 리뷰 작성 시간
     
 }
