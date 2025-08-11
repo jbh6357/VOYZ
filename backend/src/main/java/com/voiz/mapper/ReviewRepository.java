@@ -91,4 +91,10 @@ public interface ReviewRepository extends JpaRepository<Reviews, Long> {
     @Query("SELECT DISTINCT r.nationality FROM Reviews r WHERE r.userId = :userId ORDER BY r.nationality")
     List<String> findDistinctNationalitiesByUserId(@Param("userId") String userId);
 
+    @Query("SELECT r.comment, r.rating FROM Reviews r WHERE r.menuIdx = :menuId AND r.userId = :userId " +
+           "AND (:nationality IS NULL OR r.nationality = :nationality) " +
+           "AND r.comment IS NOT NULL " +
+           "ORDER BY r.createdAt DESC")
+    List<Object[]> findReviewsByMenuAndUser(@Param("menuId") Integer menuId, @Param("userId") String userId, @Param("nationality") String nationality);
+
 }

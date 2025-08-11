@@ -12,6 +12,8 @@ import com.voiz.mapper.SalesOrderRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.*;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -272,6 +274,152 @@ public class AnalyticsService {
 
     public java.util.List<String> getReviewNationalities(String userId) {
         return reviewRepository.findDistinctNationalitiesByUserId(userId);
+    }
+
+    public String generateMenuReviewSummary(Integer menuId, String menuName, String userId, String nationality) {
+        // 해당 메뉴의 리뷰 데이터 조회
+        var reviews = reviewRepository.findReviewsByMenuAndUser(menuId, userId, nationality);
+        
+        if (reviews.isEmpty()) {
+            return "리뷰가 없습니다";
+        }
+        
+        // 감정별 개수 계산
+        long positiveCount = reviews.stream().mapToLong(r -> ((Number) r[1]).intValue() >= 4 ? 1 : 0).sum();
+        long neutralCount = reviews.stream().mapToLong(r -> ((Number) r[1]).intValue() == 3 ? 1 : 0).sum();
+        long negativeCount = reviews.stream().mapToLong(r -> ((Number) r[1]).intValue() <= 2 ? 1 : 0).sum();
+        
+        try {
+            // 가장 많은 비중을 차지하는 감정 결정
+            String prioritySentiment = "positive";
+            if (negativeCount > positiveCount && negativeCount > neutralCount) {
+                prioritySentiment = "negative";
+            } else if (neutralCount > positiveCount && neutralCount > negativeCount) {
+                prioritySentiment = "neutral";
+            }
+            
+            // ML 서비스 요청 데이터 구성 (내용 분석용)
+            java.util.List<java.util.Map<String, Object>> reviewList = new java.util.ArrayList<>();
+            for (Object[] review : reviews) {
+                String text = (String) review[0];
+                int rating = ((Number) review[1]).intValue();
+                
+                String sentiment = "neutral";
+                if (rating >= 4) sentiment = "positive";
+                else if (rating <= 2) sentiment = "negative";
+                
+                java.util.Map<String, Object> reviewData = new java.util.HashMap<>();
+                reviewData.put("text", text);
+                reviewData.put("sentiment", sentiment);
+                reviewData.put("rating", rating);
+                reviewList.add(reviewData);
+            }
+            
+            // ML 서비스 호출 (내용 분석)
+            RestTemplate restTemplate = new RestTemplate();
+            String mlServiceUrl = "http://localhost:8000/api/reviews/content-analysis";
+            
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+            requestBody.put("menuName", menuName);
+            requestBody.put("reviews", reviewList);
+            requestBody.put("prioritySentiment", prioritySentiment);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<java.util.Map> response = restTemplate.postForEntity(mlServiceUrl, entity, java.util.Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return (String) response.getBody().get("insight");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("ML 서비스 호출 실패: " + e.getMessage());
+        }
+        
+        // ML 서비스 실패시 감정별 기본 메시지 생성 (다수 의견 기준)
+        if (positiveCount > negativeCount && positiveCount > neutralCount) {
+            return "맛있다고 해요";
+        } else if (negativeCount > positiveCount && negativeCount > neutralCount) {
+            return "개선이 필요해요";
+        } else if (neutralCount > positiveCount && neutralCount > negativeCount) {
+            return "괜찮은 편이에요";
+        } else {
+            return "의견이 다양해요";
+        }
+    }
+
+    public java.util.List<com.voiz.dto.MenuSentimentDto> getMenuSentimentWithSummary(
+            String userId,
+            LocalDate startDate,
+            LocalDate endDate,
+            int positiveThreshold,
+            int negativeThreshold,
+            String nationality
+    ) {
+        var list = getMenuSentiment(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
+        
+        // 각 메뉴에 대해 한줄 평 생성
+        for (MenuSentimentDto menu : list) {
+            String summary = generateMenuReviewSummary(menu.getMenuId(), menu.getMenuName(), userId, nationality);
+            menu.setReviewSummary(summary);
+        }
+        
+        return list;
+    }
+
+    public java.util.Map<String, Object> generateMenuInsights(java.util.List<MenuSentimentDto> menus) {
+        try {
+            // ML 서비스 요청 데이터 구성
+            java.util.List<java.util.Map<String, Object>> menuList = new java.util.ArrayList<>();
+            for (MenuSentimentDto menu : menus) {
+                java.util.Map<String, Object> menuData = new java.util.HashMap<>();
+                menuData.put("menuName", menu.getMenuName());
+                menuData.put("positiveCount", menu.getPositiveCount());
+                menuData.put("negativeCount", menu.getNegativeCount());
+                menuData.put("neutralCount", menu.getNeutralCount());
+                menuData.put("averageRating", menu.getAverageRating());
+                menuData.put("reviewSummary", menu.getReviewSummary());
+                menuList.add(menuData);
+            }
+            
+            // ML 서비스 호출
+            RestTemplate restTemplate = new RestTemplate();
+            String mlServiceUrl = "http://localhost:8000/api/reviews/insights";
+            
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+            requestBody.put("menus", menuList);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            ResponseEntity<java.util.Map> response = restTemplate.postForEntity(mlServiceUrl, entity, java.util.Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return response.getBody();
+            }
+            
+        } catch (Exception e) {
+            System.err.println("인사이트 생성 실패: " + e.getMessage());
+        }
+        
+        // 기본 인사이트 반환
+        java.util.Map<String, Object> defaultInsights = new java.util.HashMap<>();
+        java.util.List<String> insights = new java.util.ArrayList<>();
+        java.util.List<String> recommendations = new java.util.ArrayList<>();
+        
+        if (!menus.isEmpty()) {
+            long totalReviews = menus.stream().mapToLong(m -> 
+                m.getPositiveCount() + m.getNegativeCount() + m.getNeutralCount()).sum();
+            insights.add("총 " + totalReviews + "개의 리뷰를 분석했습니다");
+            recommendations.add("지속적으로 고객 피드백을 확인해보세요");
+        }
+        
+        defaultInsights.put("insights", insights);
+        defaultInsights.put("recommendations", recommendations);
+        return defaultInsights;
     }
 
 

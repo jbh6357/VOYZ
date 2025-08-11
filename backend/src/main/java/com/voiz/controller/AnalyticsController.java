@@ -190,9 +190,17 @@ public class AnalyticsController {
             @RequestParam LocalDate endDate,
             @RequestParam(defaultValue = "4") int positiveThreshold,
             @RequestParam(defaultValue = "2") int negativeThreshold,
-            @RequestParam(required = false) String nationality
+            @RequestParam(required = false) String nationality,
+            @RequestParam(defaultValue = "false") boolean includeSummary
     ) {
-        var list = analyticsService.getMenuSentiment(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
+        java.util.List<com.voiz.dto.MenuSentimentDto> list;
+        
+        if (includeSummary) {
+            list = analyticsService.getMenuSentimentWithSummary(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
+        } else {
+            list = analyticsService.getMenuSentiment(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
+        }
+        
         return ResponseEntity.ok(list);
     }
 
@@ -203,5 +211,20 @@ public class AnalyticsController {
     ) {
         var list = analyticsService.getReviewNationalities(userId);
         return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/reviews/{userId}/insights")
+    @Operation(summary = "메뉴별 리뷰 인사이트", description = "메뉴별 감정 분석 결과를 바탕으로 사장님용 인사이트를 생성합니다.")
+    public ResponseEntity<java.util.Map<String, Object>> getMenuInsights(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            @RequestParam(defaultValue = "4") int positiveThreshold,
+            @RequestParam(defaultValue = "2") int negativeThreshold,
+            @RequestParam(required = false) String nationality
+    ) {
+        var menus = analyticsService.getMenuSentimentWithSummary(userId, startDate, endDate, positiveThreshold, negativeThreshold, nationality);
+        var insights = analyticsService.generateMenuInsights(menus);
+        return ResponseEntity.ok(insights);
     }
 }
