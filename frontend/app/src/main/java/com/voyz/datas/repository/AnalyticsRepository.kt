@@ -83,7 +83,12 @@ class AnalyticsRepository {
         end: String,
         positive: Int = 4,
         negative: Int = 2,
+        nationality: String? = null,
     ): List<MenuSentimentDto> {
-        return api.getMenuSentiment(userId, start, end, positive, negative)
+        return api.getMenuSentiment(userId, start, end, positive, negative, nationality)
+    }
+
+    suspend fun getReviewNationalities(userId: String): List<String> {
+        return api.getReviewNationalities(userId)
     }
 }

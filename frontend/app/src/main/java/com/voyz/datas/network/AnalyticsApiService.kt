@@ -101,5 +101,11 @@ interface AnalyticsApiService {
         @Query("endDate") endDate: String,
         @Query("positiveThreshold") positiveThreshold: Int = 4,
         @Query("negativeThreshold") negativeThreshold: Int = 2,
+        @Query("nationality") nationality: String? = null,
     ): List<MenuSentimentDto>
+
+    @GET("analytics/reviews/{userId}/nationalities")
+    suspend fun getReviewNationalities(
+        @Path("userId") userId: String,
+    ): List<String>
 }
