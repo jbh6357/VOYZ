@@ -23,6 +23,9 @@ public class MenuSentimentDto {
     @Schema(description = "평균 평점", example = "4.1")
     private Double averageRating;
     
+    @Schema(description = "리뷰 한줄 평", example = "맛이 좋다는 평가")
+    private String reviewSummary;
+    
     public MenuSentimentDto() {}
     
     public MenuSentimentDto(Integer menuId, String menuName, Long positiveCount, Long negativeCount, Long neutralCount, Double averageRating) {
@@ -32,6 +35,17 @@ public class MenuSentimentDto {
         this.negativeCount = negativeCount;
         this.neutralCount = neutralCount;
         this.averageRating = averageRating;
+        this.reviewSummary = null;
+    }
+    
+    public MenuSentimentDto(Integer menuId, String menuName, Long positiveCount, Long negativeCount, Long neutralCount, Double averageRating, String reviewSummary) {
+        this.menuId = menuId;
+        this.menuName = menuName;
+        this.positiveCount = positiveCount;
+        this.negativeCount = negativeCount;
+        this.neutralCount = neutralCount;
+        this.averageRating = averageRating;
+        this.reviewSummary = reviewSummary;
     }
     
     public Integer getMenuId() {
@@ -80,5 +94,13 @@ public class MenuSentimentDto {
     
     public void setAverageRating(Double averageRating) {
         this.averageRating = averageRating;
+    }
+    
+    public String getReviewSummary() {
+        return reviewSummary;
+    }
+    
+    public void setReviewSummary(String reviewSummary) {
+        this.reviewSummary = reviewSummary;
     }
 }
