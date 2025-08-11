@@ -96,3 +96,7 @@ class MenuItem(BaseModel):
 class TranslateRequest(BaseModel):
     text: str
     targetLanguage: str
+
+class TranslateRequest2(BaseModel):
+    texts: List[str]
+    targetLanguage: str

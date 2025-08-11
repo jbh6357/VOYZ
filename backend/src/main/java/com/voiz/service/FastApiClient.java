@@ -189,4 +189,24 @@ public class FastApiClient {
         return text; // 번역 실패 시 원문 그대로 반환
 	}
 
+	public Map<String, Object> translateTexts(Map<String, Object> request) {
+		try {
+	        String endpoint = "/api/translateWeb";
+	        String url = fastApiBaseUrl + endpoint;
+
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+
+	        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(request, headers);
+
+	        ResponseEntity<Map> response = restTemplate.exchange(
+	            url, HttpMethod.POST, requestEntity, Map.class);
+
+	        return response.getBody();
+	    } catch (Exception e) {
+	        throw new RuntimeException("FastAPI 번역 서비스 연결 실패: " + e.getMessage(), e);
+	    }
+		
+	}
+
 } 

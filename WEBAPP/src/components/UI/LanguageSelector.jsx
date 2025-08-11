@@ -1,38 +1,40 @@
-import { useState } from 'react'
-import { LANGUAGES } from '../../types/index.js'
-import Modal from './Modal.jsx'
+import { useState } from "react";
+import { LANGUAGES } from "../../types/index.js";
+import Modal from "./Modal.jsx";
 
 const LanguageSelector = ({ selectedLang, onLanguageChange }) => {
-  const [showLangModal, setShowLangModal] = useState(false)
+  const [showLangModal, setShowLangModal] = useState(false);
 
   return (
     <>
       <div className="language-selector">
-        <button 
-          className="current-lang-btn"
+        <button
+          className="current-lang-btn no-translate-flag"
           onClick={() => setShowLangModal(true)}
         >
           {LANGUAGES[selectedLang].flag} {LANGUAGES[selectedLang].name} ▼
         </button>
       </div>
 
-      <Modal 
+      <Modal
         isOpen={showLangModal}
         onClose={() => setShowLangModal(false)}
         className="lang-modal"
       >
         <div className="modal-header">
           <h3>언어 선택 / Select Language</h3>
-          <button className="close-btn" onClick={() => setShowLangModal(false)}>×</button>
+          <button className="close-btn" onClick={() => setShowLangModal(false)}>
+            ×
+          </button>
         </div>
         <div className="lang-grid">
           {Object.entries(LANGUAGES).map(([code, lang]) => (
             <button
               key={code}
-              className={`lang-option ${selectedLang === code ? 'active' : ''}`}
+              className={`lang-option ${selectedLang === code ? "active" : ""}`}
               onClick={() => {
-                onLanguageChange(code)
-                setShowLangModal(false)
+                onLanguageChange(code);
+                setShowLangModal(false);
               }}
             >
               <span className="lang-flag">{lang.flag}</span>
@@ -42,7 +44,7 @@ const LanguageSelector = ({ selectedLang, onLanguageChange }) => {
         </div>
       </Modal>
     </>
-  )
-}
+  );
+};
 
-export default LanguageSelector
+export default LanguageSelector;

@@ -16,7 +16,9 @@ import os
 from google.cloud import vision
 import re
 from google.cloud import translate_v2 as translate
-from config import MenuItem, TranslateRequest
+from config import MenuItem, TranslateRequest, TranslateRequest2
+from typing import List
+import math
 # FastAPI 앱 생성
 app = FastAPI(
     title=API_CONFIG["title"],
@@ -292,10 +294,38 @@ def translateMenu(req: TranslateRequest):
         "translated": result["translatedText"]
     }
 
+@app.post("/api/translateWeb")
+def translate_text(req: TranslateRequest2):
+    try:
+        translate_client = translate.Client()
+        all_translated_texts = []
+        
+        # API 허용 최대 텍스트 수
+        MAX_TEXT_SEGMENTS = 128
+        # 텍스트 배열을 최대 허용 수만큼 묶음으로 나눕니다.
+        num_chunks = math.ceil(len(req.texts) / MAX_TEXT_SEGMENTS)
+        
+        for i in range(num_chunks):
+            start_index = i * MAX_TEXT_SEGMENTS
+            end_index = start_index + MAX_TEXT_SEGMENTS
+            chunk_of_texts = req.texts[start_index:end_index]
+            
+            # 각 묶음을 별도의 API 요청으로 보냅니다.
+            results = translate_client.translate(chunk_of_texts, target_language=req.targetLanguage)
+            translated_chunk = [result["translatedText"] for result in results]
+            all_translated_texts.extend(translated_chunk)
+            
+        return {"translated_texts": all_translated_texts}
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app, 
         host=API_CONFIG["host"], 
         port=API_CONFIG["port"]
+
     ) 

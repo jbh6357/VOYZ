@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.voiz.dto.ReviewDto;
 import com.voiz.dto.ReviewRequestDto;
 import com.voiz.dto.ReviewResponseDto;
 import com.voiz.service.ReviewService;
@@ -40,13 +41,13 @@ public class ReviewController {
 
     @GetMapping("/menu/{menuId}")
     @Operation(summary = "메뉴별 리뷰 목록 조회")
-    public ResponseEntity<List<ReviewResponseDto>> getReviewsByMenuId(
-            @PathVariable long menuId,
+    public ResponseEntity<ReviewDto> getReviewsByMenuId(
+            @PathVariable int menuId,
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String nationality) {
         
-        List<ReviewResponseDto> reviews = reviewService.getReviewsByMenuId(menuId, userId, nationality);
-        return ResponseEntity.ok(reviews);
+    	ReviewDto reviewData = reviewService.getReviewsByMenuId(menuId, userId, nationality);
+        return ResponseEntity.ok(reviewData);
 }
 
 }

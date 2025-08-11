@@ -11,9 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ReviewRequestDto {
 
-    private String orderId;
+    private int orderIdx;
     private String userId;
-    private Long menuIdx;
+    private int menuIdx;
     private int rating;
     private String comment;
     private String nationality;

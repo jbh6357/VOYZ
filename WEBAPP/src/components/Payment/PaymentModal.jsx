@@ -1,27 +1,31 @@
-import Modal from '../UI/Modal.jsx'
+import Modal from "../UI/Modal.jsx";
 
 const PaymentModal = ({ isOpen, onClose, onTossPayment, onPayPalPayment }) => {
   return (
-    <Modal 
-      isOpen={isOpen}
-      onClose={onClose}
-      className="payment-modal"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} className="payment-modal">
       <div className="modal-header">
         <h3>결제 방법 선택</h3>
-        <button className="close-btn" onClick={onClose}>×</button>
+        <button className="close-btn" onClick={onClose}>
+          ×
+        </button>
       </div>
       <div className="payment-methods">
-        <button className="payment-method toss-official" onClick={onTossPayment}>
-          <div className="toss-official-logo">toss</div>
+        <button
+          className="payment-method toss-official"
+          onClick={onTossPayment}
+        >
+          <div className="toss-official-logo no-translate-flag">toss</div>
           <div className="payment-info">
             <div className="payment-name">토스페이</div>
             <div className="payment-desc">간편하고 안전한 결제</div>
           </div>
         </button>
-        
-        <button className="payment-method paypal-official" onClick={onPayPalPayment}>
-          <div className="paypal-official-logo">
+
+        <button
+          className="payment-method paypal-official"
+          onClick={onPayPalPayment}
+        >
+          <div className="paypal-official-logo no-translate-flag">
             <span className="paypal-blue">Pay</span>
             <span className="paypal-blue-light">Pal</span>
           </div>
@@ -32,7 +36,7 @@ const PaymentModal = ({ isOpen, onClose, onTossPayment, onPayPalPayment }) => {
         </button>
       </div>
     </Modal>
-  )
-}
+  );
+};
 
-export default PaymentModal
+export default PaymentModal;

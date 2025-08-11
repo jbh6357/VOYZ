@@ -1,6 +1,7 @@
 package com.voiz.mapper;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,4 +16,6 @@ public interface TablesRepository extends JpaRepository<Tables, Integer> {
 	Integer findMaxTableNumberByUserId(@Param("userId") String userId);
 
 	List<Tables> findByUserId(String userId);
+	
+	Optional<Tables> findByUserIdAndTableNumber(String userId, int tableNumber);
 }
