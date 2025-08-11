@@ -92,4 +92,8 @@ class AnalyticsRepository {
     suspend fun getReviewNationalities(userId: String): List<String> {
         return api.getReviewNationalities(userId)
     }
+
+    suspend fun getComprehensiveInsights(userId: String, startDate: String? = null, endDate: String? = null): Map<String, Any> {
+        return api.getComprehensiveInsights(userId, startDate, endDate)
+    }
 }

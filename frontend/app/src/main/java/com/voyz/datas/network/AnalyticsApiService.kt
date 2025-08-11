@@ -109,4 +109,11 @@ interface AnalyticsApiService {
     suspend fun getReviewNationalities(
         @Path("userId") userId: String,
     ): List<String>
+
+    @GET("analytics/reviews/{userId}/comprehensive-insights")
+    suspend fun getComprehensiveInsights(
+        @Path("userId") userId: String,
+        @Query("startDate") startDate: String? = null,
+        @Query("endDate") endDate: String? = null
+    ): Map<String, Any>
 }
