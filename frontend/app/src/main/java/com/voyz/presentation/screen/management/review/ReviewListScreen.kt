@@ -20,6 +20,8 @@ import com.voyz.presentation.screen.management.review.component.SelectedFilter
 import com.voyz.presentation.screen.management.review.model.Review
 import com.voyz.datas.datastore.UserPreferencesManager
 import com.voyz.datas.repository.AnalyticsRepository
+import com.voyz.datas.repository.TranslateRepository
+import com.voyz.datas.datastore.ReviewAnalysisCache
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -41,6 +43,8 @@ fun ReviewListScreen() {
 
     // 데이터 로드
     val repo = remember { AnalyticsRepository() }
+    val translateRepo = remember { TranslateRepository() }
+    val analysisCache = remember { ReviewAnalysisCache(context) }
     val scope = rememberCoroutineScope()
     var apiReviews by remember { mutableStateOf<List<com.voyz.datas.model.dto.ReviewResponseDto>>(emptyList()) }
     var insights by remember { mutableStateOf<List<InsightItem>>(emptyList()) }
@@ -59,44 +63,106 @@ fun ReviewListScreen() {
         runCatching { apiReviews = repo.getReviews(id, start, end) }
     }
     
-    // 인사이트 데이터 로드
+    // 인사이트 데이터 로드 (캐시 우선)
     LaunchedEffect(userId) {
         val id = userId ?: return@LaunchedEffect
         isInsightsLoading = true
+        
         scope.launch {
-            try {
-                val response = repo.getComprehensiveInsights(id)
-                val insightsList = response["insights"] as? List<Map<String, Any>> ?: emptyList()
-                insights = insightsList.map { insightMap ->
-                    val suggestedFiltersMap = insightMap["suggestedFilters"] as? Map<String, String> ?: emptyMap()
-                    InsightItem(
-                        type = insightMap["type"] as? String ?: "trend",
-                        title = insightMap["title"] as? String ?: "",
-                        description = insightMap["description"] as? String ?: "",
-                        priority = insightMap["priority"] as? String ?: "medium",
-                        suggestedFilters = suggestedFiltersMap
-                    )
+            // 1. 캐시된 데이터 먼저 확인
+            analysisCache.getCachedAnalysis(id).collect { cached ->
+                if (cached != null && !cached.insights.isNullOrEmpty()) {
+                    println("✅ 캐시된 인사이트 사용")
+                    insights = cached.insights.map { insightMap ->
+                        // suggestedFilters도 캐시에서 복원
+                        val suggestedFiltersMap = try {
+                            val filters = (insightMap["suggestedFilters"] as? Map<String, String>) ?: emptyMap()
+                            println("🔍 캐시된 인사이트 필터: ${insightMap["title"]} -> $filters")
+                            filters
+                        } catch (e: Exception) {
+                            println("❌ 캐시된 인사이트 필터 복원 실패: ${e.message}")
+                            emptyMap<String, String>()
+                        }
+                        InsightItem(
+                            type = insightMap["type"] as? String ?: "trend",
+                            title = insightMap["title"] as? String ?: "",
+                            description = insightMap["description"] as? String ?: "",
+                            priority = insightMap["priority"] as? String ?: "medium",
+                            suggestedFilters = suggestedFiltersMap
+                        )
+                    }
+                    isInsightsLoading = false
+                    return@collect
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                // 기본 인사이트 설정
-                insights = listOf(
-                    InsightItem("trend", "분석 중", "리뷰를 분석하고 있어요", "medium", mapOf("sort" to "latest")),
-                    InsightItem("improvement", "데이터 수집", "더 많은 리뷰가 필요해요", "low", mapOf("sentiment" to "negative")), 
-                    InsightItem("strength", "서비스 운영", "꾸준히 좋은 서비스 해주세요", "high", mapOf("sentiment" to "positive"))
-                )
-            } finally {
-                isInsightsLoading = false
+                
+                // 2. 캐시가 없으면 API 호출
+                println("🔄 API에서 인사이트 로드")
+                try {
+                    val response = repo.getComprehensiveInsights(id)
+                    val insightsList = response["insights"] as? List<Map<String, Any>> ?: emptyList()
+                    insights = insightsList.map { insightMap ->
+                        val suggestedFiltersMap = insightMap["suggestedFilters"] as? Map<String, String> ?: emptyMap()
+                        println("🔍 API 인사이트 필터: ${insightMap["title"]} -> $suggestedFiltersMap")
+                        InsightItem(
+                            type = insightMap["type"] as? String ?: "trend",
+                            title = insightMap["title"] as? String ?: "",
+                            description = insightMap["description"] as? String ?: "",
+                            priority = insightMap["priority"] as? String ?: "medium",
+                            suggestedFilters = suggestedFiltersMap
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    // 기본 인사이트 설정
+                    insights = listOf(
+                        InsightItem("trend", "분석 중", "리뷰를 분석하고 있어요", "medium", mapOf("sort" to "latest")),
+                        InsightItem("improvement", "데이터 수집", "더 많은 리뷰가 필요해요", "low", mapOf("sentiment" to "negative")), 
+                        InsightItem("strength", "서비스 운영", "꾸준히 좋은 서비스 해주세요", "high", mapOf("sentiment" to "positive"))
+                    )
+                } finally {
+                    isInsightsLoading = false
+                }
+            }
+        }
+    }
+
+    // 번역된 리뷰 저장
+    var translatedReviews by remember { mutableStateOf<List<String>>(emptyList()) }
+    
+    // 리뷰 로드 시 번역 (캐시 우선)
+    LaunchedEffect(apiReviews, userId) {
+        if (apiReviews.isNotEmpty() && userId != null) {
+            scope.launch {
+                val reviewTexts = apiReviews.map { it.comment }
+                val reviewsHash = analysisCache.generateReviewsHash(reviewTexts)
+                
+                // 1. 캐시된 번역 확인
+                analysisCache.getCachedAnalysis(userId!!).collect { cached ->
+                    if (cached != null && cached.reviewsHash == reviewsHash && !cached.translatedReviews.isNullOrEmpty()) {
+                        println("✅ 캐시된 번역 사용")
+                        translatedReviews = cached.translatedReviews
+                        return@collect
+                    }
+                    
+                    // 2. 캐시가 없으면 번역 API 호출
+                    println("🔄 API에서 번역 실행")
+                    try {
+                        translatedReviews = translateRepo.translateReviews(reviewTexts, "ko")
+                    } catch (e: Exception) {
+                        println("❌ 번역 실패: ${e.message}")
+                        translatedReviews = reviewTexts // 원본 사용
+                    }
+                }
             }
         }
     }
 
     // UI 모델 변환
-    val allReviews: List<Review> = remember(apiReviews) {
-        apiReviews.map { dto ->
+    val allReviews: List<Review> = remember(apiReviews, translatedReviews) {
+        apiReviews.mapIndexed { index, dto ->
             Review(
                 content = dto.comment,
-                translatedContent = dto.comment, // 번역 미적용
+                translatedContent = translatedReviews.getOrNull(index) ?: dto.comment,
                 rating = dto.rating.toFloat(),
                 nationality = dto.nationality,
                 timestamp = dto.createdAt,
@@ -177,6 +243,9 @@ fun ReviewListScreen() {
         InsightCardsSection(
             insights = if (isInsightsLoading) emptyList() else insights,
             onInsightClick = { insight ->
+                println("🎯 인사이트 클릭: ${insight.title}")
+                println("🔍 suggestedFilters: ${insight.suggestedFilters}")
+                
                 // 현재 선택된 인사이트와 동일한지 확인
                 val currentInsightFilters = selectedFilters.filter { filter ->
                     insight.suggestedFilters.any { (filterType, filterValue) ->
