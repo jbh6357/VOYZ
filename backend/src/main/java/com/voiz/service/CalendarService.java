@@ -14,10 +14,11 @@ import org.springframework.stereotype.Service;
 
 import com.voiz.dto.DaySuggestionDto;
 import com.voiz.dto.ForecastResponseDto;
-import com.voiz.dto.ReminderDto;
+import com.voiz.dto.ReminderRequestDto;
 import com.voiz.dto.WeatherDto;
 import com.voiz.mapper.CalendarRepository;
 import com.voiz.mapper.MarketingRepository;
+import com.voiz.mapper.NotificationsRepository;
 import com.voiz.mapper.ReminderRepository;
 import com.voiz.mapper.SpecialDayRepository;
 import com.voiz.mapper.SpecialDaySuggestRepository;
@@ -25,6 +26,7 @@ import com.voiz.mapper.UsersRepository;
 import com.voiz.mapper.WeatherRepository;
 import com.voiz.util.GeoConverter;
 import com.voiz.vo.Marketing;
+import com.voiz.vo.Notifications;
 import com.voiz.vo.SpecialDaySuggest;
 import com.voiz.vo.Users;
 import com.voiz.vo.Weather;
@@ -55,6 +57,9 @@ public class CalendarService {
 	
 	@Autowired
 	private WeatherRepository weatherRepository;
+	
+	@Autowired
+	private NotificationsRepository notificationsRepository;
 
 	public Marketing getMarketing(int marketingIdx) {
 		Optional<Marketing> marketing = marketingRepository.findByMarketingIdx(marketingIdx);
@@ -65,43 +70,24 @@ public class CalendarService {
 		}
 	}
 
-	public void createReminder(int ssuIdx, String userId) {
-		System.out.println("=== createReminder ===");
-		System.out.println("userId: " + userId);
-		System.out.println("ssuIdx: " + ssuIdx);
-
+	public void createReminder(ReminderRequestDto dto, String userId) {
 		int reminderIdx = reminderRepository.findReminderIdxByUserId(userId);
-		System.out.println("reminderIdx: " + reminderIdx);
-		
 		Marketing marketing = new Marketing();
 		
-		Optional<SpecialDaySuggest> optionalSuggest = specialDaySuggestRepository.findById(ssuIdx);
-		
-		if(!optionalSuggest.isPresent()) {
-			throw new RuntimeException("잘못된 제안 아이디 정보");
-		}
-		
-		SpecialDaySuggest suggest = optionalSuggest.get();
-		
-		marketing.setContent(suggest.getContent());
-		marketing.setTitle(suggest.getTitle());
-		marketing.setStartDate(suggest.getStartDate());
-		marketing.setEndDate(suggest.getEndDate());
 		marketing.setReminder_idx(reminderIdx);
-		marketing.setStatus("진행전");
-		marketing.setType("1");
-		
-		marketing.setDescription(suggest.getDescription());
-		marketing.setTargetCustomer(suggest.getTargetCustomer());
-		marketing.setSuggestedAction(suggest.getSuggestedAction());
-		marketing.setExpectedEffect(suggest.getExpectedEffect());
-		marketing.setConfidence(suggest.getConfidence());
-		marketing.setPriority(suggest.getPriority());
-		
-		System.out.println("Before save - startDate: " + marketing.getStartDate() + ", endDate: " + marketing.getEndDate());
+		marketing.setTitle(dto.getTitle());
+		marketing.setContent(dto.getContent());
+		marketing.setStartDate(dto.getStartDate());
+		marketing.setStartTime(dto.getStartTime());
+		marketing.setEndDate(dto.getEndDate());
 		marketingRepository.save(marketing);
-		System.out.println("After save - marketingIdx: " + marketing.getMarketingIdx());
-		System.out.println("=== End createReminder ===");
+		Notifications note = new Notifications();
+		note.setUserId(userId);
+		note.setTitle(dto.getTitle());
+		note.setMessage(dto.getContent());
+		note.setSent(0);
+		note.setScheduledAt(dto.getStartTime());
+		notificationsRepository.save(note);
 	}
 
 	public List<Marketing> getMarketingListByUserAndMonth(String userId, int year, int month) {

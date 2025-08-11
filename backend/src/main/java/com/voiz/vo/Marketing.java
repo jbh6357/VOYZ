@@ -2,6 +2,7 @@ package com.voiz.vo;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -24,7 +25,7 @@ public class Marketing {
 	@Column(name = "TITLE", nullable = false)
     private String title;
 	
-	@Column(name = "TYPE", nullable = false)
+	@Column(name = "TYPE")
     private String type;
 	
 	@Column(name = "CONTENT", nullable = false, length = 1000)
@@ -36,31 +37,34 @@ public class Marketing {
 	@Column(name = "END_DATE", nullable = false)
 	private LocalDate endDate;
 	
-	@Column(name = "FIXED_AT", nullable = false)
+	@Column(name = "START_TIME", nullable = false)
+	private LocalDateTime startTime; 
+	
+	@Column(name = "FIXED_AT")
     private LocalDateTime fixedAt;
 	
-	@Column(name = "STATUS", nullable = false)
+	@Column(name = "STATUS")
     private String status;
 	
-	@Column(name = "REMINDER_IDX", nullable = false)
+	@Column(name = "REMINDER_IDX")
     private int reminder_idx;
 	
-	@Column(name = "DESCRIPTION", nullable = false)
+	@Column(name = "DESCRIPTION")
     private String description;
 
-    @Column(name = "TARGET_CUSTOMER", nullable = false)
+    @Column(name = "TARGET_CUSTOMER")
     private String targetCustomer;
 
-    @Column(name = "SUGGESTED_ACTION", nullable = false)
+    @Column(name = "SUGGESTED_ACTION")
     private String suggestedAction;
 
-    @Column(name = "EXPECTED_EFFECT", nullable = false)
+    @Column(name = "EXPECTED_EFFECT")
     private String expectedEffect;
 
-    @Column(name = "CONFIDENCE", nullable = false)
+    @Column(name = "CONFIDENCE")
     private Float confidence;
 
-    @Column(name = "PRIORITY", nullable = false)
+    @Column(name = "PRIORITY")
     private String priority;
     
 	@PrePersist
