@@ -14,8 +14,10 @@ import com.voiz.dto.OrderRequestDto;
 import com.voiz.mapper.MenusRepository;
 import com.voiz.mapper.OrdersItemsRepository;
 import com.voiz.mapper.OrdersRepository;
+import com.voiz.mapper.TablesRepository;
 import com.voiz.vo.Menus;
 import com.voiz.vo.OrdersItems;
+import com.voiz.vo.Tables;
 import com.voiz.vo.Orders;
 
 @Service
@@ -31,6 +33,9 @@ public class OrderService {
 	private OrdersItemsRepository ordersItemsRepository;
 	
 	@Autowired
+	private TablesRepository tablesRepository;
+	
+	@Autowired
 	private FastApiClient fastApiClient;
 	
 	public List<MenusDto> getCustomerMenus(String userId, String language) {
@@ -39,15 +44,22 @@ public class OrderService {
 	            .map(menu -> {
 	                // 번역 (한국어면 번역 안 함)
 	                String translatedName = fastApiClient.requestTranslate(menu.getMenuName(), language);
-	                String translatedDesc = fastApiClient.requestTranslate(menu.getMenuDescription(), language);
+	                String translatedDesc = null;
+	                if(menu.getMenuDescription()!=null) {
+	                	translatedDesc = fastApiClient.requestTranslate(menu.getMenuDescription(), language);
+	                }else {
+	                	translatedDesc = menu.getMenuDescription();
+	                }
+//	                String translatedDesc = fastApiClient.requestTranslate(menu.getMenuDescription(), language);
 
 	                return new MenusDto(
-	                		menu.getMenuIdx(),
-	                        translatedName,
-	                        menu.getMenuPrice(),
-	                        translatedDesc,
-	                        menu.getImageUrl()
-	                );
+		                	menu.getMenuIdx(),
+		                    translatedName,
+		                    menu.getMenuPrice(),
+		                    translatedDesc,
+		                    menu.getImageUrl(),
+		                    menu.getCategory()
+		                );
 	            })
 	            .toList();
 	}
@@ -68,7 +80,7 @@ public class OrderService {
 	}
 
 	@Transactional
-	public void createOrder(OrderRequestDto dto) {
+	public int createOrder(OrderRequestDto dto) {
 		
 		// 1. 오늘 주문 중 가장 큰 주문번호 가져오기
         Integer maxOrderNumber = ordersRepository.findTodayMaxOrderNumberByUserId(dto.getUserId());
@@ -76,10 +88,14 @@ public class OrderService {
         	maxOrderNumber = 0;
         }
         
+        Optional<Tables> optionalTable = tablesRepository.findByUserIdAndTableNumber(dto.getUserId(), dto.getTableNumber());
+        
+        Tables table = optionalTable.get();
+        
         // 2. 주문 정보 생성
         Orders order = new Orders();
         order.setUserId(dto.getUserId());
-        order.setTableIdx(dto.getTableIdx());
+        order.setTableIdx(table.getTableIdx());
         order.setOrderNumber(String.valueOf(maxOrderNumber + 1));
         order.setTotalAmount(0); // 총액 계산 전임
         order.setSpecialRequests(dto.getSpecialRequests());
@@ -118,6 +134,8 @@ public class OrderService {
         // 3. 총액 업데이트
         order.setTotalAmount(totalAmount);
         ordersRepository.save(order);
+        
+        return order.getOrderIdx();
 	}
 
 	public List<OrdersItems> getOrderItems(int orderIdx) {

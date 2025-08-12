@@ -89,10 +89,19 @@ class CreateSuggestResponse(BaseModel):
 
 # 메뉴 OCR 모델 설정
 class MenuItem(BaseModel):
-    name: str
-    price: int
+    menuName: str
+    menuPrice: int
 
 # 번역 요청 모델
 class TranslateRequest(BaseModel):
     text: str
     targetLanguage: str
+
+class TranslateRequest2(BaseModel):
+    texts: List[str]
+    targetLanguage: str
+
+# 리뷰 번역 요청 모델
+class ReviewTranslateRequest(BaseModel):
+    reviews: List[str]  # 리뷰 텍스트들
+    targetLanguage: str = "ko"  # 기본값: 한국어

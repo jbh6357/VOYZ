@@ -40,7 +40,15 @@ object ApiClient {
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
+
     
     val userApiService: UserApiService = retrofit.create(UserApiService::class.java)
     val calendarApiService: CalendarApiService = retrofit.create(CalendarApiService::class.java)
+    val menuApiService: MenuApiService = retrofit.create(MenuApiService::class.java)
+    val fcmApiService: FcmApiService = retrofit.create(FcmApiService::class.java)
+    val analyticsApiService: AnalyticsApiService by lazy {
+        retrofit.create(AnalyticsApiService::class.java)
+    }
+    val qrApiService: QrApiService = retrofit.create(QrApiService::class.java)
+    val translateApiService: TranslateApiService = retrofit.create(TranslateApiService::class.java)
 }

@@ -49,10 +49,8 @@ fun ReminderScreen(
     today: LocalDate = LocalDate.now()
 ) {
     var isSidebarOpen by remember { mutableStateOf(false) }
-    var dragOffset by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
     val sidebarWidth = with(density) { 280.dp.toPx() }
-    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
     val viewModel: ReminderCalendarViewModel = viewModel()
     val selectedDate by viewModel.selectedDate.collectAsState()
@@ -69,31 +67,11 @@ fun ReminderScreen(
 
     var isFabExpanded by remember { mutableStateOf(false) }
 
-    val calendarTargetHeight = if (isWeekly) screenHeight * 0.15f else screenHeight * 0.4f
-    val animatedCalendarHeight by animateDpAsState(
-        targetValue = calendarTargetHeight,
-        animationSpec = tween(300),
-        label = "calendar_height"
-    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier
-                .offset(x = with(density) { (animatedOffset + dragOffset).toDp() })
-                .pointerInput(isSidebarOpen) {
-                    if (!isSidebarOpen) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                if (dragOffset > sidebarWidth * 0.3f) {
-                                    isSidebarOpen = true
-                                }
-                                dragOffset = 0f
-                            }
-                        ) { _, dragAmount ->
-                            dragOffset = (dragOffset + dragAmount).coerceIn(0f, sidebarWidth)
-                        }
-                    }
-                },
+                .offset(x = with(density) { animatedOffset.toDp() }),
             topBar = {
                 CommonTopBar(
                     onMenuClick = { isSidebarOpen = true },
@@ -116,84 +94,98 @@ fun ReminderScreen(
                 )
             }
         ) { innerPadding ->
-            Column(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                // 상단 : 캘린더
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(animatedCalendarHeight)
+                val totalHeight = this.maxHeight       // or this@BoxWithConstraints.maxHeight
+                val calendarTargetHeight = if (isWeekly)
+                    totalHeight * 0.20f else totalHeight * 0.45f
+
+                val animatedCalendarHeight by animateDpAsState(
+                    targetValue = calendarTargetHeight,
+                    animationSpec = tween(300),
+                    label = "calendar_height"
+                )
+
+                Column(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    AnimatedContent(
-                        targetState = isWeekly,
-                        transitionSpec = {
-                            fadeIn(animationSpec = tween(300)) with fadeOut(animationSpec = tween(300))
-                        },
-                        label = "calendar_mode_switch"
-                    ) { weekly ->
-                        ReminderCalendarComponent(
-                            modifier = Modifier.fillMaxWidth()
-                                .height(animatedCalendarHeight),
-                            calendarHeight = animatedCalendarHeight,
-                            viewModel = viewModel,
-                            isWeekly = weekly,
-                            onDateSelected = { viewModel.selectDate(it) }
-                        )
+                    // 캘린더 영역
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(animatedCalendarHeight)
+
+                    ) {
+                        AnimatedContent(
+                            targetState = isWeekly,
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(300)) with fadeOut(animationSpec = tween(300))
+                            },
+                            label = "calendar_mode_switch"
+                        ) { weekly ->
+                            ReminderCalendarComponent(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(animatedCalendarHeight),
+                                calendarHeight = animatedCalendarHeight,
+                                viewModel = viewModel,
+                                isWeekly = weekly,
+                                onDateSelected = { viewModel.selectDate(it) }
+                            )
+                        }
                     }
-                }
 
                 // 하단 : 리마인더 리스트
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .pointerInput(Unit) {
-                            detectVerticalDragGestures { _, dragAmount ->
-                                if (dragAmount < -30) isWeekly = true
-                                else if (dragAmount > 30) isWeekly = false
-                            }
-                        },
-                    contentAlignment = Alignment.TopStart
-                ) {
-                    Column(
+                    Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 12.dp),
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        ReminderDayInfoBox(
-                            selectedDate = selectedDate ?: LocalDate.now(),
-                            weatherIcon = "\uD83C\uDF24️",
-                            temperature = "30°C",
-                            events = selectedEvents
-                        )
-
-                        ReminderListBox(
-                            events = selectedEvents,
-                            selectedDate = selectedDate ?: LocalDate.now(),
-                            viewModel = viewModel,
-                            onEventCheckChange = { event, isChecked ->
-                                viewModel.updateEventCheckStatus(event.id, isChecked)
-                            },
-                            navController = navController,
-                            onDateChange = { newDate ->
-                                // ① 새로 선택된 날짜의 YearMonth 얻기
-                                val newMonth = YearMonth.from(newDate)
-                                // ② 현재 캘린더가 보고 있는 달과 다르면 month 전환
-                                if (newMonth != viewModel.currentMonth.value) {
-                                    viewModel.goToMonth(newMonth)
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .pointerInput(Unit) {
+                                detectVerticalDragGestures { _, dragAmount ->
+                                    if (dragAmount < -30) isWeekly = true
+                                    else if (dragAmount > 30) isWeekly = false
                                 }
-                                // ③ 실제 날짜 선택
-                                viewModel.selectDate(newDate)
-                            }
-                        )
+                            },
+                        contentAlignment = Alignment.TopStart
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp),
+                            verticalArrangement = Arrangement.Top
+                        ) {
+                            ReminderDayInfoBox(
+                                selectedDate = selectedDate ?: LocalDate.now(),
+                                weatherIcon = "\uD83C\uDF24️",
+                                temperature = "30°C",
+                                events = selectedEvents
+                            )
+
+                            ReminderListBox(
+                                events = selectedEvents,
+                                selectedDate = selectedDate ?: LocalDate.now(),
+                                viewModel = viewModel,
+                                onEventCheckChange = { event, isChecked ->
+                                    viewModel.updateEventCheckStatus(event.id, isChecked)
+                                },
+                                navController = navController,
+                                onDateChange = { newDate ->
+                                    val newMonth = YearMonth.from(newDate)
+                                    if (newMonth != viewModel.currentMonth.value) {
+                                        viewModel.goToMonth(newMonth)
+                                    }
+                                    viewModel.selectDate(newDate)
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
+
 
         if (isSidebarOpen) {
             Box(
@@ -203,7 +195,6 @@ fun ReminderScreen(
                     .pointerInput(Unit) {
                         detectTapGestures {
                             isSidebarOpen = false
-                            dragOffset = 0f
                         }
                     }
                     .zIndex(0.5f)
@@ -216,16 +207,15 @@ fun ReminderScreen(
                     .fillMaxHeight()
                     .width(280.dp)
                     .graphicsLayer {
-                        translationX = animatedOffset + dragOffset - sidebarWidth
+                        translationX = animatedOffset - sidebarWidth
                     }
                     .zIndex(1f)
             ) {
                 SidebarComponent(
                     isOpen = isSidebarOpen,
-                    animatedOffset = animatedOffset + dragOffset,
+                    animatedOffset = animatedOffset,
                     onClose = {
                         isSidebarOpen = false
-                        dragOffset = 0f
                     },
                     navController = navController,
                     modifier = Modifier.fillMaxSize()

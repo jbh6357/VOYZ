@@ -35,10 +35,12 @@ public class GeoConverter {
 
             double lat = doc.get("y").asDouble();
             double lon = doc.get("x").asDouble();
+            String sido = doc.path("address").path("region_1depth_name").asText(null);
+            String gugun = doc.path("address").path("region_2depth_name").asText(null);
             String dongName = Optional.ofNullable(doc.path("address").path("region_3depth_name").asText(null))
                                     .orElse(doc.path("road_address").path("region_3depth_name").asText(null));
 
-            return Optional.of(new GeoData(lat, lon, dongName));
+            return Optional.of(new GeoData(lat, lon, sido, gugun, dongName));
         } catch (Exception e) {
             e.printStackTrace();
             return Optional.empty();
@@ -71,6 +73,6 @@ public class GeoConverter {
     }
 
     // 사용할 데이터 전달 record 
-    public record GeoData(double lat, double lon, String dongName) {}
+    public record GeoData(double lat, double lon, String sido, String gugun, String dongName) {}
     public record GridData(int nx, int ny) {}
 }

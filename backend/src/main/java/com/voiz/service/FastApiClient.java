@@ -24,7 +24,7 @@ import java.util.HashMap;
 @Service
 public class FastApiClient {
     
-    @Value("${fastapi.base-url:http://localhost:8000}")
+    @Value("${fastapi.base-url:http://127.0.0.1:8000}")
     private String fastApiBaseUrl;
     
     private final RestTemplate restTemplate = new RestTemplate();
@@ -145,19 +145,25 @@ public class FastApiClient {
 	 * @throws IOException 
 	 */
 	public ResponseEntity<String> requestOcr(MultipartFile file) throws IOException{
-		 String endpoint = "/api/ocr";
-		 String url = fastApiBaseUrl + endpoint;
+		try {
+			String endpoint = "/api/ocr";
+			String url = fastApiBaseUrl + endpoint;
 
-		// MultiValueMap으로 multipart 데이터 구성
-		MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-		body.add("file", new MultipartFileResource(file));
-		    
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-		    
-		HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-		    
-		return restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+			// MultiValueMap으로 multipart 데이터 구성
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			body.add("file", new MultipartFileResource(file));
+			    
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+			    
+			HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+			    
+			return restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+		} catch (Exception e) {
+			// ML 서비스 연결 실패 시 더 명확한 에러 메시지
+			System.err.println("Failed to connect to ML service at " + fastApiBaseUrl + ": " + e.getMessage());
+			throw new RuntimeException("ML 서비스 연결 실패 (503): " + e.getMessage(), e);
+		}
 	}
 
 	public String requestTranslate(String text, String targetLanguage) {
@@ -181,6 +187,50 @@ public class FastApiClient {
             }
         }
         return text; // 번역 실패 시 원문 그대로 반환
+	}
+
+	public Map<String, Object> translateTexts(Map<String, Object> request) {
+		try {
+	        String endpoint = "/api/translateWeb";
+	        String url = fastApiBaseUrl + endpoint;
+
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+
+	        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(request, headers);
+
+	        ResponseEntity<Map> response = restTemplate.exchange(
+	            url, HttpMethod.POST, requestEntity, Map.class);
+
+	        return response.getBody();
+	    } catch (Exception e) {
+	        throw new RuntimeException("FastAPI 번역 서비스 연결 실패: " + e.getMessage(), e);
+	    }
+		
+	}
+
+	/**
+	 * 리뷰 일괄 번역 메서드
+	 * @param request 번역 요청 (reviews: List<String>, targetLanguage: String)
+	 * @return 번역된 리뷰 목록
+	 */
+	public Map<String, Object> translateReviews(Map<String, Object> request) {
+		try {
+	        String endpoint = "/api/reviews/translate";
+	        String url = fastApiBaseUrl + endpoint;
+
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+
+	        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(request, headers);
+
+	        ResponseEntity<Map> response = restTemplate.exchange(
+	            url, HttpMethod.POST, requestEntity, Map.class);
+
+	        return response.getBody();
+	    } catch (Exception e) {
+	        throw new RuntimeException("리뷰 번역 서비스 연결 실패: " + e.getMessage(), e);
+	    }
 	}
 
 } 

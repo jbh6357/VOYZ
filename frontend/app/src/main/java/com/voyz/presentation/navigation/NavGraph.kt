@@ -14,7 +14,7 @@ import com.voyz.presentation.screen.main.MainScreen
 import com.voyz.presentation.screen.auth.IdPwFindScreen
 import com.voyz.presentation.screen.reminder.ReminderScreen
 import com.voyz.presentation.screen.management.operation.OperationManagementScreen
-import com.voyz.presentation.screen.management.CustomerManagementScreen
+import com.voyz.presentation.screen.management.review.CustomerManagementScreen
 import com.voyz.presentation.screen.management.SettingsScreen
 import com.voyz.presentation.screen.management.UserProfileScreen
 import com.voyz.presentation.screen.marketing.MarketingCreateScreen
@@ -28,16 +28,38 @@ import com.voyz.presentation.screen.management.operation.OperationManagementMenu
 import com.voyz.presentation.screen.management.operation.OperationManagementMenuUploadScreen
 import com.voyz.presentation.screen.management.operation.OperationManagementMenuInputScreen
 import com.voyz.presentation.screen.management.operation.OperationManagementMenuProcessingScreen
+import com.voyz.datas.model.dto.MenuItemDto
+import com.voyz.presentation.screen.management.operation.MenuRepository
+import com.voyz.presentation.service.ScheduledAnalysisManager
+import com.voyz.datas.datastore.UserPreferencesManager
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun NavGraph(navController: NavHostController) {
     val imageUri = remember { mutableStateOf<Uri?>(null) }
+    val ocrResults = remember { mutableStateOf<List<com.voyz.datas.model.dto.MenuItemDto>>(emptyList()) }
+    val menuRepository = remember { MenuRepository() }
+    val coroutineScope = rememberCoroutineScope()
+    
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scheduledAnalysisManager = remember { ScheduledAnalysisManager(context) }
+    val userPreferencesManager = remember { UserPreferencesManager(context) }
     
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate("main") {
+                    // 로그인 성공 시 정기 작업 스케줄링 설정 및 즉시 리뷰 업데이트
+                    println("🚀 로그인 성공 - 정기 작업 스케줄링 시작")
+                    
+                    // 1. 정기 작업 스케줄링 (매일 9시, 월요일 9시)
+                    scheduledAnalysisManager.setupScheduledTasks()
+                    
+                    // 2. 로그인 시 리뷰/번역 즉시 업데이트
+                    scheduledAnalysisManager.updateReviewsOnLogin()
+                    
+                    navController.navigate("reminder") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
@@ -105,32 +127,72 @@ fun NavGraph(navController: NavHostController) {
         }
         
         composable("operation_management_menu_upload") {
-            val imageUriState = remember { mutableStateOf<Uri?>(null) }
-
             OperationManagementMenuUploadScreen(
                 navController = navController,
-                imageUri = imageUriState.value,
-                onImageSelected = { imageUriState.value = it },
-                onDeleteImage = { imageUriState.value = null },
+                imageUri = imageUri.value,
+                onImageSelected = { 
+                    android.util.Log.d("NavGraph", "Image selected: $it")
+                    imageUri.value = it 
+                },
+                onDeleteImage = { 
+                    android.util.Log.d("NavGraph", "Image deleted")
+                    imageUri.value = null 
+                },
                 onNextStep = {
+                    android.util.Log.d("NavGraph", "Moving to processing screen, imageUri: ${imageUri.value}")
                     navController.navigate("operation_management_menu_processing")
                 }
             )
         }
 
         composable("operation_management_menu_processing") {
-            OperationManagementMenuProcessingScreen(navController = navController)
+            OperationManagementMenuProcessingScreen(
+                navController = navController,
+                imageUri = imageUri.value,
+                onOcrComplete = { results ->
+                    ocrResults.value = results
+                }
+            )
         }
 
         composable("operation_management_menu_confirm") {
             OperationManagementMenuConfirmScreen(
                 navController = navController,
-                imageUri = imageUri.value
+                imageUri = imageUri.value,
+                ocrResults = ocrResults.value
             )
         }
 
         composable("operation_management_menu_input") {
-            OperationManagementMenuInputScreen(navController = navController)
+            OperationManagementMenuInputScreen(
+                navController = navController,
+                onSubmit = { imageUri, menuName, price, description, category ->
+                    coroutineScope.launch {
+                        try {
+                            // TODO: userId를 실제 로그인된 사용자 ID로 변경
+                            val userId = "test_user"
+                            val priceInt = price.toIntOrNull() ?: 0
+                            
+                            val result = menuRepository.createMenu(
+                                userId = userId,
+                                menuName = menuName,
+                                menuPrice = priceInt,
+                                menuDescription = description,
+                                category = category
+                            )
+                            
+                            if (result.isSuccess) {
+                                navController.popBackStack()
+                            } else {
+                                // 에러 처리
+                                android.util.Log.e("MenuCreate", "메뉴 생성 실패: ${result.exceptionOrNull()}")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("MenuCreate", "메뉴 생성 중 오류: ${e.message}")
+                        }
+                    }
+                }
+            )
         }
         
         composable("customer_management") {

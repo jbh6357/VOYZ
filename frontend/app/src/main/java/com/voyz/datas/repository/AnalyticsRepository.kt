@@ -1,0 +1,131 @@
+package com.voyz.datas.repository
+
+import android.util.Log
+import com.voyz.datas.model.dto.MenuSalesDto
+import com.voyz.datas.model.dto.NationalityAnalyticsDto
+import com.voyz.datas.model.dto.NationalitySummaryDto
+import com.voyz.datas.model.dto.ReviewResponseDto
+import com.voyz.datas.model.dto.ReviewSummaryDto
+import com.voyz.datas.model.dto.SalesAnalyticsDto
+import com.voyz.datas.model.dto.CountryRatingDto
+import com.voyz.datas.model.dto.MenuSentimentDto
+import com.voyz.datas.model.dto.HourlySalesDto
+import com.voyz.datas.network.ApiClient
+import java.time.LocalDate
+
+class AnalyticsRepository {
+
+    private val api = ApiClient.analyticsApiService
+
+    suspend fun getSalesAnalytics(userId: String, start: String, end: String): List<SalesAnalyticsDto> {
+        return api.getSalesAnalytics(userId, start, end)
+    }
+
+    suspend fun getTopMenus(userId: String, start: String, end: String, category: String? = null): List<MenuSalesDto> {
+        Log.d("AnalyticsRepository", "userId ${userId}, start ${start}, end ${end}, category ${category}")
+        return api.getTopMenuSales(userId, start, end, category)
+    }
+
+    suspend fun getReviewSummary(userId: String, start: String, end: String, positive: Int = 4, negative: Int = 2): ReviewSummaryDto {
+        return api.getReviewSummary(userId, start, end, positive, negative)
+    }
+
+    suspend fun getNationalityByYear(userId: String, year: Int): List<NationalityAnalyticsDto> {
+        return api.getNationalityStatsByYear(userId, year)
+    }
+
+    suspend fun getNationalityByMonth(userId: String, month: Int): List<NationalityAnalyticsDto> {
+        return api.getNationalityStatsByMonth(userId, month)
+    }
+
+    suspend fun getNationalityByWeek(userId: String, week: Int): List<NationalityAnalyticsDto> {
+        return api.getNationalityStatsByWeek(userId, week)
+    }
+
+    suspend fun getNationalitySummaryByMonth(userId: String, month: Int): NationalitySummaryDto {
+        return api.getNationalitySummaryByMonth(userId, month)
+    }
+
+    suspend fun getReviews(
+        userId: String,
+        start: String,
+        end: String,
+        nationality: String? = null,
+        minRating: Int? = null,
+        maxRating: Int? = null,
+        menuIds: List<Int>? = null,
+    ): List<ReviewResponseDto> {
+        return api.getReviews(userId, start, end, nationality, minRating, maxRating, menuIds)
+    }
+
+    suspend fun getReviewKeywords(
+        userId: String,
+        start: String,
+        end: String,
+        positive: Int = 4,
+        negative: Int = 2,
+        topK: Int = 5,
+        mode: String = "openai",
+    ): String {
+        val resp = api.getReviewKeywords(userId, start, end, positive, negative, topK, mode)
+        return if (resp.isSuccessful) resp.body()?.string().orEmpty() else "{}"
+    }
+
+    suspend fun getCountryRatings(
+        userId: String,
+        start: String,
+        end: String,
+    ): List<CountryRatingDto> {
+        return api.getCountryRatings(userId, start, end)
+    }
+
+    suspend fun getMenuSentiment(
+        userId: String,
+        start: String,
+        end: String,
+        positive: Int = 4,
+        negative: Int = 2,
+        nationality: String? = null,
+        includeSummary: Boolean = false,
+    ): List<MenuSentimentDto> {
+        return api.getMenuSentiment(userId, start, end, positive, negative, nationality, includeSummary)
+    }
+
+    suspend fun getReviewNationalities(userId: String): List<String> {
+        return api.getReviewNationalities(userId)
+    }
+
+    suspend fun getComprehensiveInsights(userId: String, startDate: String? = null, endDate: String? = null): Map<String, Any> {
+        return api.getComprehensiveInsights(userId, startDate, endDate)
+    }
+    
+    suspend fun getSalesInsights(userId: String, period: String = "month"): Map<String, Any> {
+        return api.getSalesInsights(userId, period)
+    }
+
+    suspend fun getPeriodInsights(
+        userId: String, 
+        startDate: LocalDate, 
+        endDate: LocalDate, 
+        period: String = "month"
+    ): Map<String, Any> {
+        return api.getPeriodInsights(userId, startDate.toString(), endDate.toString(), period)
+    }
+
+    suspend fun getCustomerBehaviorAnalysis(
+        userId: String, 
+        startDate: LocalDate, 
+        endDate: LocalDate, 
+        period: String = "month"
+    ): Map<String, Any> {
+        return api.getCustomerBehaviorAnalysis(userId, startDate.toString(), endDate.toString(), period)
+    }
+
+    suspend fun getHourlySales(
+        userId: String,
+        start: String,
+        end: String,
+    ): List<HourlySalesDto> {
+        return api.getHourlySales(userId, start, end)
+    }
+}

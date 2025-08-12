@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.voyz.datas.datastore.UserPreferencesManager
 import com.voyz.datas.repository.UserRepository
+import com.voyz.datas.repository.QrRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +27,7 @@ data class SignUpUiState(
     val storeName: String = "",
     val storeCategory: String = "",
     val storeAddress: String = "",
+    val tableCount: String = "1",
     
     // 유효성 검사
     val isUserIdValid: Boolean = false,
@@ -35,29 +37,34 @@ data class SignUpUiState(
     val isUserPhoneValid: Boolean = false,
     val isStoreNameValid: Boolean = false,
     val isStoreCategoryValid: Boolean = false,
-    val isStoreAddressValid: Boolean = false
+    val isStoreAddressValid: Boolean = false,
+    val isTableCountValid: Boolean = true
 )
 
 class SignUpViewModel(
     private val userRepository: UserRepository,
-    private val userPreferencesManager: UserPreferencesManager
+    private val userPreferencesManager: UserPreferencesManager,
+    private val qrRepository: QrRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(SignUpUiState())
     val uiState: StateFlow<SignUpUiState> = _uiState.asStateFlow()
     
     fun updateUserId(userId: String) {
+        val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
         _uiState.value = _uiState.value.copy(
             userId = userId,
-            isUserIdValid = userId.length >= 4 && userId.matches(Regex("^[a-zA-Z0-9]+$"))
+            isUserIdValid = userId.matches(emailRegex)
         )
     }
     
     fun updatePassword(password: String) {
         val current = _uiState.value
+        // 영어, 숫자, 특수문자를 모두 포함하고 8자 이상
+        val passwordRegex = Regex("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$")
         _uiState.value = current.copy(
             password = password,
-            isPasswordValid = password.length >= 6,
+            isPasswordValid = password.matches(passwordRegex),
             isPasswordMatch = password == current.confirmPassword && password.isNotEmpty()
         )
     }
@@ -105,6 +112,14 @@ class SignUpViewModel(
         )
     }
     
+    fun updateTableCount(tableCount: String) {
+        val count = tableCount.toIntOrNull()
+        _uiState.value = _uiState.value.copy(
+            tableCount = tableCount,
+            isTableCountValid = count != null && count >= 1
+        )
+    }
+    
     fun nextStep() {
         val current = _uiState.value
         if (current.currentStep < 2) {
@@ -124,7 +139,7 @@ class SignUpViewModel(
         return when (current.currentStep) {
             0 -> current.isUserIdValid && current.isPasswordValid && current.isPasswordMatch
             1 -> current.isUserNameValid && current.isUserPhoneValid
-            2 -> current.isStoreNameValid && current.isStoreCategoryValid && current.isStoreAddressValid
+            2 -> current.isStoreNameValid && current.isStoreCategoryValid && current.isStoreAddressValid && current.isTableCountValid
             else -> false
         }
     }
@@ -149,10 +164,31 @@ class SignUpViewModel(
                 )
                 
                 if (response.isSuccessful) {
-                    _uiState.value = current.copy(
-                        isLoading = false,
-                        isRegistrationComplete = true
-                    )
+                    // 회원가입 성공 후 QR 코드 생성
+                    try {
+                        val tableCount = current.tableCount.toIntOrNull() ?: 1
+                        val qrResponse = qrRepository.generateQrCodes(
+                            userId = current.userId,
+                            tableCount = tableCount
+                        )
+                        
+                        if (qrResponse.isSuccessful) {
+                            _uiState.value = current.copy(
+                                isLoading = false,
+                                isRegistrationComplete = true
+                            )
+                        } else {
+                            _uiState.value = current.copy(
+                                isLoading = false,
+                                errorMessage = "회원가입은 완료되었으나 QR 코드 생성에 실패했습니다."
+                            )
+                        }
+                    } catch (e: Exception) {
+                        _uiState.value = current.copy(
+                            isLoading = false,
+                            errorMessage = "회원가입은 완료되었으나 QR 코드 생성 중 오류가 발생했습니다."
+                        )
+                    }
                 } else {
                     _uiState.value = current.copy(
                         isLoading = false,

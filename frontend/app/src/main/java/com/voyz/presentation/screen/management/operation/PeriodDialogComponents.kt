@@ -33,8 +33,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PeriodSelectionDialog(
     onDismiss: () -> Unit,
@@ -43,25 +45,27 @@ fun PeriodSelectionDialog(
     var selectedTab by remember { mutableStateOf(PeriodTab.YEAR) }
 
     // 공통 옵션
-    val yearOptions  = (2025 downTo 2021).map { it.toString() }
+    val currentYear = LocalDate.now().year
+    val yearOptions  = (currentYear downTo currentYear - 4).map { it.toString() }
     val monthOptions = (1..12).map { "${it}월" }
     val weekOptions  = listOf("1주차", "2주차", "3주차", "4주차", "5주차")
 
     // 연도별 상태
-    var startYear by remember { mutableStateOf(yearOptions.first()) }
-    var endYear   by remember { mutableStateOf(yearOptions.last()) }
+    var startYear by remember { mutableStateOf(yearOptions.last()) }  // 가장 과거
+    var endYear   by remember { mutableStateOf(yearOptions.first()) } // 가장 최근
 
     // 월별 상태
-    var startMonth by remember { mutableStateOf(monthOptions.first()) }
-    var endMonth   by remember { mutableStateOf(monthOptions.first()) }
+    val currentMonthLabel = "${LocalDate.now().monthValue}월"
+    var startMonth by remember { mutableStateOf(currentMonthLabel) }
+    var endMonth   by remember { mutableStateOf(currentMonthLabel) }
 
     // 주별 상태
     var startWeekYear  by remember { mutableStateOf(yearOptions.first()) }
-    var startWeekMonth by remember { mutableStateOf(monthOptions.first()) }
+    var startWeekMonth by remember { mutableStateOf(currentMonthLabel) }
     var startWeek      by remember { mutableStateOf(weekOptions.first()) }
 
     var endWeekYear  by remember { mutableStateOf(yearOptions.first()) }
-    var endWeekMonth by remember { mutableStateOf(monthOptions.first()) }
+    var endWeekMonth by remember { mutableStateOf(currentMonthLabel) }
     var endWeek      by remember { mutableStateOf(weekOptions.first()) }
 
     Dialog(
@@ -203,8 +207,11 @@ fun PeriodSelectionDialog(
 
                 // ─── WEEK 탭 (연도 / 월 / 1~5주차) ───
                 if (selectedTab == PeriodTab.WEEK) {
-                    // 시작
-                    Row(Modifier.fillMaxWidth()) {
+                    // 시작 (FlowRow로 자동 줄바꿈)
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         DropdownSelectorString(
                             label     = "시작 연도",
                             options   = yearOptions,
@@ -212,7 +219,6 @@ fun PeriodSelectionDialog(
                             onSelected= { startWeekYear = it },
                             modifier  = Modifier.weight(1f)
                         )
-                        Spacer(Modifier.width(8.dp))
                         DropdownSelectorString(
                             label     = "시작 월",
                             options   = monthOptions,
@@ -220,7 +226,6 @@ fun PeriodSelectionDialog(
                             onSelected= { startWeekMonth = it },
                             modifier  = Modifier.weight(1f)
                         )
-                        Spacer(Modifier.width(8.dp))
                         DropdownSelectorString(
                             label     = "시작 주차",
                             options   = weekOptions,
@@ -232,8 +237,11 @@ fun PeriodSelectionDialog(
 
                     Spacer(Modifier.height(12.dp))
 
-                    // 종료
-                    Row(Modifier.fillMaxWidth()) {
+                    // 종료 (FlowRow로 자동 줄바꿈)
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         DropdownSelectorString(
                             label     = "종료 연도",
                             options   = yearOptions,
@@ -241,7 +249,6 @@ fun PeriodSelectionDialog(
                             onSelected= { endWeekYear = it },
                             modifier  = Modifier.weight(1f)
                         )
-                        Spacer(Modifier.width(8.dp))
                         DropdownSelectorString(
                             label     = "종료 월",
                             options   = monthOptions,
@@ -249,7 +256,6 @@ fun PeriodSelectionDialog(
                             onSelected= { endWeekMonth = it },
                             modifier  = Modifier.weight(1f)
                         )
-                        Spacer(Modifier.width(8.dp))
                         DropdownSelectorString(
                             label     = "종료 주차",
                             options   = weekOptions,

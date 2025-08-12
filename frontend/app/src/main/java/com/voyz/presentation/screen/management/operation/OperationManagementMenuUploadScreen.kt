@@ -38,6 +38,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.draw.clip
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +50,8 @@ fun OperationManagementMenuUploadScreen(
     onDeleteImage: () -> Unit,
     onNextStep: () -> Unit
 ) {
+    // 디버깅용 로그
+    android.util.Log.d("UploadScreen", "imageUri: $imageUri")
     val shape = RoundedCornerShape(16.dp)
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -57,6 +60,7 @@ fun OperationManagementMenuUploadScreen(
     }
 
     Scaffold(
+        containerColor = Color.White, // 완전한 흰색 배경
         topBar = {
             TopAppBar(
                 windowInsets = WindowInsets(0),
@@ -70,16 +74,25 @@ fun OperationManagementMenuUploadScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "뒤로가기")
                     }
+                },
+                actions = {
+                    if (imageUri == null) {
+                        TextButton(
+                            onClick = { launcher.launch("image/*") }
+                        ) {
+                            Text("이미지 등록", color = Color(0xFFCD212A))
+                        }
+                    }
                 }
             )
         }
     ) { innerPadding ->
         Column(
-
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
+                .background(Color.White) // 명시적 흰색 배경
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             StepProgressIndicator(
@@ -89,73 +102,82 @@ fun OperationManagementMenuUploadScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (imageUri == null) {
-                // 아직 이미지 없을 때
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp)
-                        .drawBehind {
-                            val stroke = Stroke(
-                                width = 3f,
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 10f))
+            // 이미지 영역 - 버튼 위까지 확장
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f) // 남은 공간 모두 사용
+                    .padding(bottom = 8.dp)
+            ) {
+                if (imageUri == null) {
+                    // 아직 이미지 없을 때
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .drawBehind {
+                                val stroke = Stroke(
+                                    width = 3f,
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 10f))
+                                )
+                                drawRoundRect(
+                                    color = Color.Gray,
+                                    topLeft = Offset(0f, 0f),
+                                    size = size,
+                                    style = stroke,
+                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(32f, 32f)
+                                )
+                            }
+                            .clickable {
+                                launcher.launch("image/*")
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "이미지 추가",
+                                modifier = Modifier.size(48.dp),
+                                tint = Color.Gray
                             )
-                            drawRoundRect(
-                                color = Color.Gray,
-                                topLeft = Offset(0f, 0f),
-                                size = size,
-                                style = stroke,
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(32f, 32f)
+                            Text("메뉴판 사진을 업로드 해주세요", color = Color.Gray, fontSize = 14.sp)
+                        }
+                    }
+                } else {
+                    // 이미지 선택된 경우
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable {
+                                launcher.launch("image/*") // 이미지 클릭 시 다시 선택
+                            }
+                    ) {
+                        Image(
+                            painter = rememberAsyncImagePainter(imageUri),
+                            contentDescription = "선택된 이미지",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        
+                        // 하단에 살짝 보이는 힌트 텍스트
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .background(
+                                    color = Color.Black.copy(alpha = 0.5f)
+                                )
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = "이미지를 탭하여 변경",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                modifier = Modifier.align(Alignment.Center)
                             )
                         }
-                        .clickable {
-                            // ✅ 이 안에 있어야 작동해요!
-                            launcher.launch("image/*")
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "이미지 추가",
-                            modifier = Modifier.size(48.dp),
-                            tint = Color.Gray
-                        )
-                        Text("메뉴판 사진을 업로드 해주세요", color = Color.Gray, fontSize = 14.sp)
-                    }
-                }
-            } else {
-                // 이미지 선택된 경우
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp)
-                        .background(Color.LightGray),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(imageUri),
-                        contentDescription = "선택된 이미지",
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    OutlinedButton(onClick = onDeleteImage) {
-                        Text("삭제")
-                    }
-                    OutlinedButton(onClick = {
-                        launcher.launch("image/*") // ✅ 이미지 변경
-                    }) {
-                        Text("변경")
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.weight(1f))
 
             Row(
                 modifier = Modifier
@@ -173,7 +195,10 @@ fun OperationManagementMenuUploadScreen(
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Button(
-                    onClick = onNextStep,
+                    onClick = {
+                        android.util.Log.d("UploadScreen", "Next button clicked, imageUri: $imageUri")
+                        onNextStep()
+                    },
                     modifier = Modifier.weight(1f),
                     enabled = imageUri != null
                 ) {

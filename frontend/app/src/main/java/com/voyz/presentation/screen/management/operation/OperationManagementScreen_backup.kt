@@ -1,0 +1,53 @@
+package com.voyz.presentation.screen.management.operation
+
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.voyz.presentation.component.fab.FloatingActionMenu
+import com.voyz.presentation.component.sidebar.SidebarComponent
+import com.voyz.presentation.component.topbar.CommonTopBar
+import kotlinx.coroutines.delay
+import java.time.LocalDate
+import androidx.compose.ui.BiasAlignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.input.KeyboardType
+import com.voyz.presentation.fake.MenuItem
+import com.voyz.presentation.fake.sampleMenuItems
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
+import com.voyz.datas.model.dto.MenuItemDto
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.voyz.datas.datastore.UserPreferencesManager
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+
+// This is the original backup of OperationManagementScreen
+// Created as backup before refactoring to match ReviewAnalysisScreen design

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Korean Red 배경 -->
+    <item android:drawable="@color/korean_red" />
+    
+    <!-- 중앙 로고 (패딩 포함 inset) -->
+    <item
+        android:drawable="@drawable/splash_icon_inset"
+        android:gravity="center" />
+</layer-list>

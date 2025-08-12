@@ -17,9 +17,10 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import com.voyz.datas.datastore.UserPreferencesManager
 import com.voyz.datas.repository.UserRepository
+import com.voyz.datas.repository.QrRepository
 import com.voyz.presentation.screen.auth.signup.components.*
 import com.voyz.presentation.component.GlobalToastManager
-import com.voyz.ui.theme.Primary
+import com.voyz.ui.theme.KoreanRed
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +32,8 @@ fun SignUpScreen(
     val viewModel = remember {
         SignUpViewModel(
             userRepository = UserRepository(),
-            userPreferencesManager = UserPreferencesManager(context)
+            userPreferencesManager = UserPreferencesManager(context),
+            qrRepository = QrRepository()
         )
     }
     
@@ -112,13 +114,16 @@ fun SignUpScreen(
                         storeName = uiState.storeName,
                         storeCategory = uiState.storeCategory,
                         storeAddress = uiState.storeAddress,
+                        tableCount = uiState.tableCount,
                         categories = SignUpViewModel.STORE_CATEGORIES,
                         isStoreNameValid = uiState.isStoreNameValid,
                         isStoreCategoryValid = uiState.isStoreCategoryValid,
                         isStoreAddressValid = uiState.isStoreAddressValid,
+                        isTableCountValid = uiState.isTableCountValid,
                         onStoreNameChange = viewModel::updateStoreName,
                         onStoreCategoryChange = viewModel::updateStoreCategory,
-                        onStoreAddressChange = viewModel::updateStoreAddress
+                        onStoreAddressChange = viewModel::updateStoreAddress,
+                        onTableCountChange = viewModel::updateTableCount
                     )
                 }
             }
@@ -158,7 +163,7 @@ fun SignUpScreen(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Primary,
+                        containerColor = KoreanRed,
                         contentColor = Color.White
                     )
                 ) {
