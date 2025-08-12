@@ -5,8 +5,6 @@ import com.voiz.dto.NationalityAnalyticsDto;
 import com.voiz.dto.ReviewSummaryDto;
 import com.voiz.dto.OrderTimeAnalyticsDto;
 import com.voiz.dto.SalesAnalyticsDto;
-import com.voiz.dto.CountryRatingDto;
-import com.voiz.dto.MenuSentimentDto;
 import com.voiz.service.AnalyticsService;
 import com.voiz.service.FastApiClient;
 import io.swagger.v3.oas.annotations.Operation;
@@ -91,6 +89,17 @@ public class AnalyticsController {
         return ResponseEntity.ok(analytics);
     }
 
+    @GetMapping("/sales/{userId}/hourly")
+    @Operation(summary = "시간대별 매출액 합계 조회", description = "지정된 기간 동안 00~23시 각 시간대의 총 매출액을 반환합니다.")
+    public ResponseEntity<List<OrderTimeAnalyticsDto>> getSalesAmountByHour(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate
+    ) {
+        List<OrderTimeAnalyticsDto> list = analyticsService.getSalesAmountByHour(userId, startDate, endDate);
+        return ResponseEntity.ok(list);
+    }
+
     @GetMapping("/reviews/{userId}/summary")
     @Operation(summary = "리뷰 요약 통계", description = "기간 기준 총 리뷰 수, 평균 평점, 긍정/부정 리뷰 수를 반환합니다. 긍/부정 임계값은 기본값(positive>=4, negative<=2)을 사용합니다.")
     public ResponseEntity<ReviewSummaryDto> getReviewSummary(
@@ -126,6 +135,7 @@ public class AnalyticsController {
             dto.setMenuIdx(r.getMenuIdx());
             dto.setOrderIdx(r.getOrderIdx());
             dto.setUserId(r.getUserId());
+            dto.setGuestName(r.getGuestName());
             dto.setComment(r.getComment());
             dto.setRating(r.getRating());
             dto.setNationality(r.getNationality());
@@ -242,6 +252,15 @@ public class AnalyticsController {
         return ResponseEntity.ok(insights);
     }
 
+    @GetMapping("/sales/{userId}/insights")
+    @Operation(summary = "매출 인사이트", description = "매출 데이터를 분석하여 AI 기반 인사이트를 생성합니다.")
+    public ResponseEntity<java.util.Map<String, Object>> getSalesInsights(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "month") String period
+    ) {
+        return ResponseEntity.ok(analyticsService.getSalesInsights(userId, period));
+    }
+
     @GetMapping("/reviews/{userId}/comprehensive-insights")
     @Operation(summary = "종합 리뷰 인사이트", description = "전체 리뷰를 분석하여 핵심 인사이트 3가지를 생성합니다.")
     public ResponseEntity<java.util.Map<String, Object>> getComprehensiveInsights(
@@ -258,5 +277,170 @@ public class AnalyticsController {
         
         var insights = analyticsService.generateComprehensiveInsights(userId, startDate, endDate);
         return ResponseEntity.ok(insights);
+    }
+
+    @GetMapping("/period-insights/{userId}")
+    @Operation(summary = "AI 기반 기간별 운영 인사이트", description = "ML 서비스를 활용하여 매출 예측, 고객 패턴, 메뉴 추천 등 종합적인 운영 인사이트를 제공합니다.")
+    public ResponseEntity<java.util.Map<String, Object>> getPeriodInsights(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            @RequestParam(defaultValue = "month") String period
+    ) {
+        try {
+            System.out.println("🔍 기간별 인사이트 API 호출: " + userId + " (" + startDate + " ~ " + endDate + ")");
+            
+            // 1. 매출 데이터 수집
+            var salesData = analyticsService.getSalesAnalytics(userId, startDate, endDate);
+            System.out.println("📊 매출 데이터 수집 완료: " + salesData.size() + "건");
+            
+            // 2. 메뉴 데이터 수집
+            var menuData = analyticsService.getTopMenuSales(userId, startDate, endDate, null, 10);
+            System.out.println("🍽️ 메뉴 데이터 수집 완료: " + menuData.size() + "건");
+            
+            // 3. 고객 데이터 수집
+            var customerData = analyticsService.getNationalityAnalytics(userId, null, null, null);
+            System.out.println("👥 고객 데이터 수집 완료: " + customerData.size() + "건");
+            
+            // 4. 이전 기간 비교 데이터 (같은 기간만큼 이전)
+            long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+            LocalDate prevStartDate = startDate.minusDays(daysBetween + 1);
+            LocalDate prevEndDate = startDate.minusDays(1);
+            var previousSalesData = analyticsService.getSalesAnalytics(userId, prevStartDate, prevEndDate);
+            System.out.println("📈 이전 기간 데이터 수집 완료: " + previousSalesData.size() + "건");
+            
+            // 5. ML 서비스로 전송할 데이터 구성
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("salesData", salesData);
+            payload.put("menuData", menuData);
+            payload.put("customerData", customerData);
+            payload.put("period", period);
+            payload.put("previousPeriodData", java.util.Map.of("sales", previousSalesData));
+            
+            // 6. ML 서비스 호출
+            System.out.println("🤖 ML 서비스 호출 중...");
+            var mlResponse = fastApiClient.postDataToFastApi("/api/analytics/period-insights", payload);
+            
+            if (mlResponse.getStatusCode().is2xxSuccessful()) {
+                System.out.println("✅ ML 인사이트 생성 완료");
+                try {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    java.util.Map<String, Object> insights = mapper.readValue(mlResponse.getBody(), java.util.Map.class);
+                    
+                    // 추가 메타데이터 포함
+                    insights.put("metadata", java.util.Map.of(
+                        "period", period,
+                        "startDate", startDate.toString(),
+                        "endDate", endDate.toString(),
+                        "dataPoints", salesData.size(),
+                        "generatedAt", java.time.LocalDateTime.now().toString()
+                    ));
+                    
+                    return ResponseEntity.ok(insights);
+                } catch (Exception e) {
+                    System.err.println("❌ ML 응답 파싱 오류: " + e.getMessage());
+                    return ResponseEntity.ok(java.util.Map.of(
+                        "error", "AI 분석 중 오류가 발생했습니다",
+                        "rawResponse", mlResponse.getBody()
+                    ));
+                }
+            } else {
+                System.err.println("❌ ML 서비스 오류: " + mlResponse.getStatusCode());
+                return ResponseEntity.status(mlResponse.getStatusCode())
+                    .body(java.util.Map.of("error", "AI 분석 서비스에 연결할 수 없습니다"));
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ 기간별 인사이트 생성 오류: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", "인사이트 생성 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/customer-behavior/{userId}")
+    @Operation(summary = "AI 기반 고객 행동 패턴 분석", description = "ML 서비스를 활용하여 고객의 주문 패턴, 국가별 선호도, 시간대별 트렌드를 분석합니다.")
+    public ResponseEntity<java.util.Map<String, Object>> getCustomerBehaviorAnalysis(
+            @PathVariable String userId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            @RequestParam(defaultValue = "month") String period
+    ) {
+        try {
+            System.out.println("🕵️ 고객 행동 분석 API 호출: " + userId);
+            
+            // 1. 주문 이력 데이터 수집
+            var orderAnalytics = analyticsService.getOrderAnalyticsByTime(userId, startDate, endDate);
+            System.out.println("📋 주문 데이터 수집 완료: " + orderAnalytics.size() + "건");
+            
+            // 2. 리뷰 데이터 수집
+            var reviews = analyticsService.getReviewsByFilters(userId, startDate, endDate, null, null, null, null);
+            System.out.println("⭐ 리뷰 데이터 수집 완료: " + reviews.size() + "건");
+            
+            // 3. ML 서비스용 데이터 변환
+            java.util.List<java.util.Map<String, Object>> orderHistory = new java.util.ArrayList<>();
+            for (var order : orderAnalytics) {
+                java.util.Map<String, Object> orderMap = new java.util.HashMap<>();
+                orderMap.put("time", order.getHour() + ":00");
+                orderMap.put("orderCount", order.getOrderCount());
+                orderMap.put("amount", order.getOrderCount() * 15000); // 평균 주문금액 가정
+                orderHistory.add(orderMap);
+            }
+            
+            java.util.List<java.util.Map<String, Object>> reviewHistory = new java.util.ArrayList<>();
+            for (var review : reviews.stream().limit(50).toList()) { // 최근 50건만
+                java.util.Map<String, Object> reviewMap = new java.util.HashMap<>();
+                reviewMap.put("nationality", review.getNationality());
+                reviewMap.put("rating", review.getRating());
+                reviewMap.put("menuId", review.getMenuIdx());
+                reviewMap.put("comment", review.getComment());
+                reviewHistory.add(reviewMap);
+            }
+            
+            // 4. ML 서비스 호출
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("orderHistory", orderHistory);
+            payload.put("reviewHistory", reviewHistory);
+            payload.put("period", period);
+            
+            System.out.println("🤖 고객 행동 분석 ML 서비스 호출 중...");
+            var mlResponse = fastApiClient.postDataToFastApi("/api/analytics/customer-behavior", payload);
+            
+            if (mlResponse.getStatusCode().is2xxSuccessful()) {
+                System.out.println("✅ 고객 행동 분석 완료");
+                try {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    java.util.Map<String, Object> analysis = mapper.readValue(mlResponse.getBody(), java.util.Map.class);
+                    
+                    // 메타데이터 추가
+                    analysis.put("metadata", java.util.Map.of(
+                        "period", period,
+                        "orderDataPoints", orderHistory.size(),
+                        "reviewDataPoints", reviewHistory.size(),
+                        "analysisDate", java.time.LocalDateTime.now().toString()
+                    ));
+                    
+                    return ResponseEntity.ok(analysis);
+                } catch (Exception e) {
+                    System.err.println("❌ 고객 행동 분석 파싱 오류: " + e.getMessage());
+                    return ResponseEntity.ok(java.util.Map.of(
+                        "error", "고객 행동 분석 중 오류가 발생했습니다",
+                        "rawResponse", mlResponse.getBody()
+                    ));
+                }
+            } else {
+                System.err.println("❌ 고객 행동 분석 ML 서비스 오류: " + mlResponse.getStatusCode());
+                return ResponseEntity.status(mlResponse.getStatusCode())
+                    .body(java.util.Map.of("error", "고객 행동 분석 서비스에 연결할 수 없습니다"));
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ 고객 행동 분석 오류: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", "고객 행동 분석 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
     }
 }

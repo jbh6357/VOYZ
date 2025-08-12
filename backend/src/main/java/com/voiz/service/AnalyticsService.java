@@ -112,7 +112,8 @@ public class AnalyticsService {
                 double percentage = (grandTotal > 0) ? (itemSales / grandTotal) * 100 : 0;
                 double roundedPercentage = Math.round(percentage * 10.0) / 10.0;
                 
-                return new MenuSalesDto(menuName, roundedPercentage);
+                // 실제 매출액과 비율 모두 포함하여 전송
+                return new MenuSalesDto(menuName, itemSales, roundedPercentage);
             })
             .collect(Collectors.toList());
     }
@@ -219,7 +220,31 @@ public class AnalyticsService {
                 .map((Object[] record) -> { 
                     String hour = (String) record[0];
                     Long orderCount = ((Number) record[1]).longValue();
-                    return new OrderTimeAnalyticsDto(hour, orderCount);
+                    OrderTimeAnalyticsDto dto = new OrderTimeAnalyticsDto();
+                    dto.setHour(hour);
+                    dto.setOrderCount(orderCount);
+                    dto.setTotalAmount(null);
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    // 시간별 매출액 통계 조회 메서드
+    public List<OrderTimeAnalyticsDto> getSalesAmountByHour(String userId, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
+
+        List<Object[]> results = salesOrderRepository.findSalesAmountByHour(userId, startDateTime, endDateTime);
+
+        return results.stream()
+                .map((Object[] record) -> {
+                    String hour = (String) record[0];
+                    Double amount = ((Number) record[1]).doubleValue();
+                    OrderTimeAnalyticsDto dto = new OrderTimeAnalyticsDto();
+                    dto.setHour(hour);
+                    dto.setOrderCount(null);
+                    dto.setTotalAmount(amount);
+                    return dto;
                 })
                 .collect(Collectors.toList());
     }
@@ -574,5 +599,182 @@ public class AnalyticsService {
         return defaultInsights;
     }
 
+    public java.util.Map<String, Object> getSalesInsights(String userId, String period) {
+        try {
+            LocalDate endDate = LocalDate.now();
+            LocalDate startDate;
+            LocalDate prevStartDate;
+            LocalDate prevEndDate;
+            
+            // 기간별 날짜 계산
+            switch (period) {
+                case "week":
+                    startDate = endDate.minusDays(6);
+                    prevEndDate = startDate.minusDays(1);
+                    prevStartDate = prevEndDate.minusDays(6);
+                    break;
+                case "year":
+                    startDate = endDate.withDayOfYear(1);
+                    prevEndDate = startDate.minusDays(1);
+                    prevStartDate = prevEndDate.withDayOfYear(1);
+                    break;
+                default: // month
+                    startDate = endDate.withDayOfMonth(1);
+                    prevEndDate = startDate.minusDays(1);
+                    prevStartDate = prevEndDate.withDayOfMonth(1);
+                    break;
+            }
+            
+            // 현재/이전 기간 매출 조회 (원시 레코드)
+            java.util.List<java.util.Map<String, Object>> rawCurrent = salesOrderRepository.getDailySalesForPeriod(
+                userId, startDate.toString(), endDate.toString()
+            );
+            java.util.List<java.util.Map<String, Object>> rawPrevious = salesOrderRepository.getDailySalesForPeriod(
+                userId, prevStartDate.toString(), prevEndDate.toString()
+            );
+
+            // 키 케이스/별칭을 정규화 (date/amount 소문자 키로 통일)
+            java.util.List<java.util.Map<String, Object>> currentSales = normalizeDailySalesRecords(rawCurrent);
+            java.util.List<java.util.Map<String, Object>> previousSales = normalizeDailySalesRecords(rawPrevious);
+            
+            // ML 서비스에 인사이트 요청
+            RestTemplate restTemplate = new RestTemplate();
+            String mlServiceUrl = "http://localhost:8000/api/sales/insights";
+            
+            java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+            requestBody.put("period", period);
+            requestBody.put("currentSales", currentSales);
+            requestBody.put("previousSales", previousSales);
+            requestBody.put("userId", userId);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            
+            try {
+                ResponseEntity<java.util.Map> response = restTemplate.postForEntity(mlServiceUrl, entity, java.util.Map.class);
+                
+                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                    return response.getBody();
+                }
+            } catch (Exception mlError) {
+                System.err.println("ML 서비스 호출 실패: " + mlError.getMessage());
+                // ML 서비스 실패시 기본 분석 제공
+                return generateBasicSalesInsights(currentSales, previousSales, period);
+            }
+            
+        } catch (Exception e) {
+            System.err.println("매출 인사이트 생성 실패: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        // 에러시 기본값 반환 (null-safe)
+        java.util.Map<String, Object> summary = new java.util.HashMap<>();
+        summary.put("totalSales", 0);
+        summary.put("averageDailySales", 0);
+        summary.put("growthRate", 0.0);
+        summary.put("bestDay", java.util.Collections.emptyMap());
+
+        java.util.Map<String, Object> fallback = new java.util.HashMap<>();
+        fallback.put("summary", summary);
+        fallback.put("insights", java.util.List.of("매출 데이터를 불러올 수 없습니다."));
+        fallback.put("predictions", "데이터를 확인해주세요.");
+        return fallback;
+    }
+    
+    private java.util.Map<String, Object> generateBasicSalesInsights(
+            java.util.List<java.util.Map<String, Object>> currentSales,
+            java.util.List<java.util.Map<String, Object>> previousSales,
+            String period) {
+        
+        // 총 매출 계산
+        double totalSales = currentSales.stream()
+            .mapToDouble(s -> {
+                Object v = s.get("amount");
+                if (v == null) v = s.get("AMOUNT");
+                return v == null ? 0.0 : ((Number) v).doubleValue();
+            })
+            .sum();
+            
+        double avgDaily = currentSales.isEmpty() ? 0 : totalSales / currentSales.size();
+        
+        // 최고 매출일
+        java.util.Map<String, Object> bestDay = currentSales.stream()
+            .max((a, b) -> {
+                Object av = a.get("amount"); if (av == null) av = a.get("AMOUNT");
+                Object bv = b.get("amount"); if (bv == null) bv = b.get("AMOUNT");
+                double ad = av == null ? 0.0 : ((Number) av).doubleValue();
+                double bd = bv == null ? 0.0 : ((Number) bv).doubleValue();
+                return Double.compare(ad, bd);
+            })
+            .orElse(null);
+        
+        // 성장률 계산
+        double growthRate = 0;
+        if (!previousSales.isEmpty()) {
+            double prevTotal = previousSales.stream()
+                .mapToDouble(s -> {
+                    Object v = s.get("amount");
+                    if (v == null) v = s.get("AMOUNT");
+                    return v == null ? 0.0 : ((Number) v).doubleValue();
+                })
+                .sum();
+            if (prevTotal > 0) {
+                growthRate = ((totalSales - prevTotal) / prevTotal) * 100;
+            }
+        }
+        
+        // 기본 인사이트 생성
+        java.util.List<String> insights = new java.util.ArrayList<>();
+        
+        if (growthRate > 0) {
+            insights.add(String.format("매출이 전 기간 대비 %.1f%% 상승했습니다.", growthRate));
+        } else if (growthRate < 0) {
+            insights.add(String.format("매출이 %.1f%% 감소했습니다. 프로모션을 고려해보세요.", Math.abs(growthRate)));
+        }
+        
+        if (avgDaily > 0) {
+            insights.add(String.format("일평균 매출은 %.0f만원입니다.", avgDaily / 10000));
+        }
+        
+        String prediction = growthRate > 0 ? 
+            "현재 추세가 지속되면 매출 성장이 기대됩니다." : 
+            "매출 증대를 위한 전략이 필요합니다.";
+        
+        java.util.Map<String, Object> summary = new java.util.HashMap<>();
+        summary.put("totalSales", totalSales);
+        summary.put("averageDailySales", avgDaily);
+        summary.put("growthRate", growthRate);
+        summary.put("bestDay", bestDay != null ? bestDay : java.util.Collections.emptyMap());
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("summary", summary);
+        result.put("insights", insights);
+        result.put("predictions", prediction);
+        return result;
+    }
+
+    // DB native 결과의 키를 소문자 date/amount로 통일
+    private java.util.List<java.util.Map<String, Object>> normalizeDailySalesRecords(
+        java.util.List<java.util.Map<String, Object>> records
+    ) {
+        java.util.List<java.util.Map<String, Object>> list = new java.util.ArrayList<>();
+        if (records == null) return list;
+        for (java.util.Map<String, Object> r : records) {
+            if (r == null) continue;
+            Object dateVal = r.get("date");
+            if (dateVal == null) dateVal = r.get("DATE");
+            if (dateVal == null) dateVal = r.get("sales_date");
+            if (dateVal == null) dateVal = r.get("SALES_DATE");
+            Object amountVal = r.get("amount");
+            if (amountVal == null) amountVal = r.get("AMOUNT");
+
+            java.util.Map<String, Object> m = new java.util.HashMap<>();
+            if (dateVal != null) m.put("date", dateVal.toString());
+            if (amountVal != null) m.put("amount", ((Number) amountVal).doubleValue());
+            list.add(m);
+        }
+        return list;
+    }
 
 }
