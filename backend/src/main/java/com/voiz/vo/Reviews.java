@@ -48,6 +48,9 @@ public class Reviews {
     @Column(name = "LANGUAGE")
     private String language; // 언어
 
+     @Column(name = "GUEST_NAME")
+     private String guestName; // 리뷰 작성자 표시 이름 (손님 이름)
+
     @CreationTimestamp
     @Column(name = "CREATED_AT", updatable = false)
     private LocalDateTime createdAt; // 리뷰 작성 시간

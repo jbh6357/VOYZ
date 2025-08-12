@@ -23,6 +23,7 @@ public class ReviewService {
         review.setMenuIdx(reviewRequestDto.getMenuIdx()); // menuIdx 저장 로직 추가
         review.setOrderIdx(reviewRequestDto.getOrderIdx());
         review.setUserId(reviewRequestDto.getUserId());
+        review.setGuestName(reviewRequestDto.getGuestName());
         review.setComment(reviewRequestDto.getComment());
         review.setRating(reviewRequestDto.getRating());
         review.setNationality(reviewRequestDto.getNationality());
@@ -66,6 +67,7 @@ public class ReviewService {
         dto.setMenuIdx(review.getMenuIdx());
         dto.setOrderIdx(review.getOrderIdx());
         dto.setUserId(review.getUserId());
+        dto.setGuestName(review.getGuestName());
         dto.setComment(review.getComment());
         dto.setRating(review.getRating());
         dto.setNationality(review.getNationality());
