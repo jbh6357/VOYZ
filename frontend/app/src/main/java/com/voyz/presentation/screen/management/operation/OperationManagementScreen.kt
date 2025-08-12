@@ -29,6 +29,8 @@ import com.voyz.presentation.component.topbar.CommonTopBar
 import com.voyz.presentation.screen.management.operation.component.SalesAnalysisCard
 import com.voyz.presentation.screen.management.operation.component.MenuSalesCard
 import com.voyz.presentation.screen.management.operation.component.MenuManagementCard
+import com.voyz.presentation.screen.management.operation.component.AIAnalysisCard
+import com.voyz.presentation.screen.management.operation.component.RevenueTrendCard
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -116,20 +118,17 @@ fun OperationManagementScreen(
                             // 상단 여백
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // 매출 분석 카드
-                            SalesAnalysisCard(
-                                userId = userId,
-                                onPeriodChange = { startDate, endDate ->
-                                    // 매출 데이터 로드 로직
-                                }
-                            )
-
                             // 메뉴별 매출 카드
                             MenuSalesCard(
                                 userId = userId,
                                 onPeriodChange = { startDate, endDate ->
                                     // 메뉴 매출 데이터 로드 로직
                                 }
+                            )
+
+                            // 기존 매출 트렌드 분석 카드 대체 → 스마트 매출 분석 카드
+                            RevenueTrendCard(
+                                userId = userId
                             )
 
                             // 하단 패딩

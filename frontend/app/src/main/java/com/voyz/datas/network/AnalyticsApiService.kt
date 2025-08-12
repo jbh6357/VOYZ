@@ -7,6 +7,7 @@ import com.voyz.datas.model.dto.ReviewSummaryDto
 import com.voyz.datas.model.dto.SalesAnalyticsDto
 import com.voyz.datas.model.dto.CountryRatingDto
 import com.voyz.datas.model.dto.MenuSentimentDto
+import com.voyz.datas.model.dto.HourlySalesDto
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -116,4 +117,33 @@ interface AnalyticsApiService {
         @Query("startDate") startDate: String? = null,
         @Query("endDate") endDate: String? = null
     ): Map<String, Any>
+    
+    @GET("analytics/sales/{userId}/insights")
+    suspend fun getSalesInsights(
+        @Path("userId") userId: String,
+        @Query("period") period: String = "month"
+    ): Map<String, Any>
+
+    @GET("analytics/period-insights/{userId}")
+    suspend fun getPeriodInsights(
+        @Path("userId") userId: String,
+        @Query("startDate") startDate: String,
+        @Query("endDate") endDate: String,
+        @Query("period") period: String = "month"
+    ): Map<String, Any>
+
+    @GET("analytics/customer-behavior/{userId}")
+    suspend fun getCustomerBehaviorAnalysis(
+        @Path("userId") userId: String,
+        @Query("startDate") startDate: String,
+        @Query("endDate") endDate: String,
+        @Query("period") period: String = "month"
+    ): Map<String, Any>
+
+    @GET("analytics/sales/{userId}/hourly")
+    suspend fun getHourlySales(
+        @Path("userId") userId: String,
+        @Query("startDate") startDate: String,
+        @Query("endDate") endDate: String
+    ): List<HourlySalesDto>
 }
