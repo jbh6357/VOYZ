@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.voyz.datas.repository.AnalyticsRepository
 import com.voyz.datas.model.dto.MenuSalesDto
+import com.voyz.utils.MoneyFormats
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -55,17 +56,19 @@ fun MenuSalesCard(
             try {
                 val start = dateRange.first.format(DateTimeFormatter.ISO_LOCAL_DATE)
                 val end = dateRange.second.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                // TODO: 실제 메뉴 매출 데이터 API 호출
-                // menuSalesData = analyticsRepository.getMenuSales(id, start, end)
-                
-                // 임시 데이터
-                menuSalesData = listOf(
-                    MenuSalesDto("김치찌개", 45f),
-                    MenuSalesDto("불고기", 38f),
-                    MenuSalesDto("비빔밥", 32f),
-                    MenuSalesDto("삼겹살", 28f),
-                    MenuSalesDto("냉면", 22f)
-                )
+                // 실제 메뉴 매출 데이터 API 호출
+                menuSalesData = try {
+                    analyticsRepository.getTopMenus(id, start, end)
+                } catch (apiException: Exception) {
+                    // API 실패시 임시 테스트 데이터 사용
+                    listOf(
+                        MenuSalesDto("김치찌개", 125000.0),
+                        MenuSalesDto("불고기", 98000.0),
+                        MenuSalesDto("비빔밥", 87000.0),
+                        MenuSalesDto("삼겹살", 156000.0),
+                        MenuSalesDto("냉면", 67000.0)
+                    )
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -95,7 +98,7 @@ fun MenuSalesCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "메뉴별 매출 TOP 5",
+                    text = "메뉴별 매출",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF1D1D1F)
@@ -177,7 +180,7 @@ fun MenuSalesCard(
             } else {
                 MenuSalesDonutChart(
                     data = menuSalesData,
-                    modifier = Modifier.fillMaxWidth().height(200.dp)
+                    modifier = Modifier.fillMaxWidth().height(160.dp)
                 )
             }
         }
@@ -212,12 +215,12 @@ private fun MenuSalesDonutChart(
         Color(0xFFAD7AED)  // 부드러운 Purple
     )
 
-    val total = data.map { it.count }.sum()
+    val total = data.map { it.salesAmount }.sum()
     val menuItems = data.mapIndexed { index, menu ->
         MenuSalesItem(
             name = menu.name,
-            count = menu.count.toInt(),
-            percentage = if (total > 0) menu.count / total else 0f,
+            salesAmount = menu.salesAmount,
+            percentage = if (total > 0) (menu.salesAmount / total).toFloat() else 0f,
             color = colors[index % colors.size]
         )
     }
@@ -244,12 +247,12 @@ private fun MenuSalesDonutChart(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "총 ${total}개",
+                    text = "총 매출액",
                     fontSize = 12.sp,
                     color = Color(0xFF8E8E93)
                 )
                 Text(
-                    text = "판매량",
+                    text = MoneyFormats.formatShortKoreanMoney(total),
                     fontSize = 10.sp,
                     color = Color(0xFF8E8E93)
                 )
@@ -261,7 +264,11 @@ private fun MenuSalesDonutChart(
                 .fillMaxWidth()
                 .fillMaxHeight()
                 .padding(vertical = 8.dp, horizontal = 4.dp),
-            verticalArrangement = Arrangement.SpaceEvenly
+            verticalArrangement = if (menuItems.size <= 3) {
+                Arrangement.spacedBy(6.dp, Alignment.CenterVertically)
+            } else {
+                Arrangement.SpaceEvenly
+            }
         ) {
             menuItems.take(5).forEach { item ->
                 MenuSalesRow(item = item)
@@ -299,9 +306,9 @@ private fun MenuSalesRow(
             overflow = TextOverflow.Ellipsis
         )
         
-        // 판매량
+        // 매출액
         Text(
-            text = "${item.count}개",
+            text = MoneyFormats.formatShortKoreanMoney(item.salesAmount),
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             color = Color(0xFF007AFF)
@@ -346,7 +353,11 @@ private fun DonutChart(
 
 data class MenuSalesItem(
     val name: String,
-    val count: Int,
+    val salesAmount: Double,  // 실제 매출액
     val percentage: Float,
     val color: Color
-)
+) {
+    // 기존 코드와의 호환성을 위한 계산 속성
+    val count: Int get() = salesAmount.toInt()
+}
+
