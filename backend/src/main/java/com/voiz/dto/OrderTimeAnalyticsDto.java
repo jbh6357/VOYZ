@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class OrderTimeAnalyticsDto {
     private String hour;      
     private Long orderCount;  
+    private Double totalAmount; 
 }

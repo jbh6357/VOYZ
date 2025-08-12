@@ -9,7 +9,9 @@ import com.voyz.datas.model.dto.ReviewSummaryDto
 import com.voyz.datas.model.dto.SalesAnalyticsDto
 import com.voyz.datas.model.dto.CountryRatingDto
 import com.voyz.datas.model.dto.MenuSentimentDto
+import com.voyz.datas.model.dto.HourlySalesDto
 import com.voyz.datas.network.ApiClient
+import java.time.LocalDate
 
 class AnalyticsRepository {
 
@@ -95,5 +97,35 @@ class AnalyticsRepository {
 
     suspend fun getComprehensiveInsights(userId: String, startDate: String? = null, endDate: String? = null): Map<String, Any> {
         return api.getComprehensiveInsights(userId, startDate, endDate)
+    }
+    
+    suspend fun getSalesInsights(userId: String, period: String = "month"): Map<String, Any> {
+        return api.getSalesInsights(userId, period)
+    }
+
+    suspend fun getPeriodInsights(
+        userId: String, 
+        startDate: LocalDate, 
+        endDate: LocalDate, 
+        period: String = "month"
+    ): Map<String, Any> {
+        return api.getPeriodInsights(userId, startDate.toString(), endDate.toString(), period)
+    }
+
+    suspend fun getCustomerBehaviorAnalysis(
+        userId: String, 
+        startDate: LocalDate, 
+        endDate: LocalDate, 
+        period: String = "month"
+    ): Map<String, Any> {
+        return api.getCustomerBehaviorAnalysis(userId, startDate.toString(), endDate.toString(), period)
+    }
+
+    suspend fun getHourlySales(
+        userId: String,
+        start: String,
+        end: String,
+    ): List<HourlySalesDto> {
+        return api.getHourlySales(userId, start, end)
     }
 }

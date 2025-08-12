@@ -27,13 +27,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import com.voyz.utils.MoneyFormats
 
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -76,6 +77,76 @@ fun RevenueGraphPager(graphList: List<@Composable () -> Unit>) {
                 )
                 if (idx < graphList.size - 1) Spacer(modifier = Modifier.width(4.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun HourlySalesBarChart(
+    hours: List<String>,
+    amounts: List<Double>,
+    modifier: Modifier = Modifier
+) {
+    // y축 상단 여유: 최대값의 10%를 여유로 둠
+    val rawMax = amounts.maxOrNull() ?: 0.0
+    val maxAmount = (rawMax * 1.1).coerceAtLeast(1.0)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(220.dp)
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val barCount = amounts.size
+            if (barCount == 0) return@Canvas
+
+            val chartPaddingTop = 8.dp.toPx()
+            val chartPaddingBottom = 18.dp.toPx() // 값 레이블 공간
+            val chartHeight = size.height - chartPaddingTop - chartPaddingBottom
+
+            val barWidth = size.width / (barCount * 1.7f)
+            val gap = barWidth * 0.7f
+            var x = gap
+
+            amounts.forEachIndexed { idx, value ->
+                val heightRatio = (value / maxAmount).toFloat()
+                val barHeight = chartHeight * heightRatio
+                val top = chartPaddingTop + (chartHeight - barHeight)
+
+                // 막대
+                drawRect(
+                    color = Color(0xFF4F46E5),
+                    topLeft = Offset(x, top),
+                    size = Size(barWidth, barHeight)
+                )
+
+                // y값(매출) 라벨: 막대 상단 위에 표시
+                val label = com.voyz.utils.MoneyFormats.formatShortKoreanMoney(value)
+                drawIntoCanvas { canvas ->
+                    val paint = android.graphics.Paint().apply {
+                        isAntiAlias = true
+                        color = android.graphics.Color.DKGRAY
+                        textSize = 10.dp.toPx()
+                    }
+                    val textWidth = paint.measureText(label)
+                    canvas.nativeCanvas.drawText(
+                        label,
+                        x + (barWidth - textWidth) / 2f,
+                        top - 4.dp.toPx(),
+                        paint
+                    )
+                }
+
+                x += (barWidth + gap)
+            }
+
+            // 최상단 가이드 라인
+            drawLine(
+                color = Color(0xFFE5E7EB),
+                start = Offset(0f, chartPaddingTop),
+                end = Offset(size.width, chartPaddingTop),
+                strokeWidth = 1f
+            )
         }
     }
 }
@@ -164,6 +235,7 @@ fun MonthlyRevenueBarChartAnimated(
     }
 
 }
+
 @Composable
 fun TopMenuDonutChartAnimated(
     menuSales: List<MenuSales>,

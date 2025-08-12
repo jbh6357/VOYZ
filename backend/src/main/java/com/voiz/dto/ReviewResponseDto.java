@@ -14,6 +14,7 @@ public class ReviewResponseDto {
     private int menuIdx; 
     private int orderIdx;
     private String userId;
+    private String guestName;
     private String comment;
     private int rating;
     private String nationality;

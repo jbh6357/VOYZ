@@ -2,6 +2,7 @@ package com.voyz.datas.network
 
 import com.voyz.datas.model.dto.MenuItemDto
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -23,10 +24,42 @@ interface MenuApiService {
         @Field("category") category: String
     ): Response<Void>
     
+    @Multipart
+    @POST("menus/with-image")
+    suspend fun createMenuWithImage(
+        @Part("userId") userId: RequestBody,
+        @Part("menuName") menuName: RequestBody,
+        @Part("menuPrice") menuPrice: RequestBody,
+        @Part("menuDescription") menuDescription: RequestBody,
+        @Part("category") category: RequestBody,
+        @Part image: MultipartBody.Part?
+    ): Response<Void>
+    
     @GET("menus/{userId}")
     suspend fun getMenusByUserId(
         @Path("userId") userId: String
     ): Response<List<MenuItemDto>>
+    
+    @PUT("menus/{menuIdx}")
+    @FormUrlEncoded
+    suspend fun updateMenu(
+        @Path("menuIdx") menuIdx: Int,
+        @Field("menuName") menuName: String,
+        @Field("menuPrice") menuPrice: Int,
+        @Field("menuDescription") menuDescription: String,
+        @Field("category") category: String
+    ): Response<Void>
+    
+    @Multipart
+    @PUT("menus/{menuIdx}/with-image")
+    suspend fun updateMenuWithImage(
+        @Path("menuIdx") menuIdx: Int,
+        @Part("menuName") menuName: RequestBody,
+        @Part("menuPrice") menuPrice: RequestBody,
+        @Part("menuDescription") menuDescription: RequestBody,
+        @Part("category") category: RequestBody,
+        @Part image: MultipartBody.Part?
+    ): Response<Void>
     
     @DELETE("menus/{menuIdx}")
     suspend fun deleteMenu(
