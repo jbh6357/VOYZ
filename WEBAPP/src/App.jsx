@@ -340,7 +340,7 @@ function App() {
             const reviewResponse = await getReviewsByMenuId(item.menuIdx);
             // 배열이므로 map으로 변환
             const transformedReviews = reviewResponse.reviews.map((r) => ({
-                user: r.guestName || r.userId,
+                user: r.guestName || '익명',
                 countryCode: r.nationality,
                 text: r.comment,
             }));
