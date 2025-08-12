@@ -3,8 +3,8 @@ package com.voyz.utils
 object Constants {
     
     // Network
-    const val BASE_URL = "http://192.168.219.205:8081/api/"
-    const val TIMEOUT_SECONDS = 30L
+    const val BASE_URL = "http://192.168.219.211:8081/api/"
+    const val TIMEOUT_SECONDS = 15L
     
     // Preferences
     const val PREF_NAME = "voyz_prefs"

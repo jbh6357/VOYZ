@@ -230,7 +230,7 @@ fun ReviewAnalysisScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "리뷰 많은 국가",
+                        text = "국가별 리뷰",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF1D1D1F)
