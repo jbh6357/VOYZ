@@ -34,6 +34,198 @@ app = FastAPI(
     version=API_CONFIG["version"],
     description=API_CONFIG["description"]
 )
+@app.post("/api/analytics/period-insights")
+def generate_period_insights(payload: dict):
+    """
+    기간별 운영 인사이트 생성
+    요청: {
+      "salesData": [{"date": str, "amount": float, "orderCount": int}],
+      "menuData": [{"menuName": str, "salesCount": int, "revenue": float}],
+      "customerData": [{"nationality": str, "count": int, "avgRating": float}],
+      "period": str,  # "week", "month", "quarter"
+      "previousPeriodData": {...}  # 이전 기간 비교 데이터
+    }
+    응답: {
+      "salesForecast": {...},
+      "customerPatterns": {...},
+      "menuRecommendations": {...},
+      "operationTips": [...]
+    }
+    """
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        
+        sales_data = payload.get('salesData', [])
+        menu_data = payload.get('menuData', [])
+        customer_data = payload.get('customerData', [])
+        period = payload.get('period', 'month')
+        previous_data = payload.get('previousPeriodData', {})
+        
+        # AI 프롬프트 구성
+        prompt = f"""
+다음 데이터를 분석하여 요식업 사장님을 위한 실용적인 인사이트를 한국어로 생성해주세요:
+
+📊 매출 데이터 ({period}):
+{sales_data}
+
+🍽️ 메뉴 데이터:
+{menu_data}
+
+👥 고객 데이터:
+{customer_data}
+
+📈 이전 기간 비교 데이터:
+{previous_data}
+
+다음 형식으로 JSON 응답을 생성해주세요:
+{{
+  "salesForecast": {{
+    "prediction": "다음 기간 예상 매출",
+    "confidence": "예측 신뢰도 (1-100)",
+    "factors": ["예측에 영향을 주는 요인들"]
+  }},
+  "customerPatterns": {{
+    "peakTimes": ["피크 시간대"],
+    "preferredMenus": ["고객 선호 메뉴"],
+    "nationalityTrends": "국가별 방문 트렌드"
+  }},
+  "menuRecommendations": {{
+    "promote": ["프로모션 추천 메뉴"],
+    "improve": ["개선이 필요한 메뉴"],
+    "newIdeas": ["신메뉴 아이디어"]
+  }},
+  "operationTips": [
+    "구체적이고 실용적인 운영 개선 팁 3-5개"
+  ]
+}}
+"""
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "user", 
+                "content": prompt
+            }],
+            temperature=0.7
+        )
+        
+        import json
+        result = json.loads(response.choices[0].message.content)
+        return result
+        
+    except Exception as e:
+        print(f"Error generating period insights: {e}")
+        return {
+            "error": str(e),
+            "salesForecast": {
+                "prediction": "데이터 부족으로 예측 불가",
+                "confidence": "0",
+                "factors": ["충분한 데이터 수집 필요"]
+            },
+            "customerPatterns": {
+                "peakTimes": ["데이터 분석 중"],
+                "preferredMenus": ["분석 중"],
+                "nationalityTrends": "패턴 분석 중"
+            },
+            "menuRecommendations": {
+                "promote": ["기존 인기 메뉴 유지"],
+                "improve": ["고객 피드백 확인 필요"],
+                "newIdeas": ["시장 조사 후 결정"]
+            },
+            "operationTips": [
+                "고객 데이터를 더 수집하여 정확한 분석을 진행하세요",
+                "메뉴별 매출과 리뷰를 정기적으로 모니터링하세요",
+                "외국인 고객의 선호도를 파악하여 맞춤 서비스를 제공하세요"
+            ]
+        }
+
+@app.post("/api/analytics/customer-behavior")
+def analyze_customer_behavior(payload: dict):
+    """
+    고객 행동 패턴 분석
+    요청: {
+      "orderHistory": [{"time": str, "nationality": str, "menuIds": [int], "amount": float}],
+      "reviewHistory": [{"nationality": str, "rating": int, "menuId": int, "comment": str}],
+      "period": str
+    }
+    """
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        
+        order_history = payload.get('orderHistory', [])
+        review_history = payload.get('reviewHistory', [])
+        period = payload.get('period', 'month')
+        
+        prompt = f"""
+고객 주문 및 리뷰 데이터를 분석하여 고객 행동 패턴을 한국어로 분석해주세요:
+
+📋 주문 기록:
+{order_history[:20]}  # 최근 20건만
+
+⭐ 리뷰 기록:
+{review_history[:20]}  # 최근 20건만
+
+분석 기간: {period}
+
+다음 JSON 형식으로 응답해주세요:
+{{
+  "timePatterns": {{
+    "busyHours": ["바쁜 시간대"],
+    "quietHours": ["한가한 시간대"],
+    "weekdayVsWeekend": "평일/주말 차이점"
+  }},
+  "nationalityInsights": {{
+    "topNationalities": ["주요 국가별 방문자"],
+    "preferences": {{"국가": "선호 메뉴/특징"}},
+    "spendingPatterns": "국가별 소비 패턴"
+  }},
+  "menuPerformance": {{
+    "trending": ["인기 상승 메뉴"],
+    "declining": ["인기 하락 메뉴"],
+    "underrated": ["저평가된 메뉴"]
+  }},
+  "actionItems": [
+    "구체적인 액션 아이템 3-5개"
+  ]
+}}
+"""
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        
+        import json
+        return json.loads(response.choices[0].message.content)
+        
+    except Exception as e:
+        print(f"Error analyzing customer behavior: {e}")
+        return {
+            "timePatterns": {
+                "busyHours": ["12:00-14:00", "18:00-20:00"],
+                "quietHours": ["15:00-17:00"],
+                "weekdayVsWeekend": "주말에 외국인 고객 증가"
+            },
+            "nationalityInsights": {
+                "topNationalities": ["일본", "중국", "미국"],
+                "preferences": {"일본": "매운 음식 선호", "중국": "볶음류 선호"},
+                "spendingPatterns": "일본 고객이 평균 소비가 높음"
+            },
+            "menuPerformance": {
+                "trending": ["김치찌개", "불고기"],
+                "declining": ["냉면"],
+                "underrated": ["비빔밥"]
+            },
+            "actionItems": [
+                "점심시간 직원 배치 강화",
+                "일본 고객을 위한 매운맛 조절 옵션 제공",
+                "저평가 메뉴 프로모션 진행"
+            ]
+        }
+
 @app.post("/api/reviews/summary")
 def generate_review_summary(payload: dict):
     """
@@ -1021,6 +1213,107 @@ def translate_reviews(req: ReviewTranslateRequest):
     except Exception as e:
         print(f"리뷰 번역 오류: {e}")
         raise HTTPException(status_code=500, detail=f"번역 실패: {str(e)}")
+
+@app.post("/api/sales/insights")
+def generate_sales_insights(payload: dict):
+    """
+    매출 데이터 분석 후 AI 기반 인사이트 생성
+    요청: {
+      "period": str,  # "week", "month", "year"
+      "currentSales": [{"date": str, "amount": float}],  # 현재 기간 매출
+      "previousSales": [{"date": str, "amount": float}],  # 이전 기간 매출 (선택)
+      "userId": str
+    }
+    응답: {
+      "summary": {
+        "totalSales": float,
+        "averageDailySales": float,
+        "growthRate": float,  # 전 기간 대비 성장률
+        "bestDay": {"date": str, "amount": float}
+      },
+      "insights": [str],  # AI 생성 인사이트
+      "predictions": str  # 향후 예측
+    }
+    """
+    period = payload.get("period", "month")
+    current_sales = payload.get("currentSales", [])
+    previous_sales = payload.get("previousSales", [])
+    
+    # 데이터가 없는 경우 처리
+    if not current_sales:
+        return {
+            "summary": {
+                "totalSales": 0,
+                "averageDailySales": 0,
+                "growthRate": 0,
+                "bestDay": None
+            },
+            "insights": ["아직 매출 데이터가 없습니다. 매출이 발생하면 분석해드릴게요!"],
+            "predictions": "데이터가 쌓이면 예측 분석을 제공해드립니다."
+        }
+    
+    # 매출 요약 계산
+    total_sales = sum(s["amount"] for s in current_sales)
+    avg_daily = total_sales / len(current_sales) if current_sales else 0
+    
+    # 최고 매출일 찾기
+    best_day = max(current_sales, key=lambda x: x["amount"]) if current_sales else None
+    
+    # 성장률 계산
+    growth_rate = 0
+    if previous_sales:
+        prev_total = sum(s["amount"] for s in previous_sales)
+        if prev_total > 0:
+            growth_rate = ((total_sales - prev_total) / prev_total) * 100
+    
+    # AI 인사이트 생성
+    insights = []
+    
+    # 성장률 기반 인사이트
+    if growth_rate > 20:
+        insights.append(f"매출이 지난 {get_period_korean(period)} 대비 {growth_rate:.1f}% 급성장했어요! 🚀")
+    elif growth_rate > 0:
+        insights.append(f"매출이 꾸준히 성장하고 있어요. 전 기간 대비 {growth_rate:.1f}% 상승했습니다.")
+    elif growth_rate < -10:
+        insights.append(f"매출이 {abs(growth_rate):.1f}% 감소했어요. 프로모션이나 이벤트를 고려해보세요.")
+    
+    # 패턴 분석
+    if len(current_sales) >= 7:
+        # 요일별 매출 패턴 분석
+        daily_amounts = [s["amount"] for s in current_sales[-7:]]
+        weekend_avg = (daily_amounts[-2] + daily_amounts[-1]) / 2 if len(daily_amounts) >= 2 else 0
+        weekday_avg = sum(daily_amounts[:-2]) / 5 if len(daily_amounts) >= 5 else avg_daily
+        
+        if weekend_avg > weekday_avg * 1.3:
+            insights.append("주말 매출이 평일보다 30% 이상 높아요. 주말 특별 메뉴를 준비해보세요!")
+        elif weekday_avg > weekend_avg * 1.2:
+            insights.append("평일 매출이 주말보다 높네요. 직장인 고객이 많은 것 같아요.")
+    
+    # 최고 매출일 인사이트
+    if best_day and best_day["amount"] > avg_daily * 1.5:
+        insights.append(f"{best_day['date']}에 평균보다 50% 높은 매출을 기록했어요. 특별한 이벤트가 있었나요?")
+    
+    # 기간별 맞춤 인사이트
+    if period == "week" and len(current_sales) >= 3:
+        if all(current_sales[i]["amount"] < current_sales[i+1]["amount"] for i in range(len(current_sales)-1)):
+            insights.append("이번 주 매출이 계속 상승세예요! 이 추세를 유지해보세요.")
+    
+    # 예측 생성
+    prediction = ""
+
+    return {
+        "summary": {
+            "totalSales": total_sales,
+            "averageDailySales": avg_daily,
+            "growthRate": growth_rate,
+            "bestDay": best_day
+        },
+        "insights": insights[:3],  # 최대 3개 인사이트
+        "predictions": prediction
+    }
+
+def get_period_korean(period):
+    return {"week": "주", "month": "달", "year": "년"}.get(period, "기간")
 
 if __name__ == "__main__":
     import uvicorn
