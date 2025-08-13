@@ -117,8 +117,8 @@ fun SidebarComponent(
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                     
-                    // 고객 관리와 설정 사이에 구분선 추가
-                    if (item.id == "customer_management") {
+                    // 일정 관리와 설정 사이에 구분선 추가
+                    if (item.id == "dashboard") {
                         Spacer(modifier = Modifier.height(8.dp))
                         Divider(
                             modifier = Modifier.padding(horizontal = 8.dp),
@@ -234,22 +234,6 @@ private fun UserProfileSection(
 private fun getDefaultMenuItems(navController: NavController): List<SidebarMenuItem> {
     return listOf(
         SidebarMenuItem(
-            id = "reminder",
-            title = "리마인더",
-            route = "dashboard",
-            onClick = {
-                navController.navigate("dashboard")
-            }
-        ),
-        SidebarMenuItem(
-            id = "dashboard",
-            title = "일정 관리",
-            route = "main",
-            onClick = {
-                navController.navigate("main")
-            }
-        ),
-        SidebarMenuItem(
             id = "operation_management",
             title = "운영 관리",
             route = "operation_management",
@@ -263,6 +247,22 @@ private fun getDefaultMenuItems(navController: NavController): List<SidebarMenuI
             route = "customer_management",
             onClick = {
                 navController.navigate("customer_management")
+            }
+        ),
+        SidebarMenuItem(
+            id = "reminder",
+            title = "일정 관리",
+            route = "dashboard",
+            onClick = {
+                navController.navigate("dashboard")
+            }
+        ),
+        SidebarMenuItem(
+            id = "dashboard",
+            title = "마케팅 제안",
+            route = "main",
+            onClick = {
+                navController.navigate("main")
             }
         ),
         SidebarMenuItem(

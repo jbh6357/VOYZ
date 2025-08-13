@@ -59,7 +59,7 @@ fun NavGraph(navController: NavHostController) {
                     // 2. 로그인 시 리뷰/번역 즉시 업데이트
                     scheduledAnalysisManager.updateReviewsOnLogin()
                     
-                    navController.navigate("reminder") {
+                    navController.navigate("operation_management") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
