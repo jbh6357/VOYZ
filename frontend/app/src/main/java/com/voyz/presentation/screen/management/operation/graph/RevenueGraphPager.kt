@@ -121,13 +121,13 @@ fun HourlySalesBarChart(
 
             val chartPaddingTop = 8.dp.toPx()
             val chartPaddingBottom = 28.dp.toPx() // 값 레이블 + 시간 레이블 공간
-            val chartPaddingHorizontal = 12.dp.toPx() // 좌우 여유 공간 절반으로 줄임
+            val chartPaddingHorizontal = 6.dp.toPx() // 좌우 여유 공간 절반으로 줄임
             val chartHeight = size.height - chartPaddingTop - chartPaddingBottom
             val chartWidth = size.width - (chartPaddingHorizontal * 2)
 
             // 시간당 1개의 막대를 그리되, 양쪽에 여유 공간 확보
             val barWidth = chartWidth / barCount.toFloat()
-            val gap = barWidth * 0.2f
+            val gap = barWidth * 0.5f
             var x = chartPaddingHorizontal
 
             displayAmounts.forEachIndexed { idx, value ->
@@ -149,7 +149,7 @@ fun HourlySalesBarChart(
                         val paint = android.graphics.Paint().apply {
                             isAntiAlias = true
                             color = android.graphics.Color.DKGRAY
-                            textSize = 10.dp.toPx()
+                            textSize = 8.dp.toPx()
                         }
                         val textWidth = paint.measureText(label)
                         canvas.nativeCanvas.drawText(
