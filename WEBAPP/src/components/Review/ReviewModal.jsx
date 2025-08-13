@@ -1,9 +1,10 @@
 import { useState } from "react";
 import Modal from "../UI/Modal.jsx";
+import StarRating from "../UI/StarRating.jsx";
 import {
   getItemName,
   getReviewText,
-  getCountryFlag,
+  getCountryName,
   getFilteredReviews,
   getUniqueCountries,
 } from "../../utils/helpers.js";
@@ -24,7 +25,7 @@ const ReviewModal = ({
     item.reviews,
     selectedCountryFilter
   );
-  const uniqueCountries = getUniqueCountries(item.reviews, getCountryFlag);
+  const uniqueCountries = getUniqueCountries(item.reviews, getCountryName);
 
   return (
     <Modal
@@ -68,8 +69,11 @@ const ReviewModal = ({
           >
             <option value="all">All Countries</option>
             {uniqueCountries.map((country) => (
-              <option key={country.code} value={country.code}>
-                [{country.flag}] {country.name}
+              <option 
+                key={country.code} 
+                value={country.code}
+              >
+                {country.name}
               </option>
             ))}
           </select>
@@ -81,22 +85,27 @@ const ReviewModal = ({
           reviewViewMode === "original" ? "original-mode" : ""
         }`}
       >
-        {filteredReviews.map((review, index) => (
-          <div key={index} className="review-item">
-            <div className="review-header">
-              <span className="review-user">
-                <span className="review-flag no-translate-flag">
-                  [{getCountryFlag(review.countryCode)}]
+        {filteredReviews.map((review, index) => {
+          const countryCode = review.nationality || review.countryCode;
+          const countryName = getCountryName(countryCode);
+          
+          return (
+            <div key={index} className="review-item">
+              <div className="review-header">
+                <span className="review-user">
+                  <span className="review-country">
+                    [{countryName}]
+                  </span>
+                  <span className="review-author no-translate-flag">{review.guestName || review.user}</span>
                 </span>
-                <span className="no-translate-flag">{review.user}</span>
-              </span>
-              <span className="review-country no-translate-flag">
-                ({review.countryCode})
-              </span>
+                <span className="review-rating no-translate-flag">
+                  <StarRating rating={review.rating} />
+                </span>
+              </div>
+              <div className="review-text">{review.comment || review.text}</div>
             </div>
-            <div className="review-text">{review.text}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Modal>
   );

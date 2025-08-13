@@ -1,0 +1,37 @@
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.star {
+  color: #ddd;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.star.empty {
+  color: #ddd;
+}
+
+.star.filled {
+  color: #ffd700;
+}
+
+.star.partial {
+  position: relative;
+  display: inline-block;
+}
+
+.star.partial .star-bg {
+  color: #ddd;
+}
+
+.star.partial .star-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #ffd700;
+  overflow: hidden;
+  width: var(--fill);
+}
