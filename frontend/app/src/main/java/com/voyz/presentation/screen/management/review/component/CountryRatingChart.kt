@@ -43,13 +43,28 @@ fun CountryRatingChart(
         return
     }
 
-    // VOYZ Korean Red 기반 밝고 부드러운 색상 팔레트
+    // VOYZ Korean Red 기반 확장된 색상 팔레트 (20개 색상)
     val colors = listOf(
         Color(0xFFE53E3E), // 부드러운 Red (Korean Red 밝게)
         Color(0xFF4299E1), // 부드러운 Blue 
         Color(0xFF38B2AC), // 부드러운 Teal
         Color(0xFFED8936), // 부드러운 Orange
-        Color(0xFFAD7AED)  // 부드러운 Purple
+        Color(0xFFAD7AED), // 부드러운 Purple
+        Color(0xFF48BB78), // Green
+        Color(0xFFFC8181), // Light Red
+        Color(0xFF63B3ED), // Light Blue
+        Color(0xFF4FD1C5), // Light Teal
+        Color(0xFFF6AD55), // Light Orange
+        Color(0xFFB794F4), // Light Purple
+        Color(0xFF68D391), // Light Green
+        Color(0xFFDD6B20), // Dark Orange
+        Color(0xFF2D3748), // Dark Gray
+        Color(0xFFE6FFFA), // Mint
+        Color(0xFFFBB6CE), // Pink
+        Color(0xFF9F7AEA), // Dark Purple
+        Color(0xFF667EEA), // Indigo
+        Color(0xFF065666), // Dark Teal
+        Color(0xFFB83280)  // Dark Pink
     )
 
     Row(

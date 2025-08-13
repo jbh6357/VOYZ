@@ -65,6 +65,21 @@ object NationalityFlagMapper {
     )
 
     fun flagFor(nationality: String): String = map[nationality] ?: "\uD83C\uDF10"
+    
+    /**
+     * HTML 엔티티 코드를 실제 이모지로 디코딩하는 함수
+     * 예: "&#127471;&#127477;" -> "🇯🇵"
+     */
+    fun decodeHtmlEntity(input: String): String {
+        return input.replace(Regex("&#(\\d+);")) { matchResult ->
+            val code = matchResult.groupValues[1].toIntOrNull()
+            if (code != null) {
+                String(Character.toChars(code))
+            } else {
+                matchResult.value
+            }
+        }
+    }
 }
 
 

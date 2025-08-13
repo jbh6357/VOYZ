@@ -190,19 +190,22 @@ fun ReviewAnalysisScreen() {
 
     // 국가별 평점 데이터를 CountryRatingItem으로 변환 (리뷰 많은 순, 같으면 평점 높은 순)
     val countryRatingItems = remember(countryRatings) {
-        val totalCount = countryRatings.sumOf { it.count }
-        countryRatings
+        val top5Countries = countryRatings
             .sortedWith(compareByDescending<CountryRatingDto> { it.count }.thenByDescending { it.averageRating })
             .take(5)
-            .map { rating ->
-                CountryRatingItem(
-                    nationality = rating.nationality,
-                    flag = com.voyz.presentation.screen.management.review.util.NationalityFlagMapper.flagFor(rating.nationality),
-                    count = rating.count,
-                    averageRating = rating.averageRating,
-                    percentage = if (totalCount > 0) rating.count.toFloat() / totalCount else 0f
-                )
-            }
+        
+        // 상위 5개의 합계를 100%로 계산
+        val top5TotalCount = top5Countries.sumOf { it.count }
+        
+        top5Countries.map { rating ->
+            CountryRatingItem(
+                nationality = rating.nationality,
+                flag = com.voyz.presentation.screen.management.review.util.NationalityFlagMapper.flagFor(rating.nationality),
+                count = rating.count,
+                averageRating = rating.averageRating,
+                percentage = if (top5TotalCount > 0) rating.count.toFloat() / top5TotalCount else 0f
+            )
+        }
     }
 
     Column(

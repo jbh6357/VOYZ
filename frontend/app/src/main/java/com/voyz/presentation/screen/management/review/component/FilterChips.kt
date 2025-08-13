@@ -154,16 +154,5 @@ private fun FilterChip(
 }
 
 private fun getNationalityFlag(nationality: String): String {
-    return when (nationality) {
-        "한국" -> "🇰🇷"
-        "미국" -> "🇺🇸"
-        "일본" -> "🇯🇵"
-        "중국" -> "🇨🇳"
-        "영국" -> "🇬🇧"
-        "프랑스" -> "🇫🇷"
-        "독일" -> "🇩🇪"
-        "캐나다" -> "🇨🇦"
-        "호주" -> "🇦🇺"
-        else -> "🌍"
-    }
+    return com.voyz.presentation.screen.management.review.util.NationalityFlagMapper.flagFor(nationality)
 }
