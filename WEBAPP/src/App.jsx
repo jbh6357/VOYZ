@@ -14,7 +14,7 @@ import SuccessPage from './pages/SuccessPage/index.jsx';
 
 // Data & Utils
 import { sampleMenuData } from './constants/sampleData.js';
-import { getMenusByUserId, getUrlParams } from './api/menu.js';
+import { getMenusByUserId, getUrlParams, getStoreInfoByUserId } from './api/menu.js';
 import { getReviewsByMenuId, postReview } from './api/review.js';
 import { postOrder } from './api/order.js';
 import { translateTexts } from './api/translate.js';
@@ -37,6 +37,7 @@ function App() {
     const tableNumberRef = useRef(null);
     const [isLoadingMenu, setIsLoadingMenu] = useState(false);
     const [menuError, setMenuError] = useState(null);
+    const [storeInfo, setStoreInfo] = useState(null);
     const { userId: urlUserId, table: urlTable } = getUrlParams();
     const [isTranslating, setIsTranslating] = useState(false);
     // 쿠키에서 읽어서 초기값 설정 (없으면 'ko' 기본)
@@ -214,7 +215,15 @@ function App() {
                     setIsLoadingMenu(true);
                     setMenuError(null);
 
-                    const menuItems = await getMenusByUserId(userId, selectedLang);
+                    // 메뉴 데이터와 매장 정보를 동시에 로드
+                    const [menuItems, storeData] = await Promise.all([
+                        getMenusByUserId(userId, selectedLang),
+                        getStoreInfoByUserId(userId).catch(() => null) // 실패해도 계속 진행
+                    ]);
+
+                    if (storeData) {
+                        setStoreInfo(storeData);
+                    }
 
                     if (menuItems && menuItems.length > 0) {
                         // API에서 받은 데이터를 기존 sampleMenuData 형식으로 변환
@@ -343,6 +352,10 @@ function App() {
                 user: r.guestName || '익명',
                 countryCode: r.nationality,
                 text: r.comment,
+                rating: r.rating,
+                guestName: r.guestName,
+                nationality: r.nationality,
+                comment: r.comment,
             }));
             if (!menuByCategory[category]) {
                 menuByCategory[category] = [];
@@ -372,8 +385,8 @@ function App() {
 
         return {
             restaurant: {
-                name: userIdRef ? `${userIdRef.current.split('@')[0]}님의 레스토랑` : sampleMenuData.restaurant.name,
-                subtitle: tableNumberRef ? `테이블 ${tableNumberRef.current}` : sampleMenuData.restaurant.subtitle,
+                name: storeInfo?.storeName || (userIdRef.current ? `${userIdRef.current.split('@')[0]}님의 레스토랑` : sampleMenuData.restaurant.name),
+                subtitle: tableNumberRef.current ? `테이블 ${tableNumberRef.current}` : sampleMenuData.restaurant.subtitle,
             },
             menu: menuByCategory,
         };
@@ -567,18 +580,46 @@ function App() {
             )}
 
             <main>
-                {Object.entries(menuData.menu).map(([category, items]) => (
-                    <MenuSection
-                        key={category}
-                        category={category}
-                        items={items}
-                        selectedLang={selectedLang}
-                        cart={cart}
-                        onAddToCart={addToCart}
-                        onRemoveFromCart={removeFromCart}
-                        onShowReviews={setShowReviews}
-                    />
-                ))}
+                {(() => {
+                    // 고정된 카테고리 순서 (한국어/영어 모두 포함)
+                    const categoryOrder = [
+                        '메인메뉴', 'Main', 'Mains', '메인',
+                        '세트메뉴', 'Set', 'Sets', '세트',
+                        '사이드', 'Side', 'Sides', 'Starters',
+                        '주류', 'Alcohol', 'Drinks', 'Alcoholic',
+                        '음료', 'Beverage', 'Beverages', 'Drinks',
+                        '디저트', 'Dessert', 'Desserts',
+                        '시그니처', 'Signature', 'Special', 'Specials'
+                    ];
+                    
+                    // 카테고리 우선순위 맵 (낮을수록 우선)
+                    const categoryPriority = {};
+                    categoryOrder.forEach((cat, index) => {
+                        categoryPriority[cat.toLowerCase()] = Math.floor(index / 4); // 4개씩 같은 우선순위
+                    });
+                    
+                    // 정렬된 카테고리 배열 생성
+                    const sortedCategories = Object.entries(menuData.menu)
+                        .sort(([catA], [catB]) => {
+                            const priorityA = categoryPriority[catA.toLowerCase()] ?? 999;
+                            const priorityB = categoryPriority[catB.toLowerCase()] ?? 999;
+                            return priorityA - priorityB;
+                        });
+                    
+                    // 렌더링
+                    return sortedCategories.map(([category, items]) => (
+                        <MenuSection
+                            key={category}
+                            category={category}
+                            items={items}
+                            selectedLang={selectedLang}
+                            cart={cart}
+                            onAddToCart={addToCart}
+                            onRemoveFromCart={removeFromCart}
+                            onShowReviews={setShowReviews}
+                        />
+                    ));
+                })()}
             </main>
 
             {getTotalItems() > 0 && (

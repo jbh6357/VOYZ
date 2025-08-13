@@ -1,7 +1,7 @@
 export const sampleMenuData = {
   restaurant: {
     name: "VOYZ Restaurant",
-    subtitle: "Delicious Food & Great Service",
+    subtitle: "합정 원조 떡갈비 전문점",
   },
   menu: {
     Starters: [
@@ -18,16 +18,19 @@ export const sampleMenuData = {
           {
             user: "John D.",
             countryCode: "US",
+            rating: 5.0,
             text: "Absolutely delicious! The best spring rolls I've ever had.",
           },
           {
             user: "김민수",
             countryCode: "KR",
+            rating: 4.5,
             text: "바삭함이 완벽해요! 소스와 잘 어울립니다.",
           },
           {
             user: "Liu Wei",
             countryCode: "CN",
+            rating: 4.8,
             text: "这让我想起了家常菜. 非常真实!",
           },
         ],
@@ -45,11 +48,13 @@ export const sampleMenuData = {
           {
             user: "Maria G.",
             countryCode: "IT",
+            rating: 4.8,
             text: "Autentico gusto italiano! Fresco e saporito.",
           },
           {
             user: "박지영",
             countryCode: "KR",
+            rating: 4.5,
             text: "신선한 재료가 모든 차이를 만들어요!",
           },
         ],
@@ -68,16 +73,19 @@ export const sampleMenuData = {
           {
             user: "Sarah L.",
             countryCode: "US",
+            rating: 5.0,
             text: "Perfectly cooked salmon! The lemon butter sauce is amazing.",
           },
           {
             user: "이준호",
             countryCode: "KR",
+            rating: 4.8,
             text: "고품질 연어, 완벽하게 조리되었습니다.",
           },
           {
             user: "Yuki T.",
             countryCode: "JP",
+            rating: 5.0,
             text: "日本以外で食べたサーモンの中で最高です！",
           },
         ],
@@ -95,11 +103,13 @@ export const sampleMenuData = {
           {
             user: "Mike T.",
             countryCode: "US",
+            rating: 4.7,
             text: "Generous portion and tastes great! Highly recommend.",
           },
           {
             user: "최은정",
             countryCode: "KR",
+            rating: 4.6,
             text: "치즈가 정말 쭉쭉 늘어나고 맛있어요!",
           },
         ],
@@ -116,11 +126,13 @@ export const sampleMenuData = {
           {
             user: "Linda K.",
             countryCode: "US",
+            rating: 4.5,
             text: "Fresh veggies and perfectly seasoned. Great vegetarian option!",
           },
           {
             user: "정수아",
             countryCode: "KR",
+            rating: 4.4,
             text: "건강하고 맛있어요! 제가 자주 선택하는 메뉴입니다.",
           },
         ],
