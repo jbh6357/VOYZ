@@ -129,7 +129,7 @@ fun OperationManagementRevenueScreen() {
             scope.launch {
                 try {
                     val hourly = analyticsRepository.getHourlySales(it, start.toString(), end.toString())
-                    hourlyLabels = hourly.map { h -> h.hour }
+                    hourlyLabels = hourly.map { h -> h.hour ?: "00" }
                     hourlyAmounts = hourly.map { h -> h.totalAmount ?: 0.0 }
                 } catch (e: Exception) {
                     println("시간대별 매출 로드 실패: ${e.message}")
@@ -471,7 +471,7 @@ fun OperationManagementRevenueScreen() {
                             }
                             try {
                                 val hourly = analyticsRepository.getHourlySales(id, s.toString(), e.toString())
-                                hourlyLabels = hourly.map { h -> h.hour }
+                                hourlyLabels = hourly.map { h -> h.hour ?: "00" }
                                 hourlyAmounts = hourly.map { h -> h.totalAmount ?: 0.0 }
                             } catch (e: Exception) {
                                 println("시간대별 매출 로드 실패: ${e.message}")
