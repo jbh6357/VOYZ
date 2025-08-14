@@ -58,7 +58,18 @@ fun NationalityPieChart(
         Color(0xFFFFD54F), // Yellow
         Color(0xFF26C6DA), // Cyan
         Color(0xFFA1887F), // Brown
-        Color(0xFF78909C)  // Gray Blue
+        Color(0xFF78909C), // Gray Blue
+        Color(0xFF7986CB), // Indigo
+        Color(0xFF4DB6AC), // Teal
+        Color(0xFFBA68C8), // Deep Purple
+        Color(0xFFFFB74D), // Amber
+        Color(0xFF81C784), // Light Green
+        Color(0xFFE57373), // Light Red
+        Color(0xFF64B5F6), // Light Blue
+        Color(0xFF4FC3F7), // Light Cyan
+        Color(0xFFDCE775), // Lime
+        Color(0xFFAED581), // Light Lime
+        Color(0xFF9575CD)  // Deep Purple Light
     )
 
     Canvas(modifier = modifier) {

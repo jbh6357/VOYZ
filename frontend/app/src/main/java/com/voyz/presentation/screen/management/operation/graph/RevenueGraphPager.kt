@@ -87,6 +87,25 @@ fun HourlySalesBarChart(
     amounts: List<Double>,
     modifier: Modifier = Modifier
 ) {
+    // 데이터 전후로 1시간씩 추가해서 여유 공간 만들기
+    val extendedData = if (hours.isNotEmpty() && amounts.isNotEmpty()) {
+        val firstHour = hours.first().removeSuffix("시").toIntOrNull() ?: 0
+        val lastHour = hours.last().removeSuffix("시").toIntOrNull() ?: 23
+        
+        val prevHour = if (firstHour > 0) "${firstHour - 1}시" else "23시"
+        val nextHour = if (lastHour < 23) "${lastHour + 1}시" else "0시"
+        
+        val extendedHours = listOf(prevHour) + hours + listOf(nextHour)
+        val extendedAmounts = listOf(0.0) + amounts + listOf(0.0)
+        
+        Pair(extendedHours, extendedAmounts)
+    } else {
+        Pair(hours, amounts)
+    }
+    
+    val displayHours = extendedData.first
+    val displayAmounts = extendedData.second
+
     // y축 상단 여유: 최대값의 10%를 여유로 둠
     val rawMax = amounts.maxOrNull() ?: 0.0
     val maxAmount = (rawMax * 1.1).coerceAtLeast(1.0)
@@ -97,54 +116,78 @@ fun HourlySalesBarChart(
             .height(220.dp)
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val barCount = amounts.size
+            val barCount = displayAmounts.size
             if (barCount == 0) return@Canvas
 
             val chartPaddingTop = 8.dp.toPx()
-            val chartPaddingBottom = 18.dp.toPx() // 값 레이블 공간
+            val chartPaddingBottom = 28.dp.toPx() // 값 레이블 + 시간 레이블 공간
+            val chartPaddingHorizontal = 6.dp.toPx() // 좌우 여유 공간 절반으로 줄임
             val chartHeight = size.height - chartPaddingTop - chartPaddingBottom
+            val chartWidth = size.width - (chartPaddingHorizontal * 2)
 
-            val barWidth = size.width / (barCount * 1.7f)
-            val gap = barWidth * 0.7f
-            var x = gap
+            // 시간당 1개의 막대를 그리되, 양쪽에 여유 공간 확보
+            val barWidth = chartWidth / barCount.toFloat()
+            val gap = barWidth * 0.5f
+            var x = chartPaddingHorizontal
 
-            amounts.forEachIndexed { idx, value ->
+            displayAmounts.forEachIndexed { idx, value ->
                 val heightRatio = (value / maxAmount).toFloat()
                 val barHeight = chartHeight * heightRatio
                 val top = chartPaddingTop + (chartHeight - barHeight)
 
-                // 막대
-                drawRect(
-                    color = Color(0xFF4F46E5),
-                    topLeft = Offset(x, top),
-                    size = Size(barWidth, barHeight)
-                )
-
-                // y값(매출) 라벨: 막대 상단 위에 표시
-                val label = com.voyz.utils.MoneyFormats.formatShortKoreanMoney(value)
-                drawIntoCanvas { canvas ->
-                    val paint = android.graphics.Paint().apply {
-                        isAntiAlias = true
-                        color = android.graphics.Color.DKGRAY
-                        textSize = 10.dp.toPx()
-                    }
-                    val textWidth = paint.measureText(label)
-                    canvas.nativeCanvas.drawText(
-                        label,
-                        x + (barWidth - textWidth) / 2f,
-                        top - 4.dp.toPx(),
-                        paint
+                // 막대 (값이 0이 아닐 때만)
+                if (value > 0) {
+                    drawRect(
+                        color = Color(0xFF4F46E5),
+                        topLeft = Offset(x + gap/2, top),
+                        size = Size(barWidth - gap, barHeight)
                     )
+
+                    // y값(매출) 라벨: 막대 상단 위에 표시
+                    val label = com.voyz.utils.MoneyFormats.formatShortKoreanMoney(value)
+                    drawIntoCanvas { canvas ->
+                        val paint = android.graphics.Paint().apply {
+                            isAntiAlias = true
+                            color = android.graphics.Color.DKGRAY
+                            textSize = 8.dp.toPx()
+                        }
+                        val textWidth = paint.measureText(label)
+                        canvas.nativeCanvas.drawText(
+                            label,
+                            x + (barWidth - textWidth) / 2f,
+                            top - 4.dp.toPx(),
+                            paint
+                        )
+                    }
                 }
 
-                x += (barWidth + gap)
+                // X축 라벨 (시간) 표시: 막대 하단에 표시
+                if (idx < displayHours.size) {
+                    val hourLabel = displayHours[idx]
+                    drawIntoCanvas { canvas ->
+                        val paint = android.graphics.Paint().apply {
+                            isAntiAlias = true
+                            color = if (value > 0) android.graphics.Color.GRAY else android.graphics.Color.LTGRAY
+                            textSize = 9.dp.toPx()
+                            textAlign = android.graphics.Paint.Align.CENTER
+                        }
+                        canvas.nativeCanvas.drawText(
+                            hourLabel,
+                            x + barWidth / 2f,
+                            size.height - 2.dp.toPx(),
+                            paint
+                        )
+                    }
+                }
+
+                x += barWidth
             }
 
             // 최상단 가이드 라인
             drawLine(
                 color = Color(0xFFE5E7EB),
-                start = Offset(0f, chartPaddingTop),
-                end = Offset(size.width, chartPaddingTop),
+                start = Offset(chartPaddingHorizontal, chartPaddingTop),
+                end = Offset(size.width - chartPaddingHorizontal, chartPaddingTop),
                 strokeWidth = 1f
             )
         }

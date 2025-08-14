@@ -302,7 +302,7 @@ def generate_review_summary(payload: dict):
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.3,
-            "max_tokens": 50
+            "max_tokens": 150
         }
         
         resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=30)
@@ -310,7 +310,7 @@ def generate_review_summary(payload: dict):
             content = resp.json()["choices"][0]["message"]["content"].strip()
             
             return {
-                "summary": content[:50],  # 최대 50자로 제한
+                "summary": content[:100],  # 최대 100자로 제한 (완전한 문장 보장)
                 "basedOnSentiment": priority_sentiment,
                 "reviewCount": len(target_reviews)
             }
@@ -395,9 +395,10 @@ def analyze_review_content(payload: dict):
 
 규칙:
 1. 리뷰에서 실제로 언급된 내용만 사용 (추측 금지)
-2. 10자 이내로 간단하게
-3. 리뷰가 너무 단순하면 "고객들이 좋아해요" 수준으로 간단히
-4. 구체적 언급이 있을 때만 구체적으로 ("짜다", "양이 많다", "빠르다" 등이 실제 언급된 경우)
+2. 20-30자 정도의 완전한 문장으로 작성
+3. 구체적인 특징이나 개선점을 포함하여 의미있는 정보 제공
+4. 문장이 중간에 잘리지 않도록 완성된 형태로 작성
+5. 예시: "양이 푸짐하고 가격도 적당하다는 평이 많아요", "맛은 좋지만 서비스 개선이 필요하다는 의견이 있어요"
 
 요약:"""
 
@@ -412,7 +413,7 @@ def analyze_review_content(payload: dict):
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.2,
-            "max_tokens": 60
+            "max_tokens": 150
         }
         
         resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=30)
@@ -430,7 +431,7 @@ def analyze_review_content(payload: dict):
                     keywords.append(keyword)
             
             result = {
-                "insight": content[:15],  # 최대 15자로 단축
+                "insight": content[:100],  # 최대 100자로 확장하여 완전한 문장 보장
                 "keywords": keywords[:3]  # 최대 3개 키워드
             }
             print(f"🎯 ML 서비스: 최종 결과 - {result}")

@@ -1,7 +1,30 @@
 import { COUNTRY_FLAGS } from "../types/index.js";
 
 export const getCountryFlag = (countryCode) => {
-  return COUNTRY_FLAGS[countryCode] || "[??]";
+  return COUNTRY_FLAGS[countryCode] || "🌐";
+};
+
+export const getCountryName = (countryCode) => {
+  const countryNames = {
+    US: "United States",
+    KR: "South Korea",
+    IT: "Italy",
+    CA: "Canada",
+    JP: "Japan",
+    AU: "Australia",
+    GB: "United Kingdom",
+    FR: "France",
+    NZ: "New Zealand",
+    CN: "China",
+    ES: "Spain",
+    DE: "Germany",
+    RU: "Russia",
+    AE: "UAE",
+    TH: "Thailand",
+    VN: "Vietnam",
+    SA: "Saudi Arabia",
+  };
+  return countryNames[countryCode] || countryCode;
 };
 
 export const getItemName = (item, selectedLang) => {
@@ -69,28 +92,17 @@ export const getFilteredReviews = (reviews, selectedCountryFilter) => {
     return reviews;
   }
   return reviews.filter(
-    (review) => review.countryCode === selectedCountryFilter
+    (review) => (review.nationality || review.countryCode) === selectedCountryFilter
   );
 };
 
-export const getUniqueCountries = (reviews, getCountryFlag) => {
-  const countryNames = {
-    US: "United States",
-    KR: "South Korea",
-    IT: "Italy",
-    CA: "Canada",
-    JP: "Japan",
-    AU: "Australia",
-    GB: "United Kingdom",
-    FR: "France",
-    NZ: "New Zealand",
-    CN: "China",
-  };
-
-  const countries = reviews.map((review) => ({
-    code: review.countryCode,
-    name: countryNames[review.countryCode] || review.countryCode,
-    flag: getCountryFlag(review.countryCode),
-  }));
+export const getUniqueCountries = (reviews, getCountryName) => {
+  const countries = reviews.map((review) => {
+    const countryCode = review.nationality || review.countryCode;
+    return {
+      code: countryCode,
+      name: getCountryName(countryCode),
+    };
+  });
   return [...new Map(countries.map((item) => [item.code, item])).values()];
 };

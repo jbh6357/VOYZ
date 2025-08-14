@@ -64,7 +64,7 @@ fun RevenueTrendCard(
 
                 // 2) 시간대별 매출
                 val hourly = repo.getHourlySales(id, start.toString(), end.toString())
-                hourlyLabels = hourly.map { it.hour }
+                hourlyLabels = hourly.map { it.hour ?: "00" }
                 hourlyAmounts = hourly.map { it.totalAmount ?: 0.0 }
             } catch (_: Exception) {
                 summary = null
@@ -205,7 +205,9 @@ fun RevenueTrendCard(
                     Text(
                         text = insights.first(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF2C2C2C)
+                        color = Color(0xFF2C2C2C),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
             }

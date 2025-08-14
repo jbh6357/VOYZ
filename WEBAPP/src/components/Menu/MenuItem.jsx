@@ -2,9 +2,10 @@ import {
   getItemName,
   getItemDescription,
   formatPrice,
-  getCountryFlag,
+  getCountryName,
   getReviewText,
 } from "../../utils/helpers.js";
+import StarRating from "../UI/StarRating.jsx";
 
 const MenuItem = ({
   item,
@@ -34,7 +35,7 @@ const MenuItem = ({
       <div className="reviews-preview">
         {item?.rating && item.rating > 0 ? (
           <div className="rating">
-            <span className="stars">{"★".repeat(Math.floor(item.rating))}</span>
+            <StarRating rating={item.rating} />
             <span className="rating-text">
               {item.rating.toFixed(1)} ({item?.reviewCount || 0} reviews)
             </span>
@@ -47,22 +48,24 @@ const MenuItem = ({
           </div>
         ) : (
           <div className="rating no-rating">
-            <span className="stars">☆☆☆☆☆</span>
+            <StarRating rating={0} />
             <span className="rating-text placeholder">평가 대기중</span>
           </div>
         )}
 
         {item?.reviews && item.reviews.length > 0 && item.reviews[0] ? (
           <div className="review-snippet">
-            <span className="review-flag">
-              [{getCountryFlag(item.reviews[0]?.countryCode)}]
-            </span>
-            <span>
-              {item.reviews[0].text} -{" "}
-              <span className="review-country no-translate-flag">
+            <div className="review-meta">
+              <span className="review-country">
+                [{getCountryName(item.reviews[0]?.countryCode)}]
+              </span>
+              <span className="review-author no-translate-flag">
                 {item.reviews[0]?.user || "익명"}
               </span>
-            </span>
+            </div>
+            <div className="review-text">
+              {item.reviews[0].text}
+            </div>
           </div>
         ) : (
           <div className="review-snippet placeholder">

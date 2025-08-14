@@ -47,4 +47,15 @@ public class UserController {
             return ResponseEntity.badRequest().body("회원가입에 실패했습니다. 이미 존재하는 사용자명 또는 이메일입니다.");
         }
     }
+    
+    @GetMapping("/store/{userId}")
+    @Operation(summary = "매장 정보 조회", description = "userId로 매장 정보를 조회합니다.")
+    public ResponseEntity<Map<String, String>> getStoreInfo(@PathVariable String userId) {
+        try {
+            Map<String, String> storeInfo = userService.getStoreInfoByUserId(userId);
+            return ResponseEntity.ok(storeInfo);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

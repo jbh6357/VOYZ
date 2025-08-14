@@ -41,3 +41,32 @@ export const getUrlParams = () => {
     table: urlParams.get("table"),
   };
 };
+
+/**
+ * 사용자의 매장 정보를 가져오는 API
+ * @param {string} userId - 사용자 ID (이메일)
+ * @returns {Promise<Object>} 매장 정보 객체 { storeName, storeCategory, storeAddress }
+ */
+export const getStoreInfoByUserId = async (userId) => {
+  try {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}/users/store/${encodeURIComponent(userId)}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("매장 정보 로드 실패:", error);
+    throw error;
+  }
+};
